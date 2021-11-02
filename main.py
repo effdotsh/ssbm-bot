@@ -144,8 +144,7 @@ while True:
     else:
         break
 
-
-
+attacking = 0
 while True:
     gamestate = getGameState(console)
 
@@ -160,12 +159,31 @@ while True:
         # NOTE: This is where your AI does all of its stuff!
         # This line will get hit once per frame, so here is where you read
         #   in the gamestate and decide what buttons to push on the controller
-        melee.techskill.multishine(ai_state=gamestate.players[discovered_port], controller=controller)
+        # melee.techskill.multishine(ai_state=gamestate.players[discovered_port], controller=controller)
 
+        player_state: melee.PlayerState = gamestate.players.get(discovered_port)
+
+        if(attacking >= 50):
+            controller.press_button(melee.Button.BUTTON_A)
+            attacking = 0
+        else:
+            controller.release_button(melee.Button.BUTTON_A)
+            attacking += 1
+
+        print(player_state.action)
+        if(player_state.action in [melee.Action.EDGE_TEETERING_START, melee.Action.EDGE_TEETERING]):
+            controller.press_button(melee.Button.BUTTON_Y);
+        else:
+            controller.release_button(melee.Button.BUTTON_Y);
+
+        controller.tilt_analog(melee.Button.BUTTON_MAIN, 0, 1)
+
+        controller.flush()
+        # pass
     else:
         # If the discovered port was unsure, reroll our costume for next time
-        costume = random.randint(0, 4)
-
+        # costume = random.randint(0, 4)
+        pass
     # Log this frame's detailed info if we're in game
     if log:
         log.logframe(gamestate)
