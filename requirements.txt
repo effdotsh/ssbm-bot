@@ -1,0 +1,4 @@
+melee
+gym
+stable_baselines3
+numpy
