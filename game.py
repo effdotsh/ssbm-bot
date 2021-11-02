@@ -4,7 +4,7 @@ import melee
 
 class Args:
     port: int
-    oppenent: int
+    opponent: int
     address: str
     debug: bool
     dolphin_executable_path: str
@@ -79,7 +79,7 @@ class Game:
         print("Shutting down cleanly...")
         sys.exit(0)
 
-    def getState(self):
+    def getState(self) -> melee.GameState:
         gamestate = self.console.step()
         if gamestate is None:
             print("No gamestate")
@@ -115,10 +115,11 @@ class Game:
                                                 costume=costume,
                                                 autostart=True,
                                                 swag=False)  # If we're not in game, don't log the frame
+            # melee.MenuHelper.
             if self.log:
                 self.log.skipframe()
 
-    def getController(self):
-        return self.controller
-    def getControllerOpponent(self):
+    def getController(self, port) -> melee.Controller:
+        if (port == self.args.port):
+            return self.controller
         return self.controller_opponent
