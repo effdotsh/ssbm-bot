@@ -4,6 +4,7 @@ import signal
 import sys
 import melee
 
+
 # This example program demonstrates how to use the Melee API to run a console,
 #   setup controllers, and send button presses over to a console
 
@@ -13,6 +14,7 @@ def check_port(value):
         raise argparse.ArgumentTypeError("%s is an invalid controller port. \
                                          Must be 1, 2, 3, or 4." % value)
     return ivalue
+
 
 parser = argparse.ArgumentParser(description='Example of libmelee in action')
 parser.add_argument('--port', '-p', type=check_port,
@@ -26,7 +28,8 @@ parser.add_argument('--debug', '-d', action='store_true',
 parser.add_argument('--address', '-a', default="127.0.0.1",
                     help='IP address of Slippi/Wii')
 parser.add_argument('--dolphin_executable_path', '-e',
-                    help='The directory where dolphin is', default='/home/human/.config/Slippi Launcher/netplay/squashfs-root/usr/bin')
+                    help='The directory where dolphin is',
+                    default='/home/human/.config/Slippi Launcher/netplay/squashfs-root/usr/bin')
 parser.add_argument('--connect_code', '-t', default="",
                     help='Direct connect code to connect to in Slippi Online')
 parser.add_argument('--iso', default='SSBM.iso', type=str,
@@ -59,17 +62,19 @@ controller = melee.Controller(console=console,
 
 controller_opponent = melee.Controller(console=console,
                                        port=args.opponent,
-                                       type=melee.ControllerType.GCN_ADAPTER)
+                                       type=melee.ControllerType.STANDARD)
+
 
 # This isn't necessary, but makes it so that Dolphin will get killed when you ^C
 def signal_handler(sig, frame):
     console.stop()
     if args.debug:
         log.writelog()
-        print("") #because the ^C will be on the terminal
+        print("")  # because the ^C will be on the terminal
         print("Log file created: " + log.filename)
     print("Shutting down cleanly...")
     sys.exit(0)
+
 
 signal.signal(signal.SIGINT, signal_handler)
 
@@ -91,6 +96,9 @@ print("Connecting controller to console...")
 if not controller.connect():
     print("ERROR: Failed to connect the controller.")
     sys.exit(-1)
+if not controller_opponent.connect():
+    print("ERROR: Failed to connect the controller.")
+    sys.exit(-1)
 print("Controller connected")
 
 costume = 0
@@ -101,16 +109,17 @@ while True:
     # "step" to the next frame
     gamestate = console.step()
     if gamestate is None:
+        print("No gamestate")
         continue
 
     # The console object keeps track of how long your bot is taking to process frames
     #   And can warn you if it's taking too long
     if console.processingtime * 1000 > 12:
-        print("WARNING: Last frame took " + str(console.processingtime*1000) + "ms to process.")
+        print("WARNING: Last frame took " + str(console.processingtime * 1000) + "ms to process.")
 
     # What menu are we in?
     if gamestate.menu_state in [melee.Menu.IN_GAME, melee.Menu.SUDDEN_DEATH]:
-
+        print('wut')
         # Slippi Online matches assign you a random port once you're in game that's different
         #   than the one you're physically plugged into. This helper will autodiscover what
         #   port we actually are.
@@ -139,12 +148,17 @@ while True:
                                             costume=costume,
                                             autostart=True,
                                             swag=False)
-
-        # If we're not in game, don't log the frame
+        melee.MenuHelper.menu_helper_simple(gamestate,
+                                            controller_opponent,
+                                            melee.Character.LUIGI,
+                                            melee.Stage.YOSHIS_STORY,
+                                            args.connect_code,
+                                            costume=costume,
+                                            autostart=True,
+                                            swag=False)        # If we're not in game, don't log the frame
         if log:
             log.skipframe()
-
-
+print('woah')
 # import melee
 #
 # console = melee.Console(dolphin_home_path='/home/human/Desktop/SSBM_Based/dolphin/build/Binaries', is_dolphin=True)
