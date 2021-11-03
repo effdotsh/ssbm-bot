@@ -1,3 +1,4 @@
 SSBM.iso
 venv/
 .idea/
+__pycache__
