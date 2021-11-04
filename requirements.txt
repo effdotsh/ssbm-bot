@@ -5,3 +5,6 @@ numpy
 torch
 torchvision
 torchaudio
+
+keras
+tensorflow-gpu
