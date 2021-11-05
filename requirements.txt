@@ -7,4 +7,6 @@ torchvision
 torchaudio
 
 keras
-tensorflow-gpu
+tensorflow
+
+matplotlib
