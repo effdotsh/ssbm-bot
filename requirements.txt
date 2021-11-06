@@ -2,11 +2,7 @@ melee
 gym
 numpy
 
-torch
-torchvision
-torchaudio
-
-keras
-tensorflow
-
 matplotlib
+
+sklearn
+mushroom_rl
