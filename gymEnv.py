@@ -3,15 +3,19 @@ import random
 from gym import spaces
 import math
 import numpy as np
+import gameManager
+import melee
+frames_per_step = 200
 
-frames_per_step = 100
 
-def rand_value():
-    return random.random()-0.5 * 1000
-def getObs():
-    return np.array([rand_value(), rand_value(), rand_value()])
 class CharacterEnv(gym.Env):
-    def __init__(self):
+    def __init__(self, args: gameManager.Args):
+        game = gameManager.Game(args)
+        controller = game.getController(args.port)
+        controller_opponent = game.getController(args.opponent)
+
+        game.enterMatch(stage=melee.Stage.FINAL_DESTINATION)
+
         super(CharacterEnv, self).__init__()
 
         self.obs = getObs()
