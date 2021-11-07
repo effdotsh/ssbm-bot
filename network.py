@@ -1,5 +1,5 @@
 import gym
-from stable_baselines3 import PPO
+from stable_baselines3 import PPO, A2C, SAC
 
 # Parallel environments
 import gymEnv
@@ -13,5 +13,6 @@ env = gymEnv.CharacterEnv()
 model = PPO("MlpPolicy", env, verbose=1, learning_rate=0.005)
 model.learn(total_timesteps=50000)
 
+env.rewards = [-i for i in env.rewards]
 plt.plot(env.rewards)
 plt.show()
