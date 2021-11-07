@@ -83,9 +83,9 @@ class CharacterEnv(gym.Env):
         damage_dealt = max(0, new_opponent.percent - old_opponent.percent)
         damage_recieved = max(0, new_player.percent - old_player.percent)
 
-        deaths = 1 if new_player.stock < old_player.stock else 0
+        deaths = 1 if new_player.percent < old_player.percent else 0
 
-        kills = 1 if new_opponent.stock < old_opponent.stock else 0
+        kills = 1 if new_opponent.percent < old_opponent.percent else 0
 
         # try:
         #     print(f"Stocks: {old_player.}")
