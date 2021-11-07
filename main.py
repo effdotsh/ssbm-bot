@@ -4,6 +4,8 @@ import math
 import gameManager
 import gymEnv
 import melee
+from stable_baselines3 import PPO, DQN, A2C
+from stable_baselines3.common.callbacks import CheckpointCallback
 
 def check_port(value):
     ivalue = int(value)
@@ -35,6 +37,13 @@ parser.add_argument('--iso', default='SSBM.iso', type=str,
 args: gameManager.Args = parser.parse_args()
 
 
-env = gymEnv.CharacterEnv(args=args)
+env = gymEnv.CharacterEnv(args=args, player_port=args.port, opponent_port=args.opponent)
 
+model = DQN("MlpPolicy", env, gamma=0.5, learning_rate=1e-4)
+
+
+checkpoint_callback = CheckpointCallback(save_freq=3600, save_path='./logs/',
+                                         name_prefix='rl_model', verbose=3)
+
+model.learn(total_timesteps=5e50, callback=checkpoint_callback)
 

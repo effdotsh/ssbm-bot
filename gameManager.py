@@ -160,7 +160,7 @@ class Game:
         time.sleep(0.3)
         flick_button(melee.Button.BUTTON_B)
 
-    def enterMatch(self, player_character: melee.Character = melee.Character.JIGGLYPUFF, opponant_character: melee.Character = melee.Character.CPTFALCON, stage: melee.Stage = melee.Stage.FINAL_DESTINATION):
+    def enterMatch(self, player_character: melee.Character = melee.Character.FOX, opponant_character: melee.Character = melee.Character.CPTFALCON, stage: melee.Stage = melee.Stage.FINAL_DESTINATION):
         costume = 0
         # "step" to the next frame
         gamestate = self.getState()
@@ -170,6 +170,7 @@ class Game:
 
         # # What menu are we in?
         t = time.time()
+        # self.controller_opponent.st
         while gamestate.menu_state not in [melee.Menu.IN_GAME, melee.Menu.SUDDEN_DEATH]:
             gamestate = self.getState()
 
@@ -179,13 +180,14 @@ class Game:
                                                 stage,
                                                 self.args.connect_code,
                                                 costume=costume,
-                                                autostart=True,
+                                                autostart=False,
                                                 swag=False)
             melee.MenuHelper.menu_helper_simple(gamestate,
                                                 self.controller_opponent,
                                                 opponant_character,
                                                 stage,
                                                 self.args.connect_code,
+                                                cpu_level=5,
                                                 costume=costume,
                                                 autostart=True,
                                                 swag=False)  # If we're not in game, don't log the frame
