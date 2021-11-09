@@ -4,5 +4,4 @@ numpy
 
 matplotlib
 
-sklearn
-mushroom_rl
+stable_baselines3

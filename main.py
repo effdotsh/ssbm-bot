@@ -28,7 +28,7 @@ parser.add_argument('--address', '-a', default="127.0.0.1",
                     help='IP address of Slippi/Wii')
 parser.add_argument('--dolphin_executable_path', '-e',
                     help='The directory where dolphin is',
-                    default='/home/human/.config/Slippi Launcher/netplay/squashfs-root/usr/bin')
+                    default='C:/Users/human-w/AppData/Roaming/Slippi Launcher/netplay/')
 parser.add_argument('--connect_code', '-t', default="",
                     help='Direct connect code to connect to in Slippi Online')
 parser.add_argument('--iso', default='SSBM.iso', type=str,
@@ -39,10 +39,10 @@ args: gameManager.Args = parser.parse_args()
 
 env = gymEnv.CharacterEnv(args=args, player_port=args.port, opponent_port=args.opponent)
 
-model = DQN("MlpPolicy", env, gamma=0.5, learning_rate=1e-4)
+model = PPO("MlpPolicy", env, learning_rate=1e-4)
 
 
-checkpoint_callback = CheckpointCallback(save_freq=3600, save_path='./logs/',
+checkpoint_callback = CheckpointCallback(save_freq=3600, save_path='./logs-ppo/',
                                          name_prefix='rl_model', verbose=3)
 
 model.learn(total_timesteps=5e50, callback=checkpoint_callback)
