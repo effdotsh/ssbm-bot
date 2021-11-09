@@ -160,7 +160,7 @@ class Game:
         time.sleep(0.3)
         flick_button(melee.Button.BUTTON_B)
 
-    def enterMatch(self, player_character: melee.Character = melee.Character.FOX, opponant_character: melee.Character = melee.Character.CPTFALCON, stage: melee.Stage = melee.Stage.FINAL_DESTINATION):
+    def enterMatch(self, player_character: melee.Character = melee.Character.JIGGLYPUFF, opponant_character: melee.Character = melee.Character.CPTFALCON, stage: melee.Stage = melee.Stage.FINAL_DESTINATION):
         costume = 0
         # "step" to the next frame
         gamestate = self.getState()

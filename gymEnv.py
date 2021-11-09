@@ -9,7 +9,7 @@ import melee
 import utils
 
 frames_per_step = 100
-num_actions = 13
+num_actions = 12
 
 
 class CharacterEnv(gym.Env):
@@ -65,7 +65,11 @@ class CharacterEnv(gym.Env):
         opponent_vel_x = opponent.speed_air_x_self + opponent.speed_ground_x_self + opponent.speed_x_attack
         opponent_vel_y = opponent.speed_y_self + opponent.speed_y_attack
 
-        obs = np.array([player.x, player.y, opponent.x, opponent.y, player_facing, opponent_vel_x, opponent_vel_y, opponent_attacking * opponent_facing, self_attacking, ])
+        self_vel_x = player.speed_air_x_self + player.speed_ground_x_self + player.speed_x_attack
+        self_vel_y = player.speed_y_self + player.speed_y_attack
+
+
+        obs = np.array([player.x, player.y, opponent.x, opponent.y, player_facing, opponent_vel_x, opponent_vel_y, self_vel_x, self_vel_y, opponent_attacking * opponent_facing, self_attacking, player.jumps_left, player.percent/100, opponent.percent/100])
         return obs
 
     def calculate_reward(self):
@@ -86,8 +90,8 @@ class CharacterEnv(gym.Env):
 
         blast_thresh = 20
         blastzones = melee.BLASTZONES.get(melee.Stage.FINAL_DESTINATION)
-        deaths = 1 if new_player.percent < old_player.percent or math.fabs(new_player.x) > blastzones[1] - blast_thresh or new_player.y > blastzones[2] - blast_thresh or new_player.y < blastzones[3] + blast_thresh  else 0
-        kills = 1 if new_opponent.percent < old_opponent.percent or math.fabs(new_opponent.x) > blastzones[1] - blast_thresh or new_opponent.y > blastzones[2] - blast_thresh or new_opponent.y < blastzones[3] + blast_thresh  else 0
+        deaths = 1 if math.fabs(new_player.x) > blastzones[1] - blast_thresh or new_player.y > blastzones[2] - blast_thresh or new_player.y < blastzones[3] + blast_thresh  else 0
+        kills = 1 if math.fabs(new_opponent.x) > blastzones[1] - blast_thresh or new_opponent.y > blastzones[2] - blast_thresh or new_opponent.y < blastzones[3] + blast_thresh  else 0
         # print(deaths)
 
         reward = -distance/5 + (damage_dealt - damage_recieved) * 10 + kills * 1000 - deaths * 5000
@@ -134,18 +138,20 @@ class CharacterEnv(gym.Env):
         elif action == 6:  # Jab Up
             flick_axis(melee.Button.BUTTON_C, 0, 1)
 
-        elif action == 7:  # Neutral B
-            flick_button(melee.Button.BUTTON_B)
-        elif action == 8:  # Right B
+        # elif action == 7:  # Neutral B
+        #     # flick_button(melee.Button.BUTTON_B)
+        #
+
+        elif action == 7:  # Right B
             button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, 1, 0)
-        elif action == 9:  # Left B
+        elif action == 8:  # Left B
             button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, -1, 0)
-        elif action == 10:  # Up B
+        elif action == 9:  # Up B
             button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, 0, 1)
-        elif action == 11:  # Down B
+        elif action == 10:  # Down B
             button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, 0, -1)
 
-        elif action == 12:  # Sheild
+        elif action == 11:  # Sheild
             self.controller.press_button(melee.Button.BUTTON_L)
         else:
             self.controller.release_button(melee.Button.BUTTON_L)
