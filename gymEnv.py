@@ -44,20 +44,19 @@ class CharacterEnv(gym.Env):
 
         obs = self.get_observation(self.gamestate)
 
-        r = 0
-        new_step = False
-        if (self.frame == 0):
-            r = self.calculate_reward()
-            new_step = True
-            self.rewards.append(r)
-        return [obs, r, new_step, {}]
+
+        r = self.calculate_reward()
+        return [obs, r, False, {}]
 
     def get_observation(self, gamestate):
         player: melee.PlayerState = gamestate.players.get(self.player_port)
         opponent: melee.PlayerState = gamestate.players.get(self.opponent_port)
 
         opponent_action = opponent.action
+        self_action = player.action
+
         opponent_attacking = 1 if opponent_action in utils.attacking_list else 0
+        self_attacking = 1 if self_action in utils.attacking_list else 0
 
         player_facing = 1 if player.facing else -1
         opponent_facing = 1 if player.facing else -1
@@ -65,8 +64,10 @@ class CharacterEnv(gym.Env):
         opponent_vel_x = opponent.speed_air_x_self + opponent.speed_ground_x_self + opponent.speed_x_attack
         opponent_vel_y = opponent.speed_y_self + opponent.speed_y_attack
 
+        player_able_to_move = 1 if player.
 
-        return np.array([player.x, player.y, opponent.x, opponent.y, player_facing, opponent_vel_x, opponent_vel_y, opponent_attacking * opponent_facing])
+        obs = np.array([player.x, player.y, opponent.x, opponent.y, player_facing, opponent_vel_x, opponent_vel_y, opponent_attacking * opponent_facing, self_attacking, ])
+        return obs
 
     def calculate_reward(self):
         old_gamestate = self.old_gamestate
@@ -83,15 +84,16 @@ class CharacterEnv(gym.Env):
         damage_dealt = max(0, new_opponent.percent - old_opponent.percent)
         damage_recieved = max(0, new_player.percent - old_player.percent)
 
-        deaths = 1 if new_player.percent < old_player.percent else 0
 
-        kills = 1 if new_opponent.percent < old_opponent.percent else 0
+        blast_thresh = 20
+        blastzones = melee.BLASTZONES.get(melee.Stage.FINAL_DESTINATION)
+        deaths = 1 if new_player.percent < old_player.percent or math.fabs(new_player.x) > blastzones[1] - blast_thresh or new_player.y > blastzones[2] - blast_thresh or new_player.y < blastzones[3] + blast_thresh  else 0
+        kills = 1 if new_opponent.percent < old_opponent.percent or math.fabs(new_opponent.x) > blastzones[1] - blast_thresh or new_opponent.y > blastzones[2] - blast_thresh or new_opponent.y < blastzones[3] + blast_thresh  else 0
+        print(deaths)
 
-        # try:
-        #     print(f"Stocks: {old_player.}")
-        # except:
-        #     pass
-        return -distance + (damage_dealt - damage_recieved) * 10 + kills * 1000 - deaths * 2000
+        reward = -distance/5 + (damage_dealt - damage_recieved) * 10 + kills * 1000 - deaths * 5000
+        # print(reward)
+        return reward
 
     def reset(self):
         self.old_gamestate = self.game.console.step()
@@ -116,7 +118,6 @@ class CharacterEnv(gym.Env):
             self.controller.release_button(button)
             self.controller.tilt_analog_unit(axis, 0, 0)
 
-        # print(action)
         move_stick = melee.Button.BUTTON_MAIN
         if action == 0:  # Move Left
             self.controller.tilt_analog_unit(move_stick, -1, 0)
