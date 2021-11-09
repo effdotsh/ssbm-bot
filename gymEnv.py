@@ -9,7 +9,7 @@ import melee
 import utils
 
 frames_per_step = 100
-num_actions = 10
+num_actions = 13
 
 
 class CharacterEnv(gym.Env):
@@ -40,6 +40,7 @@ class CharacterEnv(gym.Env):
         self.frame %= frames_per_step
 
         self.act(action)
+        self.old_gamestate = self.gamestate
         self.gamestate = self.game.console.step()
 
         obs = self.get_observation(self.gamestate)
@@ -64,8 +65,6 @@ class CharacterEnv(gym.Env):
         opponent_vel_x = opponent.speed_air_x_self + opponent.speed_ground_x_self + opponent.speed_x_attack
         opponent_vel_y = opponent.speed_y_self + opponent.speed_y_attack
 
-        player_able_to_move = 1 if player.
-
         obs = np.array([player.x, player.y, opponent.x, opponent.y, player_facing, opponent_vel_x, opponent_vel_y, opponent_attacking * opponent_facing, self_attacking, ])
         return obs
 
@@ -89,10 +88,10 @@ class CharacterEnv(gym.Env):
         blastzones = melee.BLASTZONES.get(melee.Stage.FINAL_DESTINATION)
         deaths = 1 if new_player.percent < old_player.percent or math.fabs(new_player.x) > blastzones[1] - blast_thresh or new_player.y > blastzones[2] - blast_thresh or new_player.y < blastzones[3] + blast_thresh  else 0
         kills = 1 if new_opponent.percent < old_opponent.percent or math.fabs(new_opponent.x) > blastzones[1] - blast_thresh or new_opponent.y > blastzones[2] - blast_thresh or new_opponent.y < blastzones[3] + blast_thresh  else 0
-        print(deaths)
+        # print(deaths)
 
         reward = -distance/5 + (damage_dealt - damage_recieved) * 10 + kills * 1000 - deaths * 5000
-        # print(reward)
+        print(reward)
         return reward
 
     def reset(self):
@@ -123,19 +122,30 @@ class CharacterEnv(gym.Env):
             self.controller.tilt_analog_unit(move_stick, -1, 0)
         elif action == 1:  # Move Right
             self.controller.tilt_analog_unit(move_stick, 1, 0)
-        elif action == 2:  # Attack Right
-            flick_axis(melee.Button.BUTTON_C, 1, 0)
-        elif action == 3:  # Attack Left
-            flick_axis(melee.Button.BUTTON_C, -1, 0)
-        elif action == 4:  # Attack Down
-            flick_axis(melee.Button.BUTTON_C, 0, -1)
-        elif action == 5:  # Jump
+        elif action == 2:  # Jump
             flick_button(melee.Button.BUTTON_Y)
-        elif action == 6:  # Neutral B
+
+        elif action == 3:  # Jab Left
+            flick_axis(melee.Button.BUTTON_C, -1, 0)
+        elif action == 4:  # Jab Right
+            flick_axis(melee.Button.BUTTON_C, 1, 0)
+        elif action == 5:  # Jab Down
+            flick_axis(melee.Button.BUTTON_C, 0, -1)
+        elif action == 6:  # Jab Up
+            flick_axis(melee.Button.BUTTON_C, 0, 1)
+
+        elif action == 7:  # Neutral B
             flick_button(melee.Button.BUTTON_B)
-        elif action == 7:  # Right B
+        elif action == 8:  # Right B
             button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, 1, 0)
-        elif action == 8:  # Left B
+        elif action == 9:  # Left B
             button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, -1, 0)
-        elif action == 9:  # Up B
+        elif action == 10:  # Up B
             button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, 0, 1)
+        elif action == 11:  # Down B
+            button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, 0, -1)
+
+        elif action == 12:  # Sheild
+            self.controller.press_button(melee.Button.BUTTON_L)
+        else:
+            self.controller.release_button(melee.Button.BUTTON_L)
