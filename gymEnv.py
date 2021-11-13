@@ -9,11 +9,12 @@ import melee
 import utils
 
 frames_per_step = 100
-num_actions = 12
+num_actions = 13
 
 
 class CharacterEnv(gym.Env):
     def __init__(self, args: gameManager.Args, player_port, opponent_port):
+        self.stage = melee.Stage.BATTLEFIELD
 
         # Setup Game
         self.game = gameManager.Game(args)
@@ -21,7 +22,7 @@ class CharacterEnv(gym.Env):
         self.player_port = player_port
         self.opponent_port = opponent_port
         # controller_opponent = game.getController(args.opponent)
-        self.game.enterMatch(stage=melee.Stage.FINAL_DESTINATION)
+        self.game.enterMatch()
 
         super(CharacterEnv, self).__init__()
 
@@ -30,10 +31,11 @@ class CharacterEnv(gym.Env):
         self.old_gamestate = self.game.console.step()
 
         nun_inputs = self.get_observation(self.gamestate).shape[0]
-        self.observation_space = spaces.Box(shape=np.array([nun_inputs]), dtype=np.float, low=-500, high=500)
+        self.observation_space = spaces.Box(shape=np.array([nun_inputs]), dtype=np.float, low=-1, high=1)
         self.action_space = spaces.Discrete(num_actions)
 
         self.rewards = []
+
 
     def step(self, action: int):
         self.frame += 1
@@ -62,14 +64,17 @@ class CharacterEnv(gym.Env):
         player_facing = 1 if player.facing else -1
         opponent_facing = 1 if player.facing else -1
 
-        opponent_vel_x = opponent.speed_air_x_self + opponent.speed_ground_x_self + opponent.speed_x_attack
-        opponent_vel_y = opponent.speed_y_self + opponent.speed_y_attack
+        # opponent_vel_x = max((opponent.speed_air_x_self + opponent.speed_ground_x_self + opponent.speed_x_attack)/1000, 1)
+        # opponent_vel_y = max((opponent.speed_y_self + opponent.speed_y_attack)/1000, 1)
+        #
+        # self_vel_x = max((player.speed_air_x_self + player.speed_ground_x_self + player.speed_x_attack)/1000, 1)
+        # self_vel_y = max((player.speed_y_self + player.speed_y_attack)/1000, 1)
 
-        self_vel_x = player.speed_air_x_self + player.speed_ground_x_self + player.speed_x_attack
-        self_vel_y = player.speed_y_self + player.speed_y_attack
+        blastzones = melee.BLASTZONES.get(self.stage)
 
 
-        obs = np.array([player.x, player.y, opponent.x, opponent.y, player_facing, opponent_vel_x, opponent_vel_y, self_vel_x, self_vel_y, opponent_attacking * opponent_facing, self_attacking, player.jumps_left, player.percent/100, opponent.percent/100])
+        obs = np.array([player.x/blastzones[1], player.y/blastzones[2], opponent.x/blastzones[1], opponent.y/blastzones[2], player_facing, opponent_attacking * opponent_facing, self_attacking])
+        # print(obs)
         return obs
 
     def calculate_reward(self):
@@ -89,12 +94,12 @@ class CharacterEnv(gym.Env):
 
 
         blast_thresh = 20
-        blastzones = melee.BLASTZONES.get(melee.Stage.FINAL_DESTINATION)
+        blastzones = melee.BLASTZONES.get(self.stage)
         deaths = 1 if math.fabs(new_player.x) > blastzones[1] - blast_thresh or new_player.y > blastzones[2] - blast_thresh or new_player.y < blastzones[3] + blast_thresh  else 0
         kills = 1 if math.fabs(new_opponent.x) > blastzones[1] - blast_thresh or new_opponent.y > blastzones[2] - blast_thresh or new_opponent.y < blastzones[3] + blast_thresh  else 0
         # print(deaths)
 
-        reward = -distance/5 + (damage_dealt - damage_recieved) * 10 + kills * 1000 - deaths * 5000
+        reward = (damage_dealt - damage_recieved) * 10 + kills * 1000 - deaths * 5000
         print(reward)
         return reward
 
@@ -103,6 +108,7 @@ class CharacterEnv(gym.Env):
         return self.get_observation(self.old_gamestate)
 
     def act(self, action: int):
+        # print(action)
         def flick_button(button):
             self.controller.press_button(button)
             gamestate = self.game.console.step()
@@ -128,30 +134,41 @@ class CharacterEnv(gym.Env):
             self.controller.tilt_analog_unit(move_stick, 1, 0)
         elif action == 2:  # Jump
             flick_button(melee.Button.BUTTON_Y)
+        elif action == 3:  # Drop
+            self.controller.tilt_analog_unit(move_stick, 0, -1)
+            self.game.console.step()
+            self.game.console.step()
+            self.game.console.step()
+            self.game.console.step()
+            self.game.console.step()
+            self.controller.tilt_analog_unit(move_stick, 0, 0)
 
-        elif action == 3:  # Jab Left
+        elif action == 4:  # Jab Left
             flick_axis(melee.Button.BUTTON_C, -1, 0)
-        elif action == 4:  # Jab Right
+        elif action == 5:  # Jab Right
             flick_axis(melee.Button.BUTTON_C, 1, 0)
-        elif action == 5:  # Jab Down
+        elif action == 6:  # Jab Down
             flick_axis(melee.Button.BUTTON_C, 0, -1)
-        elif action == 6:  # Jab Up
+        elif action == 7:  # Jab Up
             flick_axis(melee.Button.BUTTON_C, 0, 1)
 
-        # elif action == 7:  # Neutral B
-        #     # flick_button(melee.Button.BUTTON_B)
-        #
-
-        elif action == 7:  # Right B
+        elif action == 8:  # Right B
             button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, 1, 0)
-        elif action == 8:  # Left B
+        elif action == 9:  # Left B
             button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, -1, 0)
-        elif action == 9:  # Up B
+        elif action == 10:  # Up B
             button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, 0, 1)
-        elif action == 10:  # Down B
+        elif action == 11:  # Down B
             button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, 0, -1)
+        #
+        # elif action == 12:  # Sheild
+        #     self.controller.press_button(melee.Button.BUTTON_L)
 
-        elif action == 11:  # Sheild
-            self.controller.press_button(melee.Button.BUTTON_L)
-        else:
-            self.controller.release_button(melee.Button.BUTTON_L)
+        elif action == 12:  # Neutral B
+            flick_button(melee.Button.BUTTON_B)
+
+        #
+        # if action != 12:
+        #     self.controller.release_button(melee.Button.BUTTON_L)
+
+        m

@@ -39,11 +39,15 @@ args: gameManager.Args = parser.parse_args()
 
 env = gymEnv.CharacterEnv(args=args, player_port=args.port, opponent_port=args.opponent)
 
-model = PPO("MlpPolicy", env, learning_rate=1e-4)
 
-
-checkpoint_callback = CheckpointCallback(save_freq=3600, save_path='./logs-ppo/',
+checkpoint_callback = CheckpointCallback(save_freq=3600, save_path='./fox-a2c/',
                                          name_prefix='rl_model', verbose=3)
+
+
+
+model = A2C("MlpPolicy", env)
+# model = A2C.load(path="fox-dqn/rl_model_367200_steps.zip", env=env,force_reset=True, print_system_info=True)
+print(model.get_parameters())
 
 model.learn(total_timesteps=5e50, callback=checkpoint_callback)
 
