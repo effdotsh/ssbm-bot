@@ -160,7 +160,7 @@ class Game:
         time.sleep(0.3)
         flick_button(melee.Button.BUTTON_B)
 
-    def enterMatch(self, player_character: melee.Character = melee.Character.JIGGLYPUFF, opponant_character: melee.Character = melee.Character.CPTFALCON, stage: melee.Stage = melee.Stage.FINAL_DESTINATION):
+    def enterMatch(self, player_character: melee.Character = melee.Character.FOX, opponant_character: melee.Character = melee.Character.CPTFALCON, stage: melee.Stage = melee.Stage.BATTLEFIELD, cpu_level: int = 2):
         costume = 0
         # "step" to the next frame
         gamestate = self.getState()
@@ -187,7 +187,7 @@ class Game:
                                                 opponant_character,
                                                 stage,
                                                 self.args.connect_code,
-                                                cpu_level=5,
+                                                cpu_level=cpu_level,
                                                 costume=costume,
                                                 autostart=True,
                                                 swag=False)  # If we're not in game, don't log the frame
