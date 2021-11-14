@@ -2,10 +2,12 @@
 import argparse
 import math
 import gameManager
-import gymEnv
+import FoxEnv
 import melee
 from stable_baselines3 import PPO, DQN, A2C
 from stable_baselines3.common.callbacks import CheckpointCallback
+import threading
+
 
 def check_port(value):
     ivalue = int(value)
@@ -37,17 +39,23 @@ parser.add_argument('--iso', default='SSBM.iso', type=str,
 args: gameManager.Args = parser.parse_args()
 
 
-env = gymEnv.CharacterEnv(args=args, player_port=args.port, opponent_port=args.opponent)
+game = gameManager.Game(args)
+game.enterMatch(cpu_level=3, opponant_character=melee.Character.FALCO)
+
+
+p1_env = FoxEnv.FoxEnv(game=game, player_port=args.port, opponent_port=args.opponent)
+# p2_env = FoxEnv.FoxEnv(game=game, player_port=args.opponent, opponent_port=args.port)
 
 
 checkpoint_callback = CheckpointCallback(save_freq=3600, save_path='./fox-a2c/',
                                          name_prefix='rl_model', verbose=3)
 
 
+p1_model = DQN("MlpPolicy", p1_env)
+# p2_model = A2C("MlpPolicy", p2_env)
 
-model = A2C("MlpPolicy", env)
-# model = A2C.load(path="fox-dqn/rl_model_367200_steps.zip", env=env,force_reset=True, print_system_info=True)
-print(model.get_parameters())
+p1_model.learn(total_timesteps=5e20, callback=checkpoint_callback)
 
-model.learn(total_timesteps=5e50, callback=checkpoint_callback)
-
+# for i in range(int(5e20)):
+#     p1_model.learn(total_timesteps=1, callback=checkpoint_callback)
+    # p2_model.learn(total_timesteps=1, callback=checkpoint_callback)

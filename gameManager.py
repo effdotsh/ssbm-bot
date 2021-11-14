@@ -32,9 +32,9 @@ class Game:
         #   The Console represents the virtual or hardware system Melee is playing on.
         #   Through this object, we can get "GameState" objects per-frame so that your
         #       bot can actually "see" what's happening in the game
-        self.console = melee.Console(path=args.dolphin_executable_path,
-                                slippi_address=args.address,
-                                logger=self.log)
+        self.console: melee.Console = melee.Console(path=args.dolphin_executable_path,
+                                                    slippi_address=args.address,
+                                                    logger=self.log)
 
         # Create our Controller object
         #   The controller is the second primary object your bot will interact with
@@ -160,7 +160,7 @@ class Game:
         time.sleep(0.3)
         flick_button(melee.Button.BUTTON_B)
 
-    def enterMatch(self, player_character: melee.Character = melee.Character.FOX, opponant_character: melee.Character = melee.Character.CPTFALCON, stage: melee.Stage = melee.Stage.BATTLEFIELD, cpu_level: int = 2):
+    def enterMatch(self, player_character: melee.Character = melee.Character.FOX, opponant_character: melee.Character = melee.Character.FOX, stage: melee.Stage = melee.Stage.BATTLEFIELD, cpu_level: int = 0):
         costume = 0
         # "step" to the next frame
         gamestate = self.getState()
