@@ -37,7 +37,12 @@ class FoxEnv(gym.Env):
 
         self.move_x = 0
 
+        self.kills = 0
+        self.deaths = 0
+
     def step(self, action: int):
+        self.kills = 0
+        self.deaths = 0
         self.act(action)
         self.old_gamestate = self.gamestate
         self.gamestate = self.game.console.step()
@@ -91,14 +96,18 @@ class FoxEnv(gym.Env):
         damage_recieved = max(0, new_player.percent - old_player.percent)
 
 
-        blast_thresh = 20
+        blast_thresh = 30
         blastzones = melee.BLASTZONES.get(self.stage)
-        deaths = 1 if math.fabs(new_player.x) > blastzones[1] - blast_thresh or new_player.y > blastzones[2] - blast_thresh or new_player.y < blastzones[3] + blast_thresh  else 0
-        kills = 1 if math.fabs(new_opponent.x) > blastzones[1] - blast_thresh or new_opponent.y > blastzones[2] - blast_thresh or new_opponent.y < blastzones[3] + blast_thresh  else 0
+        # deaths = 1 if new_player.percent < old_player.percent or math.fabs(new_player.x) > blastzones[1] - blast_thresh or new_player.y > blastzones[2] - blast_thresh or new_player.y < blastzones[3] + blast_thresh else 0
+        # kills = 1 if new_opponent.percent < old_opponent.percent or math.fabs(new_opponent.x) > blastzones[1] - blast_thresh or new_opponent.y > blastzones[2] - blast_thresh or new_opponent.y < blastzones[3] + blast_thresh else 0
+        if new_player.action == melee.Action.ON_HALO_DESCENT and self.deaths == 0:
+            self.deaths = 1
+        if new_opponent.action == melee.Action.ON_HALO_DESCENT and self.kills == 0:
+            self.kills = 1
 
         # print(deaths)
 
-        reward = -distance/1000 + (damage_dealt - damage_recieved) * 10 + kills * 2000 - deaths * 5000
+        reward = -distance/1000 + (damage_dealt - damage_recieved) * 10 + self.kills * 2000 - self.deaths * 5000
         print(reward)
         return reward
 
@@ -112,7 +121,14 @@ class FoxEnv(gym.Env):
             if num_frames > 1:
                 num_frames -= 1
             for i in range(num_frames):
-                self.game.console.step()
+                game_state = self.game.console.step()
+                new_player: melee.PlayerState = game_state.players.get(self.player_port)
+                new_opponent: melee.PlayerState = game_state.players.get(self.opponent_port)
+                if new_player.action == melee.Action.ON_HALO_DESCENT and self.deaths == 0:
+                    self.deaths = 1
+                if new_opponent.action == melee.Action.ON_HALO_DESCENT and self.kills == 0:
+                    self.kills = 1
+
             # fps = 60
             # time.sleep(num_frames/fps)
 
@@ -144,7 +160,6 @@ class FoxEnv(gym.Env):
 
         move_stick = melee.Button.BUTTON_MAIN
 
-
         if action == 0:  # Move Left
             self.move_x = -1
         elif action == 1:  # Move Right
@@ -171,9 +186,8 @@ class FoxEnv(gym.Env):
             button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, -1, 0, num_frames=63)
         elif action == 10:  # Down B
             button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, 0, -1, num_frames=1)
-            frame_delay(3)
-            flick_button(melee.Button.BUTTON_Y, num_frames=5)
-
+            frame_delay(4)
+            flick_button(melee.Button.BUTTON_Y, num_frames=1)
         ##Up B's
         elif action == 11:  # Up B Up
             button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, 0, 1, num_frames=92)
@@ -201,7 +215,7 @@ class FoxEnv(gym.Env):
             player: melee.PlayerState = self.gamestate.players.get(self.player_port)
 
             x = -side - player.x
-            y = 0 - player.y
+            y = 10 - player.y
 
             button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, 0, 1, num_frames=10)
             button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, x, y, num_frames=82)
