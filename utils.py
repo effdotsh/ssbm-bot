@@ -1,4 +1,6 @@
 import melee
+
+
 def clamp(n, smallest, largest): return max(smallest, min(n, largest))
 
 
@@ -32,7 +34,10 @@ attacking_list = [melee.Action.BACKWARD_TECH, melee.Action.BAT_SWING_1, melee.Ac
                   melee.Action.NEUTRAL_B_ATTACKING, melee.Action.NEUTRAL_B_ATTACKING_AIR,
                   melee.Action.PARASOL_SWING_1, melee.Action.PARASOL_SWING_2, melee.Action.PARASOL_SWING_3,
                   melee.Action.PARASOL_SWING_4, melee.Action.SWORD_DANCE_1,
-                  melee.Action.SWORD_DANCE_1_AIR, melee.Action.SWORD_DANCE_2_HIGH, melee.Action.SWORD_DANCE_2_HIGH_AIR,
+                  melee.Action.UAIR, melee.Action.UAIR_LANDING,
+                  melee.Action.UPSMASH, melee.Action.UPTILT, melee.Action.UP_B_AIR, melee.Action.UP_B_GROUND,
+                  melee.Action.SWORD_DANCE_1_AIR,
+                  melee.Action.SWORD_DANCE_2_HIGH, melee.Action.SWORD_DANCE_2_HIGH_AIR,
                   melee.Action.SWORD_DANCE_2_MID, melee.Action.SWORD_DANCE_2_MID_AIR, melee.Action.SWORD_DANCE_2_HIGH,
                   melee.Action.SWORD_DANCE_2_HIGH_AIR, melee.Action.SWORD_DANCE_3_HIGH,
                   melee.Action.SWORD_DANCE_3_HIGH_AIR, melee.Action.SWORD_DANCE_3_LOW,
@@ -40,6 +45,9 @@ attacking_list = [melee.Action.BACKWARD_TECH, melee.Action.BAT_SWING_1, melee.Ac
                   melee.Action.SWORD_DANCE_3_MID_AIR, melee.Action.SWORD_DANCE_4_HIGH,
                   melee.Action.SWORD_DANCE_4_HIGH_AIR, melee.Action.SWORD_DANCE_4_LOW, melee.Action.SWORD_DANCE_4_LOW,
                   melee.Action.SWORD_DANCE_4_LOW_AIR, melee.Action.SWORD_DANCE_4_MID,
-                  melee.Action.SWORD_DANCE_4_MID_AIR, melee.Action.UAIR, melee.Action.UAIR_LANDING,
+                  melee.Action.SWORD_DANCE_4_MID_AIR]
 
-                  melee.Action.UPSMASH, melee.Action.UPTILT, melee.Action.UP_B_AIR, melee.Action.UP_B_GROUND]
+dead_list = [melee.Action.DEAD_FALL, melee.Action.DEAD_DOWN, melee.Action.DEAD_FLY, melee.Action.DEAD_FLY_SPLATTER,
+             melee.Action.DEAD_FLY_SPLATTER_FLAT, melee.Action.DEAD_FLY_SPLATTER_FLAT_ICE,
+             melee.Action.DEAD_FLY_SPLATTER_ICE, melee.Action.DEAD_FLY_STAR, melee.Action.DEAD_FLY_STAR_ICE,
+             melee.Action.DEAD_LEFT, melee.Action.DEAD_RIGHT, melee.Action.DEAD_UP, melee.Action.ON_HALO_DESCENT]
