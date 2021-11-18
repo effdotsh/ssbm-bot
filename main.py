@@ -8,6 +8,7 @@ from stable_baselines3 import PPO, DQN, A2C
 from stable_baselines3.common.callbacks import CheckpointCallback
 import threading
 
+import copy
 
 def check_port(value):
     ivalue = int(value)
@@ -40,15 +41,20 @@ args: gameManager.Args = parser.parse_args()
 
 
 game = gameManager.Game(args)
-game.enterMatch(cpu_level=9, opponant_character=melee.Character.CPTFALCON)
+game.enterMatch(cpu_level=0, opponant_character=melee.Character.FOX)
 
+# game2 = gameManager.Game(args)
+# game2.connect()
 
 p1_env = FoxEnv.FoxEnv(game=game, player_port=args.port, opponent_port=args.opponent)
-# p2_env = FoxEnv.FoxEnv(game=game, player_port=args.opponent, opponent_port=args.port)
+# p2_env = FoxEnv.FoxEnv(game=game2, player_port=args.opponent, opponent_port=args.port)
 
 
 checkpoint_callback = CheckpointCallback(save_freq=500, save_path='./fox-a2c/',
                                          name_prefix='rl_model', verbose=3)
+
+def learn(model):
+    model.learn(total_timesteps=5e20, callback=checkpoint_callback)
 
 
 p1_model = A2C("MlpPolicy", p1_env)
@@ -57,8 +63,11 @@ p1_model = A2C("MlpPolicy", p1_env)
 
 # p2_model = A2C("MlpPolicy", p2_env)
 
-p1_model.learn(total_timesteps=5e20, callback=checkpoint_callback)
+threading.Thread(target=learn, args=(p1_model,)).start()
+# threading.Thread(target=learn, args=(p2_model,)).start()
+
+# p1_model.learn(total_timesteps=5e20, callback=checkpoint_callback)
 
 # for i in range(int(5e20)):
 #     p1_model.learn(total_timesteps=1, callback=checkpoint_callback)
-    # p2_model.learn(total_timesteps=1, callback=checkpoint_callback)
+#     p2_model.learn(total_timesteps=1, callback=checkpoint_callback)

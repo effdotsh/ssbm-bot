@@ -53,6 +53,9 @@ class FoxEnv(gym.Env):
 
 
         r = self.calculate_reward()
+
+        # print(f'{action} - {r}')
+        print(f'{action} {r}')
         return [obs, r, False, {}]
 
     def get_observation(self, gamestate):
@@ -108,7 +111,6 @@ class FoxEnv(gym.Env):
         self.killed_last = -self.kills + 1
 
         reward = -distance/1000 + (damage_dealt - damage_recieved) * 10 + k * 2000 - self.deaths * 5000
-        print(reward)
         return reward
 
     def reset(self):
