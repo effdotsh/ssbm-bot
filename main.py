@@ -40,7 +40,7 @@ args: gameManager.Args = parser.parse_args()
 
 
 game = gameManager.Game(args)
-game.enterMatch(cpu_level=3, opponant_character=melee.Character.JIGGLYPUFF)
+game.enterMatch(cpu_level=9, opponant_character=melee.Character.CPTFALCON)
 
 
 p1_env = FoxEnv.FoxEnv(game=game, player_port=args.port, opponent_port=args.opponent)
@@ -52,6 +52,9 @@ checkpoint_callback = CheckpointCallback(save_freq=500, save_path='./fox-a2c/',
 
 
 p1_model = A2C("MlpPolicy", p1_env)
+# p1_model = A2C.load(path="fox-a2c/rl_model_16500_steps", env=p1_env, learning_rate=0.0007)
+
+
 # p2_model = A2C("MlpPolicy", p2_env)
 
 p1_model.learn(total_timesteps=5e20, callback=checkpoint_callback)
