@@ -7,6 +7,7 @@ import melee
 import utils
 from utils import clamp
 
+from queue import Queue
 
 class Args:
     port: int
@@ -19,20 +20,25 @@ class Args:
 
 
 class Action:
-    def __init__(self, button: melee.Button = None, joystick: melee.Button = None, num_frames=0, x=0, y=0):
+    def __init__(self, button: melee.Button = None, joystick: melee.Button = None, num_frames=0, force_end=False, x=0,
+                 y=0):
         # if no button/joystick is inputted then no action needs to be complete
         self.complete: bool = button is None and joystick is None
 
         self.joystick = joystick
         self.button = button
+
         self.num_frames = num_frames
+        self.force_end = force_end
+
         self.x = x
         self.y = y
         self.frame_counter = 0
 
 
 class Game:
-    def __init__(self, args: Args):
+    def __init__(self, args: Args, p1_queue: Queue):
+        self.p1_queue = p1_queue
         self.args: Args = args
 
         self.first_match_started = False
@@ -91,7 +97,7 @@ class Game:
         print("Controller connected")
 
         self.player_actions: list[Action] = [Action(), Action()]
-        self.gamestate = self.console.step()
+        self.gamestate = self.getState()
 
     # This isn't necessary, but makes it so that Dolphin will get killed when you ^C
     def signal_handler(self, sig, frame):
@@ -215,6 +221,8 @@ class Game:
             if self.log:
                 self.log.skipframe()
 
+        self.gamestate = self.getState()
+
         # self.first_match_started = True
 
     def getController(self, port) -> melee.Controller:
@@ -227,7 +235,12 @@ class Game:
             self.player_actions[player_index] = action
 
     def gameLoop(self):
-        self.gamestate = self.console.step()
+        self.gamestate = self.getState()
+
+        # try:
+        #     self.player_actions[0] = self.p1_queue.get(block=False, timeout=0.05)
+        # except:
+        #     pass
 
         for controller, action in zip(self.controllers, self.player_actions):
             if not action.complete:
@@ -239,8 +252,11 @@ class Game:
                 if action.button is not None:
                     controller.press_button(action.button)
 
-                if (
-                        action.num_frames >= action.frame_counter or action.num_frames <= 0) and player.action not in utils.attacking_list and player.action not in utils.dead_list:
-                    action.complete = True
+                if (action.frame_counter >= action.num_frames) and player.action not in utils.dead_list and player.action not in utils.attacking_list:
 
-        self.gameLoop()
+                    action.complete = True
+                    self.p1_queue.put(True)
+                    controller.release_all()
+
+    def getGamestate(self):
+        return self.gamestate
