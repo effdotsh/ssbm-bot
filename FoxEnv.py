@@ -11,10 +11,12 @@ import melee
 import utils
 import copy
 
+from queue import Queue
 from gameManager import Action
 
 class FoxEnv(gym.Env):
-    def __init__(self, player_port, opponent_port, game: gameManager.Game):
+    def __init__(self, player_port, opponent_port, game: gameManager.Game, queue: Queue):
+        self.queue = queue
         self.num_actions = 18
 
         self.stage = melee.Stage.BATTLEFIELD

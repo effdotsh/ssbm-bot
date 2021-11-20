@@ -47,8 +47,11 @@ game.enterMatch(cpu_level=0, opponant_character=melee.Character.FOX)
 # game2 = gameManager.Game(args)
 # game2.connect()
 
-p1_env = FoxEnv.FoxEnv(game=game, player_port=args.port, opponent_port=args.opponent)
-# p2_env = FoxEnv.FoxEnv(game=game2, player_port=args.opponent, opponent_port=args.port)
+p1_queue = Queue()
+p2_queue = Queue()
+
+p1_env = FoxEnv.FoxEnv(game=game, player_port=args.port, opponent_port=args.opponent, queue=p1_queue)
+p2_env = FoxEnv.FoxEnv(game=game, player_port=args.opponent, opponent_port=args.port, queue=p2_queue)
 
 
 checkpoint_callback = CheckpointCallback(save_freq=500, save_path='./fox-a2c/',
@@ -58,11 +61,16 @@ def learn(model):
     model.learn(total_timesteps=5e20, callback=checkpoint_callback)
 
 
+
+
+
 p1_model = A2C("MlpPolicy", p1_env)
 # p1_model = A2C.load(path="fox-a2c/rl_model_16500_steps", env=p1_env, learning_rate=0.0007)
+p2_model = A2C("MlpPolicy", p2_env)
 
 
-# p2_model = A2C("MlpPolicy", p2_env)
+
+
 
 threading.Thread(target=learn, args=(p1_model,)).start()
 # threading.Thread(target=learn, args=(p2_model,)).start()
