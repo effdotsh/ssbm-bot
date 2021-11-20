@@ -6,9 +6,10 @@ import FoxEnv
 import melee
 from stable_baselines3 import PPO, DQN, A2C
 from stable_baselines3.common.callbacks import CheckpointCallback
-import threading
 
-import copy
+
+import threading
+from queue import Queue
 
 def check_port(value):
     ivalue = int(value)

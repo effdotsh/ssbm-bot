@@ -11,6 +11,8 @@ import melee
 import utils
 import copy
 
+from gameManager import Action
+
 class FoxEnv(gym.Env):
     def __init__(self, player_port, opponent_port, game: gameManager.Game):
         self.num_actions = 18
