@@ -1,32 +1,29 @@
-from stable_baselines3 import A2C as MLAlgorithm
-from stable_baselines3.common.callbacks import BaseCallback
-from matplotlib import pyplot as plt
+from network import Overseer
 import numpy as np
-import testEnv
+from tqdm import tqdm
 
+from matplotlib import pyplot as plt
 def graph(points):
     avg = 200
     graph = []
     for i in range(avg, len(points)):
-        graph.append(np.mean(points[i-avg:i]))
+        graph.append(np.mean(points[i - avg:i]))
     print(graph)
     plt.plot(graph)
     plt.show()
-if __name__=='__main__':
-    env = testEnv.TestEnv()
-    model = MLAlgorithm("MlpPolicy", env=env)
+if __name__ =='__main__':
+    nn = Overseer(num_inputs=2, num_choices=2)
+    obs = np.random.rand(2)
 
+    rewards = []
+    for i in tqdm(range(100_000)):
+        action = nn.predict(obs)
+        r=0.
+        if(action == 0 and obs[0] > obs[1] or action==1 and obs[0]<obs[1]):
+            r = 1.
+        rewards.append(r)
+        nn.learn(chosen_action=action, inputs=obs, observed_reward=r)
 
-    # model.learn(total_timesteps=100_000)
-    obs = env.reset()
-    for i in range(10_000):
-        action, _states = model.predict(obs)
-        obs, rewards, dones, info = env.step(action)
-        collected = model.collect_rollouts(env, BaseCallback, model.rollout_buffer, 64)
-        if(collected):
-            model.train()
+        obs = np.random.rand(2)
 
-
-
-
-    graph(env.rewards)
+    graph(rewards)
