@@ -6,3 +6,5 @@ matplotlib
 
 stable_baselines3
 torch
+
+tqdm
