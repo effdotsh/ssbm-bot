@@ -8,10 +8,10 @@ class Network(nn.Module):
         super().__init__()
         self.layers = nn.Sequential(
             nn.Linear(num_inputs+num_choices, 10),
-            nn.ReLU(),
-            nn.Linear(10, 9001),
+            # nn.ReLU(),
+            # nn.Linear(10, 10),
             nn.Sigmoid(),
-            nn.Linear(9001, 1),
+            nn.Linear(10, 1),
         )
     def forward(self, inputs):
         return self.layers(inputs)
@@ -26,6 +26,7 @@ class Overseer:
 
         self.criterion = nn.MSELoss()
         self.optimizer = torch.optim.Adam(self.network.parameters(), lr=0.0005)
+        self.loss = []
     def predict(self, inputs):
         output = 0
         max_reward = -1 * 10e10
@@ -33,7 +34,8 @@ class Overseer:
         for i in range(self.num_choices):
             network_in = self._generate_input_tensor(chosen_action=i, inputs=inputs)
 
-            predicted_reward: torch.Tensor = self.network.forward(network_in)
+            predicted_reward_tensor: torch.Tensor = self.network.forward(network_in)
+            predicted_reward: float = predicted_reward_tensor.item()
             if(predicted_reward > max_reward):
                 max_reward = predicted_reward
                 output = i
@@ -41,12 +43,16 @@ class Overseer:
 
     def learn(self, chosen_action, inputs, observed_reward):
         network_in= self._generate_input_tensor(chosen_action=chosen_action, inputs=inputs)
-        predicted_reward = self.network.forward(network_in)
+        predicted_reward_tensor = self.network.forward(network_in)
 
-        loss = self.criterion(predicted_reward, torch.tensor([observed_reward]))
+        # print(predicted_reward_tensor)
+        # print(torch.tensor([observed_reward]))
+
+        loss = self.criterion(predicted_reward_tensor, torch.tensor([observed_reward]))
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
+        self.loss.append(loss.item())
 
 
 

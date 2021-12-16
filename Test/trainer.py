@@ -1,8 +1,10 @@
 from network import Overseer
 import numpy as np
 from tqdm import tqdm
+from testEnv import TestEnv
 
 from matplotlib import pyplot as plt
+
 def graph(points):
     avg = 200
     graph = []
@@ -11,19 +13,22 @@ def graph(points):
     print(graph)
     plt.plot(graph)
     plt.show()
+
 if __name__ =='__main__':
-    nn = Overseer(num_inputs=2, num_choices=2)
-    obs = np.random.rand(2)
+    env = TestEnv()
+    # num_inputs = int(env.observation_space.shape[0])
+    # num_outputs = int(env.action_space.n)
+    nn = Overseer(num_inputs=2, num_choices=3)
 
     rewards = []
-    for i in tqdm(range(100_000)):
-        action = nn.predict(obs)
-        r=0.
-        if(action == 0 and obs[0] > obs[1] or action==1 and obs[0]<obs[1]):
-            r = 1.
-        rewards.append(r)
-        nn.learn(chosen_action=action, inputs=obs, observed_reward=r)
+    state = env.reset()
+    for i in tqdm(range(300_000)):
+        action = nn.predict(state)
+        next_state, reward, done, _callback = env.step(action)
 
-        obs = np.random.rand(2)
+        nn.learn(chosen_action=action, inputs=state, observed_reward=reward)
+        state = next_state
+        rewards.append(reward)
 
     graph(rewards)
+    graph(nn.loss)
