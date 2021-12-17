@@ -18,11 +18,11 @@ if __name__ =='__main__':
     env = TestEnv()
     # num_inputs = int(env.observation_space.shape[0])
     # num_outputs = int(env.action_space.n)
-    nn = Overseer(num_inputs=2, num_choices=3)
+    nn = Overseer(num_inputs=2, num_choices=3, epsilon_greedy_chance=1, epsilon_greedy_decrease=0.00001)
 
     rewards = []
     state = env.reset()
-    for i in tqdm(range(300_000)):
+    for i in tqdm(range(500_000)):
         action = nn.predict(state)
         next_state, reward, done, _callback = env.step(action)
 
