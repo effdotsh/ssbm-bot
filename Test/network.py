@@ -13,12 +13,15 @@ class Network(nn.Module):
             # nn.ReLU(),
             # nn.Linear(10, 10),
             nn.Sigmoid(),
+            nn.Linear(10, 10),
+            nn.Sigmoid(),
             nn.Linear(10, 1),
         )
     def forward(self, inputs):
         return self.layers(inputs)
 
 class Overseer:
+    # TODO: also have a network to predict the future state from the state + action, and max reward from that
     # The goal of this network is to guess the reward returned by an acrtion in ad=vance, and use backprop to update from an observed reward. An action can be chosen by testing each input through the reward predictor and choosing the one with the highest reward
     def __init__(self, num_inputs, num_choices, epsilon_greedy_chance=1, epsilon_greedy_decrease=0.0001, learning_rate=0.0003):
         self.num_inputs: int = num_inputs
