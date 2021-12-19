@@ -1,4 +1,4 @@
-from network import Overseer
+from Spartann import Overseer
 import numpy as np
 from tqdm import tqdm
 from navEnv import NavEnv
