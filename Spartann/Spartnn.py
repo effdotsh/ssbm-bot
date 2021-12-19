@@ -10,7 +10,7 @@ from tqdm import tqdm
 from typing import List
 
 
-def generate_input_tensor(num_choices, chosen_action: int, inputs):
+def generate_input_tensor(num_choices, chosen_action: int, inputs) -> torch.Tensor:
     input_tensor = np.zeros(num_choices)
     input_tensor[chosen_action] = 1.0
     input_tensor = np.append(input_tensor, inputs)
@@ -27,13 +27,13 @@ class RewardPredictor(nn.Module):
             nn.Linear(num_inputs + num_choices, 10),
             # nn.ReLU(),
             # nn.Linear(10, 10),
-            nn.Sigmoid(),
-            nn.Linear(10, 10),
+            # nn.Linear(10, 10),
             nn.Sigmoid(),
             nn.Linear(10, 1),
         )
 
-    def forward(self, inputs):
+    def forward(self, inputs) -> torch.Tensor:
+
         return self.layers(inputs)
 
 
@@ -44,13 +44,12 @@ class StatePredictor(nn.Module):
             nn.Linear(num_inputs + num_choices, 10),
             # nn.ReLU(),
             # nn.Linear(10, 10),
-            nn.Sigmoid(),
             nn.Linear(10, 10),
             nn.Sigmoid(),
             nn.Linear(10, num_inputs),
         )
 
-    def forward(self, inputs):
+    def forward(self, inputs) -> torch.Tensor:
         return self.layers(inputs)
 
 
@@ -85,7 +84,7 @@ class Node:
             for i in range(self.num_choices):
                 generated_inputs = generate_input_tensor(num_choices=self.num_choices, chosen_action=i,
                                                          inputs=self.inputs)
-                cval = self.reward_predictor.forward(generated_inputs)
+                cval = self.reward_predictor.forward(generated_inputs).item()
                 if cval > max_val:
                     max_val = cval
             return max_val
@@ -93,7 +92,7 @@ class Node:
         for i, c in enumerate(self.children):
             generated_inputs = generate_input_tensor(num_choices=self.num_choices, chosen_action=i, inputs=self.inputs)
 
-            cval = c.compute_value() * self.discount_factor + self.reward_predictor.forward(inputs=generated_inputs)
+            cval = c.compute_value() * self.discount_factor + self.reward_predictor.forward(inputs=generated_inputs).item()
             if cval > max_val:
                 max_val = cval
 
@@ -102,6 +101,24 @@ class Node:
     def get_action(self) -> int:
         action = 0
         max_reward = -1 * 10e10
+
+
+
+        if self.depth == self.max_depth:
+            for i in range(self.num_choices):
+                generated_inputs = generate_input_tensor(num_choices=self.num_choices, chosen_action=i,
+                                                         inputs=self.inputs)
+                cval = self.reward_predictor.forward(generated_inputs).item()
+                if cval > max_reward:
+                    max_reward = cval
+                    action = i
+
+
+                # print(f'{generated_inputs} - {cval}')
+
+            actual = 0 if self.inputs[0] > self.inputs[1] else 1
+
+            return action
         for i, child in enumerate(self.children):
             generated_inputs = generate_input_tensor(num_choices=self.num_choices, chosen_action=i, inputs=self.inputs)
 
@@ -109,6 +126,7 @@ class Node:
             if cval > max_reward:
                 action = i
                 max_reward = cval
+
         return action
 
 
@@ -127,7 +145,7 @@ class Overseer:
         self.reward_network_optimizer = torch.optim.Adam(self.reward_network.parameters(), lr=learning_rate)
         self.reward_network_loss = []
 
-        self.state_predictor = RewardPredictor(num_inputs=num_inputs, num_choices=num_choices)
+        self.state_predictor = StatePredictor(num_inputs=num_inputs, num_choices=num_choices)
         self.state_network_criterion = nn.MSELoss()
         self.state_network_optimizer = torch.optim.Adam(self.reward_network.parameters(), lr=learning_rate)
         self.state_network_loss = []
@@ -143,17 +161,17 @@ class Overseer:
         #     network_in: torch.Tensor = generate_input_tensor(num_choices=self.num_choices, chosen_action=i,
         #                                                      inputs=inputs)
         #
-        #     predicted_reward_tensor: torch.Tensor = self.network.forward(network_in)
+        #     predicted_reward_tensor: torch.Tensor = self.reward_network.forward(network_in)
         #     predicted_reward: float = predicted_reward_tensor.item()
         #     if predicted_reward > max_reward:
         #         max_reward = predicted_reward
         #         output = i
 
-        base_node = Node(inputs=self.num_inputs, state_predictor=self.state_predictor,
+        base_node = Node(inputs=inputs, state_predictor=self.state_predictor,
                          reward_predictor=self.reward_network, discount_factor=self.discount_factor,
                          num_choices=self.num_choices, max_depth=self.search_depth)
-
         output = base_node.get_action()
+
         # Implement epsilon greedy policy
         if random.random() < self.epsilon_greedy_chance:
             output = random.randint(0, self.num_choices - 1)
@@ -166,7 +184,6 @@ class Overseer:
 
     def learn(self, chosen_action, inputs, observed_reward):
         network_in = generate_input_tensor(num_choices=self.num_choices, chosen_action=chosen_action, inputs=inputs)
-        print(network_in)
         predicted_reward_tensor = self.reward_network.forward(network_in)
 
         loss = self.reward_network_criterion(predicted_reward_tensor, torch.tensor([observed_reward]))
