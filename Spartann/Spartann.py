@@ -1,5 +1,5 @@
 # Spartnn - State Predictor And Reward Tree Neural Network
-
+# TODO: Nodes currentky dont know which action they've taken or will take
 import random
 
 import numpy as np
@@ -79,22 +79,33 @@ class Node:
                 self.children.append(child)
 
     def compute_value(self) -> int:
-        if self.maxdepth == self.depth:
-            return self.reward_predictor.forward(inputs=self.inputs)
-
         max_val = -1 * 10e10
-        for c in self.children:
-            cval = c.compute_value()
+
+        if self.maxdepth == self.depth:
+            for i in range(self.num_choices):
+                generated_inputs = generate_input_tensor(num_choices=self.num_choices, chosen_action=i,
+                                                         inputs=self.inputs)
+                cval = self.reward_predictor.forward(generated_inputs)
+                if cval > max_val:
+                    max_val = cval
+            return max_val
+
+        for i, c in enumerate(self.children):
+            generated_inputs = generate_input_tensor(num_choices=self.num_choices, chosen_action=i, inputs=self.inputs)
+
+            cval = c.compute_value() * self.discount_factor + self.reward_predictor.forward(inputs=generated_inputs)
             if cval > max_val:
                 max_val = cval
 
-        return self.reward_predictor.forward(inputs=self.inputs) + max_val * self.discount_factor
+        return max_val
 
     def get_action(self) -> int:
         action = 0
         max_reward = -1 * 10e10
         for i, child in enumerate(self.children):
-            cval = child.compute_value()
+            generated_inputs = generate_input_tensor(num_choices=self.num_choices, chosen_action=i, inputs=self.inputs)
+
+            cval = child.compute_value() * self.discount_factor + self.reward_predictor(generated_inputs)
             if cval > max_reward:
                 action = i
                 max_reward = cval
@@ -105,33 +116,44 @@ class Overseer:
     # TODO: also have a network to predict the future state from the state + action, and max reward from that
     # The goal of this network is to guess the reward returned by an acrtion in ad=vance, and use backprop to update from an observed reward. An action can be chosen by testing each input through the reward predictor and choosing the one with the highest reward
     def __init__(self, num_inputs, num_choices, epsilon_greedy_chance=1, epsilon_greedy_decrease=0.0001,
-                 learning_rate=0.0003, num_steps_ahead=0):
+                 learning_rate=0.0003, search_depth=0, discount_factor=0):
+        self.search_depth = search_depth
+        self.discount_factor = discount_factor
         self.num_inputs: int = num_inputs
         self.num_choices: int = num_choices
 
-        self.network = RewardPredictor(num_inputs=num_inputs, num_choices=num_choices)
+        self.reward_network = RewardPredictor(num_inputs=num_inputs, num_choices=num_choices)
+        self.reward_network_criterion = nn.MSELoss()
+        self.reward_network_optimizer = torch.optim.Adam(self.reward_network.parameters(), lr=learning_rate)
+        self.reward_network_loss = []
 
-        self.criterion = nn.MSELoss()
-        self.optimizer = torch.optim.Adam(self.network.parameters(), lr=learning_rate)
-        self.loss = []
+        self.state_predictor = RewardPredictor(num_inputs=num_inputs, num_choices=num_choices)
+        self.state_network_criterion = nn.MSELoss()
+        self.state_network_optimizer = torch.optim.Adam(self.reward_network.parameters(), lr=learning_rate)
+        self.state_network_loss = []
 
         self.epsilon_greedy_chance = epsilon_greedy_chance
         self.epsilon_greedy_decrease = epsilon_greedy_decrease
 
     def predict(self, inputs):
-        output = 0
-        max_reward = -1 * 10e10
+        # output = 0
+        # max_reward = -1 * 10e10
+        #
+        # for i in range(self.num_choices):
+        #     network_in: torch.Tensor = generate_input_tensor(num_choices=self.num_choices, chosen_action=i,
+        #                                                      inputs=inputs)
+        #
+        #     predicted_reward_tensor: torch.Tensor = self.network.forward(network_in)
+        #     predicted_reward: float = predicted_reward_tensor.item()
+        #     if predicted_reward > max_reward:
+        #         max_reward = predicted_reward
+        #         output = i
 
-        for i in range(self.num_choices):
-            network_in: torch.Tensor = generate_input_tensor(num_choices=self.num_choices, chosen_action=i,
-                                                             inputs=inputs)
+        base_node = Node(inputs=self.num_inputs, state_predictor=self.state_predictor,
+                         reward_predictor=self.reward_network, discount_factor=self.discount_factor,
+                         num_choices=self.num_choices, max_depth=self.search_depth)
 
-            predicted_reward_tensor: torch.Tensor = self.network.forward(network_in)
-            predicted_reward: float = predicted_reward_tensor.item()
-            if predicted_reward > max_reward:
-                max_reward = predicted_reward
-                output = i
-
+        output = base_node.get_action()
         # Implement epsilon greedy policy
         if random.random() < self.epsilon_greedy_chance:
             output = random.randint(0, self.num_choices - 1)
@@ -144,10 +166,11 @@ class Overseer:
 
     def learn(self, chosen_action, inputs, observed_reward):
         network_in = generate_input_tensor(num_choices=self.num_choices, chosen_action=chosen_action, inputs=inputs)
-        predicted_reward_tensor = self.network.forward(network_in)
+        print(network_in)
+        predicted_reward_tensor = self.reward_network.forward(network_in)
 
-        loss = self.criterion(predicted_reward_tensor, torch.tensor([observed_reward]))
-        self.optimizer.zero_grad()
+        loss = self.reward_network_criterion(predicted_reward_tensor, torch.tensor([observed_reward]))
+        self.reward_network_optimizer.zero_grad()
         loss.backward()
-        self.optimizer.step()
-        self.loss.append(loss.item())
+        self.reward_network_optimizer.step()
+        self.reward_network_loss.append(loss.item())
