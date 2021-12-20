@@ -5,6 +5,7 @@ from wallGoalEnv import NavEnv
 from randNumEnv import TestEnv
 from matplotlib import pyplot as plt
 
+from torch import nn
 def graph(points):
     avg = 200
     graph = []
@@ -15,11 +16,23 @@ def graph(points):
     plt.show()
 
 if __name__ =='__main__':
-    env = NavEnv()
-    nn = Overseer(num_inputs=4, num_choices=5, epsilon_greedy_chance=1, epsilon_greedy_decrease=0.00001, discount_factor=0.95, search_depth=1)
 
-    # env = TestEnv()
-    # nn = Overseer(num_inputs=2, num_choices=2, epsilon_greedy_chance=1, epsilon_greedy_decrease=0.00001)
+    stateNet = nn.Sequential(
+        nn.Linear(4, 10),
+        # nn.ReLU(),
+        # nn.Linear(10, 10),
+        # nn.Linear(10, 10),
+        nn.Sigmoid(),
+        nn.Linear(10, 1),
+    )
+
+    # env = NavEnv()
+    # nn = Overseer(reward_network_layers=stateNet, num_inputs=4, num_choices=5, epsilon_greedy_chance=1, epsilon_greedy_decrease=0.00001, discount_factor=0.95, search_depth=1)
+    #
+    env = TestEnv()
+    nn = Overseer(reward_network_layers=stateNet, num_inputs=2, num_choices=2, epsilon_greedy_chance=1, epsilon_greedy_decrease=0.00001, search_depth=1)
+
+
 
 
     rewards = []
