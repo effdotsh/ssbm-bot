@@ -15,25 +15,30 @@ def graph(points):
     plt.show()
 
 if __name__ =='__main__':
-    # env = NavEnv()
-    # nn = Overseer(num_inputs=4, num_choices=5, epsilon_greedy_chance=1, epsilon_greedy_decrease=0.00001)
+    env = NavEnv()
+    nn = Overseer(num_inputs=4, num_choices=5, epsilon_greedy_chance=1, epsilon_greedy_decrease=0.00001, discount_factor=0.95, search_depth=1)
 
-    env = TestEnv()
-    nn = Overseer(num_inputs=2, num_choices=2, epsilon_greedy_chance=1, epsilon_greedy_decrease=0.00001)
+    # env = TestEnv()
+    # nn = Overseer(num_inputs=2, num_choices=2, epsilon_greedy_chance=1, epsilon_greedy_decrease=0.00001)
 
 
     rewards = []
     state = env.reset()
-    for i in tqdm(range(300_000)):
+    for i in tqdm(range(200_000)):
         action = nn.predict(state)
         next_state, reward, done, _callback = env.step(action)
 
-        # if done:
-        rewards.append(reward)
-        nn.learn(chosen_action=action, inputs=state, observed_reward=reward)
+        nn.learn_reward(chosen_action=action, inputs=state, observed_reward=reward)
+
+        if done:
+            rewards.append(reward)
+
+            state = env.reset()
+        else:
+            nn.learn_state(chosen_action=action, old_state=state, new_state=next_state)
+
         state = next_state
 
-        # env.reset()
     #
     # rewards = []
     # state = env.reset()
@@ -48,3 +53,4 @@ if __name__ =='__main__':
 
     graph(rewards)
     graph(nn.reward_network_loss)
+    graph(nn.state_network_loss)
