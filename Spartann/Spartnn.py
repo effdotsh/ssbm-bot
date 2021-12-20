@@ -24,36 +24,43 @@ def generate_input_tensor(num_choices, chosen_action: int, inputs) -> torch.Tens
 
 
 class RewardPredictor(nn.Module):
-    def __init__(self, num_inputs, num_choices):
+    def __init__(self, num_inputs, num_choices, layers = None):
         super().__init__()
-        self.layers = nn.Sequential(
-            nn.Linear(num_inputs + num_choices, 10),
-            # nn.ReLU(),
-            # nn.Linear(10, 10),
-            # nn.Linear(10, 10),
-            nn.Sigmoid(),
-            nn.Linear(10, 1),
-        )
+        if layers is None:
+            self.layers = nn.Sequential(
+                nn.Linear(num_inputs + num_choices, 10),
+                # nn.ReLU(),
+                # nn.Linear(10, 10),
+                # nn.Linear(10, 10),
+                nn.Sigmoid(),
+                nn.Linear(10, 1),
+            )
+        else:
+            self.layers=layers
 
     def forward(self, inputs) -> torch.Tensor:
         return self.layers(inputs)
 
 
 class StatePredictor(nn.Module):
-    def __init__(self, num_inputs, num_choices):
+    def __init__(self, num_inputs, num_choices, layers=None):
         super().__init__()
-        self.layers = nn.Sequential(
-            nn.Linear(num_inputs + num_choices, 10),
-            # nn.ReLU(),
-            # nn.Linear(10, 10),
-            nn.Linear(10, 10),
-            nn.Sigmoid(),
-            nn.Linear(10, 10),
-            nn.Sigmoid(),
-            nn.Linear(10, 10),
-            nn.Sigmoid(),
-            nn.Linear(10, num_inputs),
-        )
+
+        if(layers is None):
+            self.layers = nn.Sequential(
+                nn.Linear(num_inputs + num_choices, 10),
+                # nn.ReLU(),
+                # nn.Linear(10, 10),
+                nn.Linear(10, 10),
+                nn.Sigmoid(),
+                nn.Linear(10, 10),
+                nn.Sigmoid(),
+                nn.Linear(10, 10),
+                nn.Sigmoid(),
+                nn.Linear(10, num_inputs),
+            )
+        else:
+            self.layers = layers
 
     def forward(self, inputs) -> torch.Tensor:
         return self.layers(inputs)
@@ -131,23 +138,22 @@ class Node:
 
 
 class Overseer:
-    # TODO: also have a network to predict the future state from the state + action, and max reward from that
     # The goal of this network is to guess the reward returned by an acrtion in ad=vance, and use backprop to update from an observed reward. An action can be chosen by testing each input through the reward predictor and choosing the one with the highest reward
     def __init__(self, num_inputs, num_choices, epsilon_greedy_chance=1, epsilon_greedy_decrease=0.0001,
-                 learning_rate=0.0003, search_depth=0, discount_factor=0):
+                 reward_network_learning_rate=0.0003, state_network_learning_rate=0.00003, search_depth=0, discount_factor=0, reward_network_layers=None, state_network_layers=None):
         self.search_depth = search_depth
         self.discount_factor = discount_factor
         self.num_inputs: int = num_inputs
         self.num_choices: int = num_choices
 
-        self.reward_network = RewardPredictor(num_inputs=num_inputs, num_choices=num_choices)
+        self.reward_network = RewardPredictor(num_inputs=num_inputs, num_choices=num_choices, layers=reward_network_layers)
         self.reward_network_criterion = nn.MSELoss()
-        self.reward_network_optimizer = torch.optim.Adam(self.reward_network.parameters(), lr=learning_rate)
+        self.reward_network_optimizer = torch.optim.Adam(self.reward_network.parameters(), lr=reward_network_learning_rate)
         self.reward_network_loss = []
 
-        self.state_predictor = StatePredictor(num_inputs=num_inputs, num_choices=num_choices)
+        self.state_predictor = StatePredictor(num_inputs=num_inputs, num_choices=num_choices, layers=state_network_layers)
         self.state_network_criterion = nn.MSELoss()
-        self.state_network_optimizer = torch.optim.Adam(self.reward_network.parameters(), lr=learning_rate/10)
+        self.state_network_optimizer = torch.optim.Adam(self.reward_network.parameters(), lr=state_network_learning_rate)
         self.state_network_loss = []
 
         self.epsilon_greedy_chance = epsilon_greedy_chance
