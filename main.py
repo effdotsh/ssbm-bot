@@ -61,7 +61,7 @@ checkpoint_callback = CheckpointCallback(save_freq=500, save_path='./fox-a2c/',
                                          name_prefix='rl_model', verbose=3)
 
 def learn(model):
-    model.learn(total_timesteps=5e20, callback=checkpoint_callback)
+    model.learn_reward(total_timesteps=5e20, callback=checkpoint_callback)
 
 
 

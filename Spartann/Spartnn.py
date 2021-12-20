@@ -3,6 +3,7 @@
 import random
 
 import numpy as np
+import pylab as p
 import torch
 from torch import nn
 from tqdm import tqdm
@@ -11,6 +12,8 @@ from typing import List
 
 
 def generate_input_tensor(num_choices, chosen_action: int, inputs) -> torch.Tensor:
+    if isinstance(inputs, torch.Tensor):
+        inputs = inputs.detach().numpy()
     input_tensor = np.zeros(num_choices)
     input_tensor[chosen_action] = 1.0
     input_tensor = np.append(input_tensor, inputs)
@@ -33,7 +36,6 @@ class RewardPredictor(nn.Module):
         )
 
     def forward(self, inputs) -> torch.Tensor:
-
         return self.layers(inputs)
 
 
@@ -44,6 +46,10 @@ class StatePredictor(nn.Module):
             nn.Linear(num_inputs + num_choices, 10),
             # nn.ReLU(),
             # nn.Linear(10, 10),
+            nn.Linear(10, 10),
+            nn.Sigmoid(),
+            nn.Linear(10, 10),
+            nn.Sigmoid(),
             nn.Linear(10, 10),
             nn.Sigmoid(),
             nn.Linear(10, num_inputs),
@@ -80,7 +86,7 @@ class Node:
     def compute_value(self) -> int:
         max_val = -1 * 10e10
 
-        if self.maxdepth == self.depth:
+        if self.max_depth == self.depth:
             for i in range(self.num_choices):
                 generated_inputs = generate_input_tensor(num_choices=self.num_choices, chosen_action=i,
                                                          inputs=self.inputs)
@@ -92,7 +98,8 @@ class Node:
         for i, c in enumerate(self.children):
             generated_inputs = generate_input_tensor(num_choices=self.num_choices, chosen_action=i, inputs=self.inputs)
 
-            cval = c.compute_value() * self.discount_factor + self.reward_predictor.forward(inputs=generated_inputs).item()
+            cval = c.compute_value() * self.discount_factor + self.reward_predictor.forward(
+                inputs=generated_inputs).item()
             if cval > max_val:
                 max_val = cval
 
@@ -102,8 +109,6 @@ class Node:
         action = 0
         max_reward = -1 * 10e10
 
-
-
         if self.depth == self.max_depth:
             for i in range(self.num_choices):
                 generated_inputs = generate_input_tensor(num_choices=self.num_choices, chosen_action=i,
@@ -112,11 +117,6 @@ class Node:
                 if cval > max_reward:
                     max_reward = cval
                     action = i
-
-
-                # print(f'{generated_inputs} - {cval}')
-
-            actual = 0 if self.inputs[0] > self.inputs[1] else 1
 
             return action
         for i, child in enumerate(self.children):
@@ -147,7 +147,7 @@ class Overseer:
 
         self.state_predictor = StatePredictor(num_inputs=num_inputs, num_choices=num_choices)
         self.state_network_criterion = nn.MSELoss()
-        self.state_network_optimizer = torch.optim.Adam(self.reward_network.parameters(), lr=learning_rate)
+        self.state_network_optimizer = torch.optim.Adam(self.reward_network.parameters(), lr=learning_rate/10)
         self.state_network_loss = []
 
         self.epsilon_greedy_chance = epsilon_greedy_chance
@@ -182,7 +182,7 @@ class Overseer:
 
         return output
 
-    def learn(self, chosen_action, inputs, observed_reward):
+    def learn_reward(self, chosen_action, inputs, observed_reward, ):
         network_in = generate_input_tensor(num_choices=self.num_choices, chosen_action=chosen_action, inputs=inputs)
         predicted_reward_tensor = self.reward_network.forward(network_in)
 
@@ -191,3 +191,23 @@ class Overseer:
         loss.backward()
         self.reward_network_optimizer.step()
         self.reward_network_loss.append(loss.item())
+
+    def learn_state(self, chosen_action, old_state: np.ndarray, new_state: np.ndarray):
+        # print(type(new_state))
+        # if not isinstance(old_state, np.ndarray):
+        #     print('ewfoibweo')
+        #     old_state = np.array(old_state)
+        # if not isinstance(new_state, np.ndarray):
+        #     new_state = np.array(new_state)
+
+        old_state = old_state.astype(np.float32)
+        new_state = new_state.astype(np.float32)
+
+        network_in = generate_input_tensor(num_choices=self.num_choices, chosen_action=chosen_action, inputs=old_state)
+        predicted_state_tensor = self.state_predictor.forward(network_in)
+
+        loss = self.state_network_criterion(predicted_state_tensor, torch.tensor(new_state))
+        self.state_network_optimizer.zero_grad()
+        loss.backward()
+        self.state_network_optimizer.step()
+        self.state_network_loss.append(loss.item())

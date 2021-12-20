@@ -41,10 +41,10 @@ class NavEnv(gym.Env):
         return [self.state, r, done, {}]
 
     def reset(self):
-        self.agent_x = float(random.randint(0, 9))
-        self.agent_y = float(random.randint(0, 9))
-        self.target_x = float(random.randint(0, 9))
-        self.target_y = float(random.randint(0, 9))
+        self.agent_x = float(random.randint(0, 9))/10
+        self.agent_y = float(random.randint(0, 9))/10
+        self.target_x = float(random.randint(0, 9))/10
+        self.target_y = float(random.randint(0, 9))/10
         return np.array([self.agent_x, self.agent_y, self.target_x, self.target_y], dtype=float)
 
     def render(self):
