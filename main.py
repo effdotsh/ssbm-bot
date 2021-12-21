@@ -5,14 +5,22 @@ import gameManager
 import melee
 import platform
 
+from FoxEnv import FoxEnv
+from Spartann.Spartnn import Overseer
+
+from torch import nn
+
+from WalkToCharEnv import WalkToCharEnv
+
 dolphin_path = ''
 if platform.system() == "Darwin":
     dolphin_path = "/Users/human/Library/Application Support/Slippi Launcher/netplay/Slippi Dolphin.app"
 elif platform.system() == "Windows":
     dolphin_path = "C:/Users/human/AppData/Roaming/Slippi Launcher/netplay/"
 
-
 print(dolphin_path)
+
+
 def check_port(value):
     ivalue = int(value)
     if ivalue < 1 or ivalue > 4:
@@ -44,4 +52,35 @@ args: gameManager.Args = parser.parse_args()
 
 if __name__ == '__main__':
     game = gameManager.Game(args)
-    game.enterMatch(cpu_level=3, opponant_character=melee.Character.FALCO)
+    game.enterMatch(cpu_level=0, opponant_character=melee.Character.FALCO)
+
+    env = WalkToCharEnv(player_port=args.port, opponent_port=args.opponent, game=game)
+
+    num_inputs = env.obs.shape[0]
+    num_choices = env.num_actions
+
+    reward_network = nn.Sequential(
+        nn.Linear(num_inputs + num_choices, 4),
+        nn.Sigmoid(),
+        nn.Linear(4, 1)
+    )
+
+    nn = Overseer(num_inputs=env.obs.shape[0], num_choices=env.num_actions, epsilon_greedy_chance=1,
+                  epsilon_greedy_decrease=0.000001, reward_network_layers=reward_network)
+
+    state = env.reset()
+    while True:
+        action = nn.predict(state)
+        next_state, reward, done, _callback = env.step(action)
+
+        nn.learn_reward(chosen_action=action, inputs=state, observed_reward=reward)
+
+        if done:
+            state = env.reset()
+        else:
+            nn.learn_state(chosen_action=action, old_state=state, new_state=next_state)
+
+        state = next_state
+        if(nn.frame % 100 == 0):
+            nn.log(100)
+
