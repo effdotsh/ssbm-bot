@@ -1,17 +1,15 @@
 #!/usr/bin/python3
 import argparse
 import math
-import time
-
 import gameManager
-import FoxEnv
 import melee
-from stable_baselines3 import PPO, DQN, A2C
-from stable_baselines3.common.callbacks import CheckpointCallback
+import platform
 
-
-import threading
-from queue import Queue
+dolphin_path = ''
+if platform.system() == "Darwin":
+    dolphin_path = "/Users/human/Library/Application Support/Slippi Launcher/netplay/Slippi Dolphin.app"
+elif platform.system() == "Windows":
+    dolphin_path = "C:/Users/human-w/AppData/Roaming/Slippi Launcher/netplay"
 
 def check_port(value):
     ivalue = int(value)
@@ -34,7 +32,7 @@ parser.add_argument('--address', '-a', default="127.0.0.1",
                     help='IP address of Slippi/Wii')
 parser.add_argument('--dolphin_executable_path', '-e',
                     help='The directory where dolphin is',
-                    default='C:/Users/human-w/AppData/Roaming/Slippi Launcher/netplay/')
+                    default=dolphin_path)
 parser.add_argument('--connect_code', '-t', default="",
                     help='Direct connect code to connect to in Slippi Online')
 parser.add_argument('--iso', default='SSBM.iso', type=str,
@@ -42,48 +40,6 @@ parser.add_argument('--iso', default='SSBM.iso', type=str,
 
 args: gameManager.Args = parser.parse_args()
 
-p1_queue = Queue()
-# p2_queue = Queue()
-
-game = gameManager.Game(args=args, p1_queue=p1_queue)
-game.enterMatch(cpu_level=1, opponant_character=melee.Character.FOX)
-
-# game2 = gameManager.Game(args)
-# game2.connect()
-
-
-
-p1_env = FoxEnv.FoxEnv(game=game, player_port=args.port, opponent_port=args.opponent, queue=p1_queue)
-# p2_env = FoxEnv.FoxEnv(game=game, player_port=args.opponent, opponent_port=args.port, queue=p2_queue)
-
-
-checkpoint_callback = CheckpointCallback(save_freq=500, save_path='./fox-a2c/',
-                                         name_prefix='rl_model', verbose=3)
-
-def learn(model):
-    model.learn_reward(total_timesteps=5e20, callback=checkpoint_callback)
-
-
-
-
-
-p1_model = A2C("MlpPolicy", p1_env)
-# p1_model = A2C.load(path="fox-a2c/rl_model_16500_steps", env=p1_env, learning_rate=0.0007)
-# p2_model = A2C("MlpPolicy", p2_env)
-
-
-
-
-
-threading.Thread(target=learn, args=(p1_model,)).start()
-# threading.Thread(target=learn, args=(p2_model,)).start()
-# threading.Thread(target=game.gameLoop, args=()).start()
-while True:
-    game.gameLoop()
-# p1_model.learn(total_timesteps=5e20, callback=checkpoint_callback)
-
-# for i in range(int(5e20)):
-#     p1_model.learn(total_timesteps=1, callback=checkpoint_callback)
-#     p2_model.learn(total_timesteps=1, callback=checkpoint_callback)
-if __name__=='__main__':
-    pass
+if __name__ == '__main__':
+    game = gameManager.Game(args)
+    game.enterMatch(cpu_level=3, opponant_character=melee.Character.FALCO)
