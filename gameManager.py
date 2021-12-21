@@ -3,11 +3,7 @@ import sys
 import time
 
 import melee
-
-import utils
 from utils import clamp
-
-from queue import Queue
 
 class Args:
     port: int
@@ -18,28 +14,11 @@ class Args:
     connect_code: str
     iso: str
 
-
-class Action:
-    def __init__(self, button: melee.Button = None, joystick: melee.Button = None, num_frames=0, force_end=False, x=0,
-                 y=0):
-        # if no button/joystick is inputted then no action needs to be complete
-        self.complete: bool = button is None and joystick is None
-
-        self.joystick = joystick
-        self.button = button
-
-        self.num_frames = num_frames
-        self.force_end = force_end
-
-        self.x = x
-        self.y = y
-        self.frame_counter = 0
-
-
 class Game:
-    def __init__(self, args: Args, p1_queue: Queue):
-        self.p1_queue = p1_queue
+    def __init__(self, args: Args):
         self.args: Args = args
+
+
 
         self.first_match_started = False
         # This logger object is useful for retroactively debugging issues in your bot
@@ -61,15 +40,13 @@ class Game:
         #   The controller is the second primary object your bot will interact with
         #   Your controller is your way of sending button presses to the game, whether
         #   virtual or physical.
-        self.p1_controller = melee.Controller(console=self.console,
-                                              port=args.port,
-                                              type=melee.ControllerType.STANDARD)
+        self.controller = melee.Controller(console=self.console,
+                                      port=args.port,
+                                      type=melee.ControllerType.STANDARD)
 
-        self.p2_controller = melee.Controller(console=self.console,
-                                              port=args.opponent,
-                                              type=melee.ControllerType.STANDARD)
-
-        self.controllers: list[melee.Controller] = [self.p1_controller, self.p2_controller]
+        self.controller_opponent = melee.Controller(console=self.console,
+                                               port=args.opponent,
+                                               type=melee.ControllerType.STANDARD)
 
         signal.signal(signal.SIGINT, self.signal_handler)
 
@@ -88,16 +65,16 @@ class Game:
         #   NOTE: If you're loading a movie file, don't connect the controller,
         #   dolphin will hang waiting for input and never receive it
         print("Connecting controller to console...")
-        if not self.p1_controller.connect():
+        if not self.controller.connect():
             print("ERROR: Failed to connect the controller.")
             sys.exit(-1)
-        if not self.p2_controller.connect():
+        if not self.controller_opponent.connect():
             print("ERROR: Failed to connect the controller.")
             sys.exit(-1)
         print("Controller connected")
 
-        self.player_actions: list[Action] = [Action(), Action()]
-        self.gamestate = self.getState()
+        costume = 0
+        framedata = melee.framedata.FrameData()
 
     # This isn't necessary, but makes it so that Dolphin will get killed when you ^C
     def signal_handler(self, sig, frame):
@@ -127,7 +104,7 @@ class Game:
         return gamestate
 
     def set_rules(self):
-        # Sets rules to be time with no time limit
+        #Sets rules to be time with no time limit
         def move_cursor(x, y):
             while True:
                 gamestate = self.getState()
@@ -137,32 +114,31 @@ class Game:
                 print(moveX)
                 self.cursor_x += moveX
                 self.cursor_y += moveY
-                self.p1_controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, moveX, moveY)
+                self.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, moveX, moveY)
                 if (x == self.cursor_x and y == self.cursor_y):
                     return
-
         def flick_button(button):
             gamestate = self.getState()
-            self.p1_controller.press_button(button)
+            self.controller.press_button(button)
             gamestate = self.getState()
-            self.p1_controller.release_all()
+            self.controller.release_all()
             gamestate = self.getState()
 
         def flick_axis(button, x, y):
             gamestate = self.getState()
-            self.p1_controller.tilt_analog_unit(button, x, y)
+            self.controller.tilt_analog_unit(button, x, y)
             gamestate = self.getState()
             t = time.time()
             while time.time() - t < 0.2:
                 gamestate = self.getState()
-            self.p1_controller.tilt_analog_unit(button, 0, 0)
+            self.controller.tilt_analog_unit(button, 0, 0)
             gamestate = self.getState()
 
         # Select pichu, a character needs to be selected before rules can be selected
         t = time.time()
         while time.time() - t < 1:
             gamestate = self.getState()
-            melee.MenuHelper.choose_character(melee.Character.PICHU, gamestate, self.p1_controller)
+            melee.MenuHelper.choose_character(melee.Character.PICHU,gamestate, self.controller)
             # melee.MenuHelper.
             if self.log:
                 self.log.skipframe()
@@ -184,9 +160,7 @@ class Game:
         time.sleep(0.3)
         flick_button(melee.Button.BUTTON_B)
 
-    def enterMatch(self, player_character: melee.Character = melee.Character.FOX,
-                   opponant_character: melee.Character = melee.Character.FOX,
-                   stage: melee.Stage = melee.Stage.BATTLEFIELD, cpu_level: int = 0):
+    def enterMatch(self, player_character: melee.Character = melee.Character.FOX, opponant_character: melee.Character = melee.Character.FOX, stage: melee.Stage = melee.Stage.BATTLEFIELD, cpu_level: int = 0):
         costume = 0
         # "step" to the next frame
         gamestate = self.getState()
@@ -201,7 +175,7 @@ class Game:
             gamestate = self.getState()
 
             melee.MenuHelper.menu_helper_simple(gamestate,
-                                                self.p1_controller,
+                                                self.controller,
                                                 player_character,
                                                 stage,
                                                 self.args.connect_code,
@@ -209,7 +183,7 @@ class Game:
                                                 autostart=False,
                                                 swag=False)
             melee.MenuHelper.menu_helper_simple(gamestate,
-                                                self.p2_controller,
+                                                self.controller_opponent,
                                                 opponant_character,
                                                 stage,
                                                 self.args.connect_code,
@@ -221,42 +195,8 @@ class Game:
             if self.log:
                 self.log.skipframe()
 
-        self.gamestate = self.getState()
-
         # self.first_match_started = True
-
     def getController(self, port) -> melee.Controller:
         if (port == self.args.port):
-            return self.p1_controller
-        return self.p2_controller
-
-    def setAction(self, player_index: int, action: Action):
-        if self.player_actions[player_index].complete:
-            self.player_actions[player_index] = action
-
-    def gameLoop(self):
-        self.gamestate = self.getState()
-
-        # try:
-        #     self.player_actions[0] = self.p1_queue.get(block=False, timeout=0.05)
-        # except:
-        #     pass
-
-        for controller, action in zip(self.controllers, self.player_actions):
-            if not action.complete:
-                player: melee.PlayerState = self.gamestate.players.get(controller.port)
-
-                action.frame_counter += 1
-                if action.joystick is not None:
-                    controller.tilt_analog_unit(action.joystick, action.x, action.y)
-                if action.button is not None:
-                    controller.press_button(action.button)
-
-                if (action.frame_counter >= action.num_frames) and player.action not in utils.dead_list and player.action not in utils.attacking_list:
-
-                    action.complete = True
-                    self.p1_queue.put(True)
-                    controller.release_all()
-
-    def getGamestate(self):
-        return self.gamestate
+            return self.controller
+        return self.controller_opponent
