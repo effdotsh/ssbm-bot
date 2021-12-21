@@ -9,8 +9,10 @@ dolphin_path = ''
 if platform.system() == "Darwin":
     dolphin_path = "/Users/human/Library/Application Support/Slippi Launcher/netplay/Slippi Dolphin.app"
 elif platform.system() == "Windows":
-    dolphin_path = "C:/Users/human-w/AppData/Roaming/Slippi Launcher/netplay"
+    dolphin_path = "C:/Users/human/AppData/Roaming/Slippi Launcher/netplay/"
 
+
+print(dolphin_path)
 def check_port(value):
     ivalue = int(value)
     if ivalue < 1 or ivalue > 4:
