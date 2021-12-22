@@ -11,9 +11,13 @@ import melee
 import utils
 import copy
 
+# class Action:
+#     def __init__(self, ):
+#
+
 class FoxEnv(gym.Env):
     def __init__(self, player_port, opponent_port, game: gameManager.Game):
-        self.num_actions = 18
+        self.num_actions = 5
 
         self.stage = melee.Stage.BATTLEFIELD
 
@@ -45,7 +49,7 @@ class FoxEnv(gym.Env):
     def step(self, action: int):
         self.kills = 0
         self.deaths = 0
-        self.act(action)
+        self.queue_action(action)
         self.old_gamestate = self.gamestate
         self.gamestate = self.game.console.step()
 
@@ -77,7 +81,7 @@ class FoxEnv(gym.Env):
         blastzones = melee.BLASTZONES.get(self.stage)
 
 
-        obs = np.array([player.x/blastzones[1], player.y/blastzones[2], opponent.x/blastzones[1], opponent.y/blastzones[2], player_facing, opponent_attacking * opponent_facing, self_attacking, opponent_vel_x, opponent_vel_y, self_vel_x, self_vel_y])
+        obs = np.array([player.x/blastzones[1], player.y/blastzones[2], opponent.x/blastzones[1], opponent.y/blastzones[2], player_facing, opponent_attacking, opponent_facing, self_attacking,opponent_vel_x, opponent_vel_y, self_vel_x, self_vel_y])
         # print(obs)
 
         return obs
@@ -109,15 +113,19 @@ class FoxEnv(gym.Env):
 
         # print(deaths)
 
-        reward = -distance/1000 + (damage_dealt - damage_recieved) * 10 + self.kills * 2000 - self.deaths * 5000
-        print(reward)
-        return reward
+        reward = -distance/1000 + (damage_dealt - damage_recieved) / 5000 + self.kills * 0.7 - self.deaths * 1
+
+        sigmoid_reward = 2/(1 + math.pow(math.e, -4.4 * reward)) -1
+
+
+        return sigmoid_reward
 
     def reset(self):
         self.old_gamestate = self.game.console.step()
         return self.get_observation(self.old_gamestate)
 
-    def act(self, action: int):
+    def queue_action(self, action: int):
+        # self.controller.release_all()
         # print(action)
         def frame_delay(num_frames):
             if num_frames > 1:
@@ -163,70 +171,14 @@ class FoxEnv(gym.Env):
         move_stick = melee.Button.BUTTON_MAIN
 
         if action == 0:  # Move Left
-            self.move_x = -1
+            flick_axis(move_stick, -1, 0, num_frames=10)
         elif action == 1:  # Move Right
-            self.move_x = 1
+            flick_axis(move_stick, 1, 0, num_frames=10)
         elif action == 2:  # Jump
             flick_button(melee.Button.BUTTON_Y, num_frames=5)
 
         elif action == 3:  # Drop
             flick_axis(move_stick, 0, -1, num_frames=10)
 
-
-        elif action == 4:  # Left Smash
-            flick_axis(melee.Button.BUTTON_C, -1, 0, num_frames=39)
-        elif action == 5:  # Right Smash
-            flick_axis(melee.Button.BUTTON_C, 1, 0, num_frames=39)
-        elif action == 6:  # Down Smash
-            flick_axis(melee.Button.BUTTON_C, 0, -1, num_frames=49)
-        elif action == 7:  # Up Smash
-            flick_axis(melee.Button.BUTTON_C, 0, 1, num_frames=41)
-
-        elif action == 8:  # Right B
-            button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, 1, 0, num_frames=63)
-        elif action == 9:  # Left B
-            button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, -1, 0, num_frames=63)
-        elif action == 10:  # Down B
-            button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, 0, -1, num_frames=1)
-            frame_delay(4)
-            flick_button(melee.Button.BUTTON_Y, num_frames=1)
-        ##Up B's
-        elif action == 11:  # Up B Up
-            button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, 0, 1, num_frames=92)
-        elif action == 12:  # Up B Down
-            button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, 0, 1, num_frames=10)
-            button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, 0, -1, num_frames=82)
-        elif action == 13:  # Up B Right
-            button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, 0, 1, num_frames=10)
-            button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, 1, 0, num_frames=82)
-        elif action == 14:  # Up B Left
-            button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, 0, 1, num_frames=10)
-            button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, -1, 0, num_frames=82)
-        elif action == 15:  # Up Recover Right Side
-            side = melee.EDGE_POSITION.get(self.stage)
-            player: melee.PlayerState = self.gamestate.players.get(self.player_port)
-
-            x = side - player.x
-            y = 10 - player.y
-
-            button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, 0, 1, num_frames=10)
-            button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, x, y, num_frames=82)
-
-        elif action == 16:  # Up Recover Left Side
-            side = melee.EDGE_POSITION.get(self.stage)
-            player: melee.PlayerState = self.gamestate.players.get(self.player_port)
-
-            x = -side - player.x
-            y = 10 - player.y
-
-            button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, 0, 1, num_frames=10)
-            button_axis(melee.Button.BUTTON_B, melee.Button.BUTTON_MAIN, x, y, num_frames=82)
-
-        elif action == 17:
-            self.move_x = 0
-
-        if action not in [11, 12, 13, 14, 15, 3]:
-            self.controller.tilt_analog_unit(move_stick, self.move_x, 0)
-
-        if action in [0, 1, 17]:
-            flick_axis(melee.Button.BUTTON_MAIN, self.move_x, 0, num_frames=3)
+        elif action == 4:  # Drop
+            flick_button(melee.Button.BUTTON_A, num_frames=35)
