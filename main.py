@@ -5,12 +5,11 @@ import gameManager
 import melee
 import platform
 
-from FoxEnv import FoxEnv
 from Spartann.Spartnn import Overseer
 
 from torch import nn
 
-from WalkToCharEnv import WalkToCharEnv
+from FoxEnv import FoxEnv
 
 dolphin_path = ''
 if platform.system() == "Darwin":
@@ -52,21 +51,28 @@ args: gameManager.Args = parser.parse_args()
 
 if __name__ == '__main__':
     game = gameManager.Game(args)
-    game.enterMatch(cpu_level=0, opponant_character=melee.Character.FALCO)
+    game.enterMatch(cpu_level=4, opponant_character=melee.Character.FALCO)
 
-    env = WalkToCharEnv(player_port=args.port, opponent_port=args.opponent, game=game)
+    env = FoxEnv(player_port=args.port, opponent_port=args.opponent, game=game)
 
     num_inputs = env.obs.shape[0]
     num_choices = env.num_actions
 
     reward_network = nn.Sequential(
-        nn.Linear(num_inputs + num_choices, 4),
+        nn.Linear(num_inputs + num_choices, 10),
         nn.Sigmoid(),
-        nn.Linear(4, 1)
+        nn.Linear(10, 1)
+    )
+    state_network = nn.Sequential(
+        nn.Linear(num_inputs + num_choices, 20),
+        nn.Sigmoid(),
+        nn.Linear(20, 20),
+        nn.Sigmoid(),
+        nn.Linear(20, num_inputs)
     )
 
     nn = Overseer(num_inputs=env.obs.shape[0], num_choices=env.num_actions, epsilon_greedy_chance=1,
-                  epsilon_greedy_decrease=0.000001, reward_network_layers=reward_network)
+                  epsilon_greedy_decrease=0.0001, reward_network_layers=reward_network)
 
     state = env.reset()
     while True:
@@ -81,6 +87,5 @@ if __name__ == '__main__':
             nn.learn_state(chosen_action=action, old_state=state, new_state=next_state)
 
         state = next_state
-        if(nn.frame % 100 == 0):
+        if (nn.frame % 30 == 0):
             nn.log(100)
-
