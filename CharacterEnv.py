@@ -155,7 +155,6 @@ class CharacterEnv(gym.Env):
 
 
     def act(self):
-        print(self.move_queue)
         player_state: melee.PlayerState = self.gamestate.players[self.player_port]
         if len(self.move_queue) == 0:
             if player_state.action in utils.attacking_list or player_state.action in utils.dead_list:

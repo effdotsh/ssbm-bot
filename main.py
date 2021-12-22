@@ -76,8 +76,8 @@ if __name__ == '__main__':
     )
 
     nn = Overseer(num_inputs=env.obs.shape[0], num_choices=env.num_actions, epsilon_greedy_chance=1,
-                  epsilon_greedy_decrease=0.0001, reward_network_layers=reward_network, search_depth=2,
-                  discount_factor=0.4)
+                  epsilon_greedy_decrease=0.00005, reward_network_layers=reward_network, search_depth=2,
+                  discount_factor=0.4, reward_network_learning_rate=0.0001)
 
     new_state = game.console.step()
     env.set_gamestate(new_state)
