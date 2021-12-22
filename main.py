@@ -51,7 +51,7 @@ args: gameManager.Args = parser.parse_args()
 
 if __name__ == '__main__':
     game = gameManager.Game(args)
-    game.enterMatch(cpu_level=6, opponant_character=melee.Character.FALCO)
+    game.enterMatch(cpu_level=5, opponant_character=melee.Character.FALCO)
 
     env = CharacterEnv(player_port=args.port, opponent_port=args.opponent, game=game)
 
@@ -59,7 +59,11 @@ if __name__ == '__main__':
     num_choices = env.num_actions
 
     reward_network = nn.Sequential(
-        nn.Linear(num_inputs + num_choices, 10),
+        nn.Linear(num_inputs + num_choices, 20),
+        nn.Sigmoid(),
+        nn.Linear(20, 10),
+        nn.Sigmoid(),
+        nn.Linear(10, 10),
         nn.Sigmoid(),
         nn.Linear(10, 1)
     )
@@ -72,17 +76,23 @@ if __name__ == '__main__':
     )
 
     nn = Overseer(num_inputs=env.obs.shape[0], num_choices=env.num_actions, epsilon_greedy_chance=1,
-                  epsilon_greedy_decrease=0.0001, reward_network_layers=reward_network, search_depth=3)
+                  epsilon_greedy_decrease=0.0001, reward_network_layers=reward_network, search_depth=2,
+                  discount_factor=0.4)
 
     new_state = game.console.step()
     env.set_gamestate(new_state)
     state = new_state
 
-
     decision_counter = 0
     while True:
 
         new_gamestate = game.console.step()
+        if new_gamestate is None:
+            continue
+        if game.console.processingtime * 1000 > 30:
+            print("WARNING: Last frame took " + str(game.console.processingtime * 1000) + "ms to process.")
+
+
         env.set_gamestate(new_gamestate)
         character_ready = env.act()
         if character_ready:
@@ -99,10 +109,6 @@ if __name__ == '__main__':
             action = nn.predict(new_obs)
             env.step(action)
             decision_counter += 1
-
-
-
-
 
         state = new_gamestate
         if (decision_counter % 30 == 0):
