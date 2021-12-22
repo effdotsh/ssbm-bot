@@ -1,4 +1,4 @@
-# Spartnn - State Predictor And Reward Tree Neural Network
+# EasyML - State Predictor And Reward Tree Neural Network
 # TODO: Nodes currentky dont know which action they've taken or will take
 import random
 
@@ -30,12 +30,13 @@ class RewardPredictor(nn.Module):
         super().__init__()
         if layers is None:
             self.layers = nn.Sequential(
-                nn.Linear(num_inputs + num_choices, 10),
-                # nn.ReLU(),
-                # nn.Linear(10, 10),
-                # nn.Linear(10, 10),
-                nn.Sigmoid(),
-                nn.Linear(10, 1),
+                nn.Linear(num_inputs + num_choices, 256),
+                nn.Tanh(),
+                nn.Linear(256, 256),
+                nn.Tanh(),
+                nn.Linear(256, 256),
+                nn.Tanh(),
+                nn.Linear(256, 1),
             )
         else:
             self.layers = layers
@@ -50,16 +51,12 @@ class StatePredictor(nn.Module):
 
         if (layers is None):
             self.layers = nn.Sequential(
-                nn.Linear(num_inputs + num_choices, 10),
-                # nn.ReLU(),
-                # nn.Linear(10, 10),
-                nn.Linear(10, 10),
-                nn.Sigmoid(),
-                nn.Linear(10, 10),
-                nn.Sigmoid(),
-                nn.Linear(10, 10),
-                nn.Sigmoid(),
-                nn.Linear(10, num_inputs),
+                nn.Linear(num_inputs + num_choices, 256),
+                nn.Linear(256, 256),
+                nn.Tanh(),
+                nn.Linear(256, 256),
+                nn.Tanh(),
+                nn.Linear(256, num_inputs),
             )
         else:
             self.layers = layers

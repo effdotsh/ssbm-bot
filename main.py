@@ -5,7 +5,7 @@ import gameManager
 import melee
 import platform
 
-from Spartann.Spartnn import Overseer
+from EasyML.Spartnn import Overseer
 
 from torch import nn
 
