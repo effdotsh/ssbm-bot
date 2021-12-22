@@ -14,6 +14,7 @@ from typing import List
 def generate_input_tensor(num_choices, chosen_action: int, inputs) -> torch.Tensor:
     if isinstance(inputs, torch.Tensor):
         inputs = inputs.detach().numpy()
+
     input_tensor = np.zeros(num_choices)
     input_tensor[chosen_action] = 1.0
     input_tensor = np.append(input_tensor, inputs)

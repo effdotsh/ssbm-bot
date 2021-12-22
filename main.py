@@ -9,7 +9,7 @@ from Spartann.Spartnn import Overseer
 
 from torch import nn
 
-from FoxEnv import FoxEnv
+from CharacterEnv import CharacterEnv
 
 dolphin_path = ''
 if platform.system() == "Darwin":
@@ -51,9 +51,9 @@ args: gameManager.Args = parser.parse_args()
 
 if __name__ == '__main__':
     game = gameManager.Game(args)
-    game.enterMatch(cpu_level=4, opponant_character=melee.Character.FALCO)
+    game.enterMatch(cpu_level=6, opponant_character=melee.Character.FALCO)
 
-    env = FoxEnv(player_port=args.port, opponent_port=args.opponent, game=game)
+    env = CharacterEnv(player_port=args.port, opponent_port=args.opponent, game=game)
 
     num_inputs = env.obs.shape[0]
     num_choices = env.num_actions
@@ -72,20 +72,37 @@ if __name__ == '__main__':
     )
 
     nn = Overseer(num_inputs=env.obs.shape[0], num_choices=env.num_actions, epsilon_greedy_chance=1,
-                  epsilon_greedy_decrease=0.0001, reward_network_layers=reward_network)
+                  epsilon_greedy_decrease=0.0001, reward_network_layers=reward_network, search_depth=2)
 
-    state = env.reset()
+    new_state = game.console.step()
+    env.set_gamestate(new_state)
+    state = new_state
+
+
+    decision_counter = 0
     while True:
-        action = nn.predict(state)
-        next_state, reward, done, _callback = env.step(action)
+        character_ready = env.act()
+        if character_ready:
+            obs = env.get_observation(state)
+            new_obs = env.get_observation(new_state)
 
-        nn.learn_reward(chosen_action=action, inputs=state, observed_reward=reward)
+            reward = env.calculate_reward(old_gamestate=state, new_gamestate=new_state)
 
-        if done:
-            state = env.reset()
-        else:
-            nn.learn_state(chosen_action=action, old_state=state, new_state=next_state)
+            nn.learn_state(chosen_action=env.last_action, old_state=obs, new_state=new_obs)
+            nn.learn_reward(chosen_action=env.last_action, inputs=obs, observed_reward=reward)
 
-        state = next_state
-        if (nn.frame % 30 == 0):
+            state = new_state
+
+            action = nn.predict(new_obs)
+            env.step(action)
+            decision_counter += 1
+
+        new_gamestate = game.console.step()
+        env.set_gamestate(new_gamestate)
+
+
+
+
+        state = new_gamestate
+        if (decision_counter % 30 == 0):
             nn.log(100)
