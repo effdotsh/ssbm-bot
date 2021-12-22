@@ -3,13 +3,14 @@
 import random
 
 import numpy as np
-import pylab as p
 import torch
 from torch import nn
 from tqdm import tqdm
 
 from typing import List
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(device)
 
 def generate_input_tensor(num_choices, chosen_action: int, inputs) -> torch.Tensor:
     if isinstance(inputs, torch.Tensor):

@@ -155,6 +155,7 @@ class CharacterEnv(gym.Env):
 
 
     def act(self):
+        print(self.move_queue)
         player_state: melee.PlayerState = self.gamestate.players[self.player_port]
         if len(self.move_queue) == 0:
             if player_state.action in utils.attacking_list or player_state.action in utils.dead_list:
@@ -163,7 +164,6 @@ class CharacterEnv(gym.Env):
 
         action: Move = self.move_queue[0]
 
-        self.controller.release_all()
         if action.button is not None:
             self.controller.press_button(action.button)
 
@@ -174,5 +174,6 @@ class CharacterEnv(gym.Env):
 
         if action.frames_remaining <= 0:
             self.move_queue.pop(0)
+            self.controller.release_all()
 
         return False

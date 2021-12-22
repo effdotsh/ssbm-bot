@@ -4,6 +4,5 @@ numpy
 
 matplotlib
 
-torch
 
 tqdm
