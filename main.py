@@ -72,7 +72,7 @@ if __name__ == '__main__':
     )
 
     nn = Overseer(num_inputs=env.obs.shape[0], num_choices=env.num_actions, epsilon_greedy_chance=1,
-                  epsilon_greedy_decrease=0.0001, reward_network_layers=reward_network, search_depth=2)
+                  epsilon_greedy_decrease=0.0001, reward_network_layers=reward_network, search_depth=3)
 
     new_state = game.console.step()
     env.set_gamestate(new_state)
@@ -81,6 +81,9 @@ if __name__ == '__main__':
 
     decision_counter = 0
     while True:
+
+        new_gamestate = game.console.step()
+        env.set_gamestate(new_gamestate)
         character_ready = env.act()
         if character_ready:
             obs = env.get_observation(state)
@@ -97,8 +100,6 @@ if __name__ == '__main__':
             env.step(action)
             decision_counter += 1
 
-        new_gamestate = game.console.step()
-        env.set_gamestate(new_gamestate)
 
 
 
@@ -106,3 +107,4 @@ if __name__ == '__main__':
         state = new_gamestate
         if (decision_counter % 30 == 0):
             nn.log(100)
+            decision_counter += 1
