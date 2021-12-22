@@ -142,7 +142,7 @@ class Node:
 class Overseer:
     # The goal of this network is to guess the reward returned by an acrtion in ad=vance, and use backprop to update from an observed reward. An action can be chosen by testing each input through the reward predictor and choosing the one with the highest reward
     def __init__(self, num_inputs, num_choices, epsilon_greedy_chance=1, epsilon_greedy_decrease=0.0001,
-                 reward_network_learning_rate=0.0003, state_network_learning_rate=0.00003, search_depth=0,
+                 reward_network_learning_rate=0.0003, state_network_learning_rate=0.00003, search_depth=2,
                  discount_factor=0, reward_network_layers=None, state_network_layers=None):
         self.search_depth = search_depth
         self.discount_factor = discount_factor
