@@ -221,6 +221,7 @@ class Overseer:
         self.state_network_optimizer.step()
         self.state_network_loss.append(loss.item())
 
+
     def log(self, history: int):
         state_network_avg_loss = np.mean(self.state_network_loss[-history:])
         reward_network_avg_loss = np.mean(self.reward_network_loss[-history:])
