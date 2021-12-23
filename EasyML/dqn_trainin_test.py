@@ -15,13 +15,8 @@ ep_rewards = [-1]
 epsilon = 1
 MIN_EPSILON = 0.01
 EPSILON_DECAY = 0.9
-AGGREGATE_STATS_EVERY = 5
 # Iterate over episodes
 for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
-
-    # Update tensorboard step every episode
-    agent.tensorboard.step = episode
-
     # Restarting episode - reset episode reward and step number
     episode_reward = 0
     step = 1
@@ -53,14 +48,6 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
 
         current_state = new_state
         step += 1
-
-    # Append episode reward to a list and log stats (every given number of episodes)
-    ep_rewards.append(episode_reward)
-    if not episode % AGGREGATE_STATS_EVERY or episode == 1:
-        average_reward = sum(ep_rewards[-AGGREGATE_STATS_EVERY:])/len(ep_rewards[-AGGREGATE_STATS_EVERY:])
-        min_reward = min(ep_rewards[-AGGREGATE_STATS_EVERY:])
-        max_reward = max(ep_rewards[-AGGREGATE_STATS_EVERY:])
-        # agent.tensorboard.update_stats(reward_avg=average_reward, reward_min=min_reward, reward_max=max_reward, epsilon=epsilon)
 
 
     # Decay epsilon
