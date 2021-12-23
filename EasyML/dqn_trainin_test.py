@@ -1,5 +1,5 @@
 from DQN import DQNAgent
-import tqdm
+from tqdm import tqdm
 import numpy as np
 ''
 from randNumEnv import TestEnv
@@ -7,12 +7,13 @@ from randNumEnv import TestEnv
 
 env = TestEnv()
 
-EPISODES=100_000
-agent = DQNAgent()
+EPISODES=5_000
+agent = DQNAgent(num_inputs=2, num_outputs=2, min_replay_size=128)
 
 ep_rewards = [-1]
 
-MIN_EPSILON = 1
+epsilon = 1
+MIN_EPSILON = 0.01
 EPSILON_DECAY = 0.9
 AGGREGATE_STATS_EVERY = 5
 # Iterate over episodes
@@ -38,9 +39,9 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
             action = np.argmax(agent.get_qs(current_state))
         else:
             # Get random action
-            action = np.random.randint(0, env.ACTION_SPACE_SIZE)
+            action = np.random.randint(0, agent.num_outputs)
 
-        new_state, reward, done = env.step(action)
+        new_state, reward, done, _callback = env.step(action)
 
         # Transform new continous state to new discrete state and count reward
         episode_reward += reward
@@ -59,7 +60,7 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
         average_reward = sum(ep_rewards[-AGGREGATE_STATS_EVERY:])/len(ep_rewards[-AGGREGATE_STATS_EVERY:])
         min_reward = min(ep_rewards[-AGGREGATE_STATS_EVERY:])
         max_reward = max(ep_rewards[-AGGREGATE_STATS_EVERY:])
-        agent.tensorboard.update_stats(reward_avg=average_reward, reward_min=min_reward, reward_max=max_reward, epsilon=epsilon)
+        # agent.tensorboard.update_stats(reward_avg=average_reward, reward_min=min_reward, reward_max=max_reward, epsilon=epsilon)
 
 
     # Decay epsilon
@@ -67,6 +68,15 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
         epsilon *= EPSILON_DECAY
         epsilon = max(MIN_EPSILON, epsilon)
 
-
+def graph(points):
+    avg = 200
+    graph = []
+    for i in range(avg, len(points)):
+        graph.append(np.mean(points[i - avg:i]))
+    pyplot.plot(graph)
+    pyplot.show()
 if __name__ == '__main__':
-    pass
+    from  matplotlib import pyplot
+
+    graph(env.rewards)
+    graph(ep_rewards)

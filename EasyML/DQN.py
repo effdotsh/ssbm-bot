@@ -18,7 +18,7 @@ class ModifiedTensorBoard(TensorBoard):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.step = 1
-        self.writer = tf.summary.FileWriter(self.log_dir)
+        self.writer = tf.summary.create_file_writer(self.log_dir)
 
     # Overriding this method to stop creating default log writer
     def set_model(self, model):
@@ -58,33 +58,35 @@ class DQNAgent:
         self.min_replay_size = min_replay_size
         self.replay_memory = deque(maxlen=max_replay_size)
 
-        self.tensorboard = ModifiedTensorBoard(Log_dir=f"logs/dqn_model_{time.time}")
+        self.tensorboard = ModifiedTensorBoard(log_dir=f"logs/dqn_model_{time.time()}")
 
         self.target_update_counter = 0
         self.minibatch_size = minibatch_size
         self.discount_factor = discount_factor
         self.update_target_every = update_target_every
+        self.num_inputs = num_inputs
+        self.num_outputs = num_outputs
 
     def create_model(self, num_inputs, num_outputs, learning_rate):
         model = Sequential()
-        model.add(Dense(num_inputs))
+        model.add(Dense(num_inputs, input_shape=[num_inputs]))
         model.add(Dense(256, activation='relu'))
         model.add(Dense(256, activation='relu'))
         model.add(Dense(256, activation='relu'))
         model.add(Dense(num_outputs, activation='linear'))
 
-        model.compile(loss="mse", optimizer=Adam(lr=learning_rate), metrics=['accuracy'])
-
+        model.compile(loss="mse", optimizer=Adam(learning_rate=learning_rate), metrics=['accuracy'])
+        # model.build(input_shape=[1 for i in range(num_inputs)])
         return model
 
     def update_replay_memory(self, transition):
         self.replay_memory.append(transition)
 
-    def get_qs(self, state, step):
+    def get_qs(self, state):
         return self.model.predict(np.array(state).reshape(-1, *state.shape))[0]
 
     def train(self, terminal_state, step):
-        if len(self.replay_memory < self.min_replay_size):
+        if len(self.replay_memory) < self.min_replay_size:
             return
 
         minibatch = random.sample(self.replay_memory, self.minibatch_size)
@@ -114,8 +116,8 @@ class DQNAgent:
             y.append(current_qs)
 
         self.model.fit(np.array(X), np.array(y), batch_size=self.minibatch_size, verbose=0, shuffle=False,
-                       callbacks=[self.tensorboard] if terminal_state else None)
-
+                       callbacks= None)
+        # self.tensorboard] if terminal_state else
         if terminal_state:
             self.target_update_counter += 1
 
