@@ -59,19 +59,23 @@ if __name__ == '__main__':
     num_choices = env.num_actions
 
     reward_network = nn.Sequential(
-        nn.Linear(num_inputs + num_choices, 20),
-        nn.Sigmoid(),
+        nn.Linear(num_inputs + num_choices, 256),
+        nn.Tanh(),
+        nn.Linear(256, 20),
+        nn.Tanh(),
         nn.Linear(20, 10),
-        nn.Sigmoid(),
-        nn.Linear(10, 10),
-        nn.Sigmoid(),
+        nn.Tanh(),
         nn.Linear(10, 1)
     )
     state_network = nn.Sequential(
         nn.Linear(num_inputs + num_choices, 20),
-        nn.Sigmoid(),
+        nn.Tanh(),
         nn.Linear(20, 20),
-        nn.Sigmoid(),
+        nn.Tanh(),
+        nn.Linear(20, 20),
+        nn.Tanh(),
+        nn.Linear(20, 20),
+        nn.Tanh(),
         nn.Linear(20, num_inputs)
     )
 
@@ -91,7 +95,6 @@ if __name__ == '__main__':
             continue
         if game.console.processingtime * 1000 > 30:
             print("WARNING: Last frame took " + str(game.console.processingtime * 1000) + "ms to process.")
-
 
         env.set_gamestate(new_gamestate)
         character_ready = env.act()

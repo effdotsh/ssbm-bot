@@ -22,7 +22,7 @@ class TestEnv(gym.Env):
             r=1.0
         self.reset()
         self.rewards.append(r)
-        return [self.state, r, True, {}]
+        return [self.state, r, True if random.random() < 0.05 else False, {}]
 
     def reset(self):
         self.state = np.random.rand(2)
