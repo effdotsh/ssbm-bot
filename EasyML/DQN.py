@@ -10,9 +10,11 @@ from collections import deque
 
 import numpy as np
 
+
 class DQNAgent:
     def __init__(self, num_inputs, num_outputs, learning_rate=0.001, min_replay_size=10_000, max_replay_size=50_000,
-                 minibatch_size=128, discount_factor=0.9, update_target_every=5):
+                 minibatch_size=128, discount_factor=0.9, update_target_every=5, epsilon=1, min_epsilon=0.01,
+                 epsilon_decay=0.9):
         # Gets Trained
         self.model = self.create_model(num_inputs=num_inputs, num_outputs=num_outputs, learning_rate=learning_rate)
 
@@ -31,6 +33,10 @@ class DQNAgent:
         self.num_inputs = num_inputs
         self.num_outputs = num_outputs
 
+        self.epsilon_decay = epsilon_decay
+        self.min_epsilon = min_epsilon
+        self.epsilon = epsilon
+
     def create_model(self, num_inputs, num_outputs, learning_rate):
         model = Sequential()
         model.add(Dense(num_inputs, input_shape=[num_inputs]))
@@ -48,6 +54,23 @@ class DQNAgent:
 
     def get_qs(self, state):
         return self.model.predict(np.array(state).reshape(-1, *state.shape))[0]
+
+    def predict(self, state):
+        if np.random.random() > self.epsilon:
+            # Get action from Q table
+            action = np.argmax(self.get_qs(state))
+        else:
+            # Get random action
+            action = np.random.randint(0, self.num_outputs)
+
+
+        self.epsilon *= self.epsilon_decay
+        self.epsilon = max(self.min_epsilon, self.epsilon)
+
+        return action
+
+
+
 
     def train(self, terminal_state, step):
         if len(self.replay_memory) < self.min_replay_size:
