@@ -60,12 +60,13 @@ class DQNAgent:
         return self.model.predict(np.array(state).reshape(-1, *state.shape))[0]
 
     def predict(self, state):
-        if np.random.random() < self.epsilon:
-            # Get action from Q table
-            action = np.argmax(self.get_qs(state))
-        else:
-            # Get random action
+        randVal = np.random.random()
+        if randVal < self.epsilon:
+            # Random action
             action = np.random.randint(0, self.num_outputs)
+        else:
+            # q-table action
+            action = np.argmax(self.get_qs(state))
 
         self.epsilon *= self.epsilon_decay
         self.epsilon = max(self.min_epsilon, self.epsilon)
