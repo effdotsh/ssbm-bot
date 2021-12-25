@@ -13,6 +13,7 @@ from EasyML.DQN import DQNAgent
 
 from CharacterEnv import CharacterEnv
 
+
 dolphin_path = ''
 if platform.system() == "Darwin":
     dolphin_path = "/Users/human/Library/Application Support/Slippi Launcher/netplay/Slippi Dolphin.app"
@@ -53,6 +54,7 @@ args: gameManager.Args = parser.parse_args()
 
 flipper = False
 
+rewards = []
 if __name__ == '__main__':
     game = gameManager.Game(args)
     game.enterMatch(cpu_level=3, opponant_character=melee.Character.FALCO)
@@ -62,8 +64,8 @@ if __name__ == '__main__':
     num_inputs = env.obs.shape[0]
     num_actions = env.num_actions
 
-    model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=1000, minibatch_size=128,
-                     learning_rate=0.0003, update_target_every=3, discount_factor=0.999, epsilon_decay=0.999)
+    model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=10_000, minibatch_size=128,
+                     learning_rate=0.00003, update_target_every=3, discount_factor=0.999, epsilon_decay=0.999)
 
     gamestate = game.console.step()
     prev_gamestate = gamestate
@@ -91,6 +93,7 @@ if __name__ == '__main__':
             if character_ready:
                 # update model from previous move
                 reward = env.calculate_reward(prev_gamestate, gamestate)
+                episode_reward += reward
                 old_obs = env.get_observation(prev_gamestate)
                 obs = env.get_observation(gamestate)
                 done = env.deaths >= 1
@@ -103,7 +106,8 @@ if __name__ == '__main__':
                 env.step(action)
                 tot_steps += 1
 
-            prev_gamestate = gamestate
+                prev_gamestate = gamestate
+
         print('##################################')
         print(f'Epsilon Greedy: {model.epsilon}')
         print(f'Total Steps: {tot_steps}')
