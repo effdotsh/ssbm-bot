@@ -1,13 +1,15 @@
 #!/usr/bin/python3
 import argparse
 import math
+import time
+
 import gameManager
 import melee
 import platform
 
-from EasyML.Spartnn import Overseer
+# from EasyML.Spartnn import Overseer
 
-from torch import nn
+from EasyML.DQN import DQNAgent
 
 from CharacterEnv import CharacterEnv
 
@@ -49,71 +51,61 @@ parser.add_argument('--iso', default='SSBM.iso', type=str,
 
 args: gameManager.Args = parser.parse_args()
 
+flipper = False
+
 if __name__ == '__main__':
     game = gameManager.Game(args)
-    game.enterMatch(cpu_level=5, opponant_character=melee.Character.FALCO)
+    game.enterMatch(cpu_level=3, opponant_character=melee.Character.FALCO)
 
     env = CharacterEnv(player_port=args.port, opponent_port=args.opponent, game=game)
 
     num_inputs = env.obs.shape[0]
-    num_choices = env.num_actions
+    num_actions = env.num_actions
 
-    reward_network = nn.Sequential(
-        nn.Linear(num_inputs + num_choices, 256),
-        nn.Tanh(),
-        nn.Linear(256, 20),
-        nn.Tanh(),
-        nn.Linear(20, 10),
-        nn.Tanh(),
-        nn.Linear(10, 1)
-    )
-    state_network = nn.Sequential(
-        nn.Linear(num_inputs + num_choices, 20),
-        nn.Tanh(),
-        nn.Linear(20, 20),
-        nn.Tanh(),
-        nn.Linear(20, 20),
-        nn.Tanh(),
-        nn.Linear(20, 20),
-        nn.Tanh(),
-        nn.Linear(20, num_inputs)
-    )
+    model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=1000, minibatch_size=128,
+                     learning_rate=0.0003, update_target_every=3, discount_factor=0.999, epsilon_decay=0.999)
 
-    nn = Overseer(num_inputs=env.obs.shape[0], num_choices=env.num_actions, epsilon_greedy_chance=1,
-                  epsilon_greedy_decrease=0.00005, reward_network_layers=reward_network, search_depth=2,
-                  discount_factor=0.4, reward_network_learning_rate=0.0001)
-
-    new_state = game.console.step()
-    env.set_gamestate(new_state)
-    state = new_state
-
-    decision_counter = 0
+    gamestate = game.console.step()
+    prev_gamestate = gamestate
+    env.set_gamestate(gamestate)
+    action = 0
+    tot_steps = 0
     while True:
 
-        new_gamestate = game.console.step()
-        if new_gamestate is None:
-            continue
-        if game.console.processingtime * 1000 > 30:
-            print("WARNING: Last frame took " + str(game.console.processingtime * 1000) + "ms to process.")
+        current_state = env.reset()
+        episode_reward = 0
+        step = 1
+        done = False
 
-        env.set_gamestate(new_gamestate)
-        character_ready = env.act()
-        if character_ready:
-            obs = env.get_observation(state)
-            new_obs = env.get_observation(new_state)
+        while not done:
 
-            reward = env.calculate_reward(old_gamestate=state, new_gamestate=new_state)
+            gamestate = game.console.step()
+            # if gamestate is None:
+            #     continue
+            # if game.console.processingtime * 1000 > 30:
+            #     print("WARNING: Last frame took " + str(game.console.processingtime * 1000) + "ms to process.")
 
-            nn.learn_state(chosen_action=env.last_action, old_state=obs, new_state=new_obs)
-            nn.learn_reward(chosen_action=env.last_action, inputs=obs, observed_reward=reward)
+            env.set_gamestate(gamestate)
 
-            state = new_state
+            character_ready = env.act()
+            if character_ready:
+                # update model from previous move
+                reward = env.calculate_reward(prev_gamestate, gamestate)
+                old_obs = env.get_observation(prev_gamestate)
+                obs = env.get_observation(gamestate)
+                done = env.deaths >= 1
+                model.update_replay_memory((old_obs, action, reward, obs, done))
+                model.train(done, step)
+                step += 1
 
-            action = nn.predict(new_obs)
-            env.step(action)
-            decision_counter += 1
+                action = model.predict(env.get_observation(gamestate))
 
-        state = new_gamestate
-        if (decision_counter % 30 == 0):
-            nn.log(100)
-            decision_counter += 1
+                env.step(action)
+                tot_steps += 1
+
+            prev_gamestate = gamestate
+        print('##################################')
+        print(f'Epsilon Greedy: {model.epsilon}')
+        print(f'Total Steps: {tot_steps}')
+        print(f'Replay Size: {len(model.replay_memory)}')
+
