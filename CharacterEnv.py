@@ -123,7 +123,7 @@ class CharacterEnv(gym.Env):
         # if damage_dealt != 0:
         #     print(f'Dealt: {damage_dealt} dmg')
         reward = -distance/5000 + (damage_dealt - damage_recieved) / 20 + self.kills * 1 - self.deaths * 1.3
-        print(reward)
+        # print(reward)
         tanh_reward = 2 / (1 + math.pow(math.e, -4.4 * reward)) - 1
 
         return tanh_reward
