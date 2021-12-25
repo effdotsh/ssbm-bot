@@ -98,7 +98,7 @@ class CharacterEnv(gym.Env):
         obs = np.array(
             [player.x / blastzones[1], player.y / blastzones[2], opponent.x / blastzones[1], opponent.y / blastzones[2],
              player_facing, opponent_attacking, opponent_facing, self_attacking, opponent_vel_x, opponent_vel_y,
-             self_vel_x, self_vel_y, opponent.stock/400, player.stock/400])
+             self_vel_x, self_vel_y, opponent.percent/400, player.percent/400])
         # print(obs)
 
         return obs
@@ -117,9 +117,13 @@ class CharacterEnv(gym.Env):
 
         # blast_thresh = 30
         # blastzones = melee.BLASTZONES.get(self.stage)
-
-        reward = -distance / 5000 + (damage_dealt - damage_recieved) / 150 + self.kills * 0.95 - self.deaths * 1
-
+        # print(f'P%: {new_player.percent}')
+        # if damage_recieved != 0:
+        #     print(f'Recieved: {damage_recieved} dmg')
+        # if damage_dealt != 0:
+        #     print(f'Dealt: {damage_dealt} dmg')
+        reward = -distance/5000 + (damage_dealt - damage_recieved) / 20 + self.kills * 1 - self.deaths * 1.3
+        print(reward)
         tanh_reward = 2 / (1 + math.pow(math.e, -4.4 * reward)) - 1
 
         return tanh_reward
