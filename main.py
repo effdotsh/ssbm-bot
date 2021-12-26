@@ -55,6 +55,7 @@ args: gameManager.Args = parser.parse_args()
 flipper = False
 
 rewards = []
+start_time = time.time()
 if __name__ == '__main__':
     game = gameManager.Game(args)
     game.enterMatch(cpu_level=6, opponant_character=melee.Character.MARTH)
@@ -93,11 +94,15 @@ if __name__ == '__main__':
             if character_ready:
                 # update model from previous move
                 reward = env.calculate_reward(prev_gamestate, gamestate)
+                print(f'{round(time.time() - start_time, 1)}: {reward}')
                 episode_reward += reward
                 old_obs = env.get_observation(prev_gamestate)
                 obs = env.get_observation(gamestate)
                 done = env.deaths >= 1 or env.kills >=1
-                model.update_replay_memory((old_obs, action, reward, obs, done))
+
+                #Don't let the model think that being where the spawn gateis is the bad thing
+                model.update_replay_memory((old_obs, action, reward, obs if env.deaths==0 else old_obs, done))
+
                 model.train(done)
                 step += 1
 
