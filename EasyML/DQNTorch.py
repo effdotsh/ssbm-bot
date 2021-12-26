@@ -66,6 +66,7 @@ class DQNAgent:
         self.min_epsilon = min_epsilon
         self.epsilon = epsilon
 
+        self.first_train = False
     def create_model(self, num_inputs: int, num_outputs: int):
         model = DQNetwork(num_inputs, num_outputs)
 
@@ -78,18 +79,22 @@ class DQNAgent:
         state_tensor = torch.Tensor(state).to(device)
         return self.model.forward(state_tensor)
 
-    def predict(self, state):
+    def predict(self, state, out_eps=False):
         randVal = np.random.random()
         if randVal < self.epsilon:
             # Random action
             action = np.random.randint(0, self.num_outputs)
+
+            if out_eps:
+                real_prediction = np.argmax(self.get_qs(state).detach().cpu().numpy())
+                print(f'{real_prediction} -> {action}')
         else:
             # q-table action
             action = np.argmax(self.get_qs(state).detach().cpu().numpy())
 
-
-        self.epsilon *= self.epsilon_decay
-        self.epsilon = max(self.min_epsilon, self.epsilon)
+        if self.first_train:
+            self.epsilon *= self.epsilon_decay
+            self.epsilon = max(self.min_epsilon, self.epsilon)
 
         return action
 
@@ -97,6 +102,7 @@ class DQNAgent:
         if len(self.replay_memory) < self.min_replay_size:
             return
 
+        self.first_train = True
         minibatch = random.sample(self.replay_memory, self.minibatch_size)
 
         # for transition in minibatch:
