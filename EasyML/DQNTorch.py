@@ -85,7 +85,7 @@ class DQNAgent:
             action = np.random.randint(0, self.num_outputs)
         else:
             # q-table action
-            action = np.argmax(self.get_qs(state))
+            action = np.argmax(self.get_qs(state).detach().cpu().numpy())
 
 
         self.epsilon *= self.epsilon_decay
