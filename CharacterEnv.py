@@ -131,8 +131,7 @@ class CharacterEnv(gym.Env):
         if self.kills >= 1:
             reward = 1
         if self.deaths >= 1:
-            reward = -1
-        print(reward)
+            reward = -2
         # tanh_reward = 2 / (1 + math.pow(math.e, -4.4 * reward)) - 1
 
         # return tanh_reward
