@@ -13,7 +13,8 @@ import numpy as np
 
 import datetime
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = 'cpu'
 print(device)
 
 class DQNetwork(nn.Module):
@@ -46,12 +47,11 @@ class DQNAgent:
         self.target_model = copy.deepcopy(self.model)
 
         self.trainer = ModuleTrainer(self.model)
-        self.trainer.compile(loss='mse_loss',
-                             optimizer='adam')
-        optim = torch.optim.Adam(self.target_model.parameters(),
-                                 lr=learning_rate)
-        self.trainer.set_optimizer(optim)
 
+        optim = torch.optim.Adam(self.model.parameters(),
+                                 lr=learning_rate)
+        self.trainer.compile(loss='mse_loss',
+                             optimizer=optim)
         self.min_replay_size = min_replay_size
         self.replay_memory = deque(maxlen=max_replay_size)
 
