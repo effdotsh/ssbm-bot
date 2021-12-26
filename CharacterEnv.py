@@ -23,7 +23,7 @@ class Move:
 
 class CharacterEnv(gym.Env):
     def __init__(self, player_port, opponent_port, game: gameManager.Game):
-        self.num_actions = 5
+        self.num_actions = 11
 
         self.stage = melee.Stage.BATTLEFIELD
 
@@ -49,6 +49,7 @@ class CharacterEnv(gym.Env):
 
         self.kills = 0
         self.deaths = 0
+        self.overjump = False # Reward penalty if agent chooses to jump when it is already out of jumps
 
         self.obs = self.reset()
 
@@ -98,7 +99,7 @@ class CharacterEnv(gym.Env):
         obs = np.array(
             [player.x / blastzones[1], player.y / blastzones[2], opponent.x / blastzones[1], opponent.y / blastzones[2],
              player_facing, opponent_attacking, opponent_facing, self_attacking, opponent_vel_x, opponent_vel_y,
-             self_vel_x, self_vel_y, opponent.percent/400, player.percent/400])
+             self_vel_x, self_vel_y, opponent.percent/300, player.percent/300, player.jumps_left/2, opponent.jumps_left/2])
         # print(obs)
 
         return obs
@@ -112,8 +113,8 @@ class CharacterEnv(gym.Env):
 
         distance = math.dist((new_player.x, new_player.y), (new_opponent.x, new_opponent.y))
 
-        damage_dealt = max(0, new_opponent.percent - old_opponent.percent)
-        damage_recieved = max(0, new_player.percent - old_player.percent)
+        # damage_dealt = max(0, new_opponent.percent - old_opponent.percent)
+        # damage_recieved = max(0, new_player.percent - old_player.percent)
 
         # blast_thresh = 30
         # blastzones = melee.BLASTZONES.get(self.stage)
@@ -122,33 +123,63 @@ class CharacterEnv(gym.Env):
         #     print(f'Recieved: {damage_recieved} dmg')
         # if damage_dealt != 0:
         #     print(f'Dealt: {damage_dealt} dmg')
-        reward = -distance/5000 + (damage_dealt - damage_recieved) / 20 + self.kills * 1 - self.deaths * 1.3
-        # print(reward)
-        tanh_reward = 2 / (1 + math.pow(math.e, -4.4 * reward)) - 1
 
-        return tanh_reward
+        jump_penalty = 1 if self.overjump == True else 0
+
+        reward = (new_opponent.percent - new_player.percent) / 250 - jump_penalty * 0.3
+
+        if self.kills >= 1:
+            reward = 1
+        if self.deaths >= 1:
+            reward = -1
+        print(reward)
+        # tanh_reward = 2 / (1 + math.pow(math.e, -4.4 * reward)) - 1
+
+        # return tanh_reward
+        return reward
 
     def reset(self):
         # self.old_gamestate = self.game.console.step()
         return self.get_observation(self.gamestate)
 
     def queue_action(self, action: int):
+        self.overjump = False
+
         # self.controller.release_all()
         # print(action)
 
         move_stick = melee.Button.BUTTON_MAIN
+        c_stick = melee.Button.BUTTON_C
 
+        player_state: melee.PlayerState = self.gamestate.players.get(self.player_port)
         if action == 0:  # Move Left
             move = Move(axis=move_stick, x=-1, y=0, num_frames=10)
         elif action == 1:  # Move Right
             move = Move(axis=move_stick, x=1, y=0, num_frames=10)
         elif action == 2:  # Jump
             move = Move(button=melee.Button.BUTTON_Y, num_frames=10)
+            if player_state.jumps_left == 0:
+                self.overjump = True
         elif action == 3:  # Drop
             move = Move(axis=move_stick, x=0, y=-1, num_frames=10)
 
-        elif action == 4:  # Jab
-            move = Move(button=melee.Button.BUTTON_A, num_frames=25)
+        elif action == 4:  # smash left
+            move = Move(axis=c_stick,x=-1, y=0, num_frames=10)
+        elif action == 5:  # smash right
+            move = Move(axis=c_stick,x=1, y=0, num_frames=10)
+        elif action == 6:  # smash up
+            move = Move(axis=c_stick,x=0, y=1, num_frames=10)
+        elif action == 7:  # smash down
+            move = Move(axis=c_stick,x=0, y=-1, num_frames=10)
+
+        elif action == 8:  # special left
+            move = Move(axis=move_stick,x=-1, y=0, button=melee.Button.BUTTON_B,num_frames=10)
+        elif action == 9:  # special right
+            move = Move(axis=move_stick, x=1, y=0, button=melee.Button.BUTTON_B, num_frames=10)
+        elif action == 10:  # special down
+            m1 = Move(axis=move_stick, x=0, y=-1, button=melee.Button.BUTTON_B, num_frames=4)
+            self.move_queue.append(m1)
+            move = Move(button=melee.Button.BUTTON_Y, num_frames=5)
 
         self.last_action = action
         self.move_queue.append(move)
