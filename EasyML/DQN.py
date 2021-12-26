@@ -73,7 +73,7 @@ class DQNAgent:
 
         return action
 
-    def train(self, terminal_state, step):
+    def train(self, terminal_state):
         if len(self.replay_memory) < self.min_replay_size:
             return
 

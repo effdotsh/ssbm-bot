@@ -98,7 +98,7 @@ class CharacterEnv(gym.Env):
 
         obs = np.array(
             [player.x / blastzones[1], player.y / blastzones[2], opponent.x / blastzones[1], opponent.y / blastzones[2],
-             player_facing, opponent_attacking, opponent_facing, self_attacking, opponent_vel_x, opponent_vel_y,
+             player_facing, opponent_attacking, opponent_facing, opponent_vel_x, opponent_vel_y,
              self_vel_x, self_vel_y, opponent.percent/300, player.percent/300, player.jumps_left/2, opponent.jumps_left/2])
         # print(obs)
 

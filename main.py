@@ -9,7 +9,7 @@ import platform
 
 # from EasyML.Spartnn import Overseer
 
-from EasyML.DQN import DQNAgent
+from EasyML.DQNTorch import DQNAgent
 
 from CharacterEnv import CharacterEnv
 
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     num_actions = env.num_actions
 
     model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=5_000, minibatch_size=32,
-                     learning_rate=0.00007, update_target_every=3, discount_factor=0.99995, epsilon_decay=0.99995, epsilon=1)
+                     learning_rate=0.00007, update_target_every=3, discount_factor=0.99995, epsilon_decay=0.99995, epsilon=0)
 
     gamestate = game.console.step()
     prev_gamestate = gamestate
@@ -98,7 +98,7 @@ if __name__ == '__main__':
                 obs = env.get_observation(gamestate)
                 done = env.deaths >= 1 or env.kills >=1
                 model.update_replay_memory((old_obs, action, reward, obs, done))
-                model.train(done, step)
+                model.train(done)
                 step += 1
 
                 action = model.predict(env.get_observation(gamestate))
