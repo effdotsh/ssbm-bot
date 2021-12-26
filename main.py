@@ -57,15 +57,15 @@ flipper = False
 rewards = []
 if __name__ == '__main__':
     game = gameManager.Game(args)
-    game.enterMatch(cpu_level=3, opponant_character=melee.Character.FALCO)
+    game.enterMatch(cpu_level=6, opponant_character=melee.Character.MARTH)
 
     env = CharacterEnv(player_port=args.port, opponent_port=args.opponent, game=game)
 
     num_inputs = env.obs.shape[0]
     num_actions = env.num_actions
 
-    model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=10_000, minibatch_size=128,
-                     learning_rate=0.00003, update_target_every=3, discount_factor=0.999, epsilon_decay=0.999, epsilon=1)
+    model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=5_000, minibatch_size=32,
+                     learning_rate=0.00007, update_target_every=3, discount_factor=0.99995, epsilon_decay=0.99995, epsilon=1)
 
     gamestate = game.console.step()
     prev_gamestate = gamestate
@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
         current_state = env.reset()
         episode_reward = 0
-        step = 1
+        step = 0
         done = False
 
         while not done:
@@ -96,7 +96,7 @@ if __name__ == '__main__':
                 episode_reward += reward
                 old_obs = env.get_observation(prev_gamestate)
                 obs = env.get_observation(gamestate)
-                done = env.deaths >= 1
+                done = env.deaths >= 1 or env.kills >=1
                 model.update_replay_memory((old_obs, action, reward, obs, done))
                 model.train(done, step)
                 step += 1
@@ -111,4 +111,4 @@ if __name__ == '__main__':
         print(f'Epsilon Greedy: {model.epsilon}')
         print(f'Total Steps: {tot_steps}')
         print(f'Replay Size: {len(model.replay_memory)}')
-
+        print(f'Average Reward: {episode_reward/step}')
