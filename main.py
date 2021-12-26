@@ -65,7 +65,7 @@ if __name__ == '__main__':
     num_actions = env.num_actions
 
     model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=5_000, minibatch_size=32,
-                     learning_rate=0.00007, update_target_every=3, discount_factor=0.99995, epsilon_decay=0.99995, epsilon=0)
+                     learning_rate=0.00007, update_target_every=3, discount_factor=0.99995, epsilon_decay=0.99995, epsilon=1)
 
     gamestate = game.console.step()
     prev_gamestate = gamestate
