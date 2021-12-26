@@ -31,7 +31,7 @@ for episode in tqdm(range(1, num_episodes + 1)):
 
 
         agent.update_replay_memory((current_state, action, reward, new_state, done))
-        agent.train(done, step)
+        agent.train(done)
 
         current_state = new_state
         step += 1
