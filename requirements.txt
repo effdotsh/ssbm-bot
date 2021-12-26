@@ -11,6 +11,6 @@ tqdm
 torch
 
 
-git+https://github.com/ncullen93/torchsample.git#egg=torchsample
+git+https://github.com/AI-Spawn/torchsample.git#egg=torchsample
 nibabel
 pandas
