@@ -41,7 +41,6 @@ class DQNAgent:
                  epsilon_decay=0.99):
         # Gets Trained
         self.model = self.create_model(num_inputs=num_inputs, num_outputs=num_outputs)
-
         # Gets predicted from
         # TODO: use the pytorch equivilent of keras' get_weights and set_weights. This implementation is kinda sloppy
         self.target_model = copy.deepcopy(self.model)
@@ -70,18 +69,19 @@ class DQNAgent:
     def create_model(self, num_inputs: int, num_outputs: int):
         model = DQNetwork(num_inputs, num_outputs)
 
-        return model
+        return model.to(device)
 
     def update_replay_memory(self, transition):
         self.replay_memory.append(transition)
 
     def get_qs(self, state):
-        return self.model.forward(torch.Tensor(state))
+        state_tensor = torch.Tensor(state).to(device)
+        return self.model.forward(state_tensor)
 
     def predict(self, state):
         if np.random.random() < self.epsilon:
             # Get action from Q table
-            action = np.argmax(self.get_qs(state).detach().numpy())
+            action = np.argmax(self.get_qs(state).detach().cpu().numpy())
         else:
             # Get random action
             action = np.random.randint(0, self.num_outputs)
@@ -100,21 +100,21 @@ class DQNAgent:
         # for transition in minibatch:
         #     print(torch.Tensor(transition[0]))
 
-        current_states = torch.Tensor(np.array([np.array(transition[0]) for transition in minibatch]))
+        current_states = torch.Tensor(np.array([np.array(transition[0]) for transition in minibatch])).to(device)
 
         # print(current_states)
         current_qs_list = self.model.forward(current_states)
 
         new_current_states = np.array([transition[3] for transition in minibatch])
 
-        future_qs_list = self.target_model.forward(torch.Tensor(new_current_states))
+        future_qs_list = self.target_model.forward(torch.Tensor(new_current_states).to(device))
 
         X = []
         y = []
 
         for index, (current_state, action, reward, new_current_state, done) in enumerate(minibatch):
             if not done:
-                max_future_q = np.max(future_qs_list[index].detach().numpy())
+                max_future_q = np.max(future_qs_list[index].detach().cpu().numpy())
                 new_q = reward + self.discount_factor * max_future_q
             else:
                 new_q = reward
@@ -123,14 +123,14 @@ class DQNAgent:
             current_qs[action] = new_q
 
             X.append(current_state)
-            y.append(current_qs.detach().numpy())
+            y.append(current_qs.detach().cpu().numpy())
 
         X = np.array(X)
         y = np.array(y)
         # self.model.fit(np.array(X), np.array(y), batch_size=self.minibatch_size, verbose=0, shuffle=False,
         #                callbacks=None, use_multiprocessing=True)
         # print(torch.Tensor(y))
-        self.trainer.fit(torch.Tensor(X), torch.Tensor(y), batch_size=self.minibatch_size, verbose=0)
+        self.trainer.fit(torch.Tensor(X).to(device), torch.Tensor(y).to(device), batch_size=self.minibatch_size, verbose=0)
 
         if terminal_state:
             self.target_update_counter += 1

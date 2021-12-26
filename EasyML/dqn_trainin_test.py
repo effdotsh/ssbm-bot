@@ -13,7 +13,7 @@ agent = DQNAgent(num_inputs=2, num_outputs=2, min_replay_size=128)
 
 
 # Iterate over episodes
-for episode in tqdm(range(1, num_episodes + 1), unit='episodes'):
+for episode in tqdm(range(1, num_episodes + 1)):
     # Restarting episode - reset episode reward and step number
     episode_reward = 0
     step = 1
