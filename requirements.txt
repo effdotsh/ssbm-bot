@@ -7,3 +7,9 @@ matplotlib
 tensorflow
 
 tqdm
+
+torch
+
+
+git+https://github.com/ncullen93/torchsample.git#egg=torchsample
+nibabel
