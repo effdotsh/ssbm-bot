@@ -13,6 +13,8 @@ import numpy as np
 
 import datetime
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(device)
 
 class DQNetwork(nn.Module):
     def __init__(self, num_inputs: int, num_outputs: int):
@@ -98,7 +100,7 @@ class DQNAgent:
         # for transition in minibatch:
         #     print(torch.Tensor(transition[0]))
 
-        current_states = torch.Tensor([np.array(transition[0]) for transition in minibatch])
+        current_states = torch.Tensor(np.array([np.array(transition[0]) for transition in minibatch]))
 
         # print(current_states)
         current_qs_list = self.model.forward(current_states)
@@ -123,9 +125,11 @@ class DQNAgent:
             X.append(current_state)
             y.append(current_qs.detach().numpy())
 
+        X = np.array(X)
+        y = np.array(y)
         # self.model.fit(np.array(X), np.array(y), batch_size=self.minibatch_size, verbose=0, shuffle=False,
         #                callbacks=None, use_multiprocessing=True)
-        print(torch.Tensor(y))
+        # print(torch.Tensor(y))
         self.trainer.fit(torch.Tensor(X), torch.Tensor(y), batch_size=self.minibatch_size, verbose=0)
 
         if terminal_state:

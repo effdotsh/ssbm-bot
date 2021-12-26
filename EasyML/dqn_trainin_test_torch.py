@@ -7,7 +7,7 @@ from randNumEnv import TestEnv
 
 env = TestEnv()
 
-num_episodes=5_000
+num_episodes=1_000
 
 agent = DQNAgent(num_inputs=2, num_outputs=2, min_replay_size=128)
 
