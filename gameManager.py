@@ -162,6 +162,7 @@ class Game:
 
     def enterMatch(self, player_character: melee.Character = melee.Character.FOX, opponant_character: melee.Character = melee.Character.FOX, stage: melee.Stage = melee.Stage.BATTLEFIELD, cpu_level: int = 0):
         costume = 0
+        self.stage = stage
         # "step" to the next frame
         gamestate = self.getState()
 
