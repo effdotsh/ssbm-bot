@@ -145,7 +145,6 @@ class CharacterEnv(gym.Env):
 
     def queue_action(self, action: int):
         self.overjump = False
-        action = 12
         # self.controller.release_all()
         # print(action)
 
@@ -190,7 +189,7 @@ class CharacterEnv(gym.Env):
 
         elif action == 12:  # Recovery
             target_x: float = melee.stages.EDGE_POSITION.get(self.game.stage) * np.sign(player_state.x)
-            angle = math.atan2(3 - player_state.y, target_x - player_state.x)
+            angle = math.atan2(0.2 - player_state.y, target_x - player_state.x)
             m1 = Move(axis=move_stick, x=0, y=1, button=melee.Button.BUTTON_B, num_frames=3)
             self.move_queue.append(m1)
             move = Move(axis=move_stick, x=math.cos(angle), y=math.sin(angle), button=melee.Button.BUTTON_B,
