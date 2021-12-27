@@ -131,7 +131,7 @@ class CharacterEnv(gym.Env):
         if self.kills >= 1:
             reward = 1
         if self.deaths >= 1:
-            reward = -2
+            reward = -1 - 1/int(new_player.percent/20 + 1)
         # tanh_reward = 2 / (1 + math.pow(math.e, -4.4 * reward)) - 1
 
         # return tanh_reward
@@ -153,14 +153,16 @@ class CharacterEnv(gym.Env):
         player_state: melee.PlayerState = self.gamestate.players.get(self.player_port)
         if action == 0:  # Move Left
             move = Move(axis=move_stick, x=-1, y=0, num_frames=10)
+            self.move_x = -1
         elif action == 1:  # Move Right
             move = Move(axis=move_stick, x=1, y=0, num_frames=10)
+            self.move_x = 1
         elif action == 2:  # Jump
             move = Move(button=melee.Button.BUTTON_Y, num_frames=10)
             if player_state.jumps_left == 0:
                 self.overjump = True
         elif action == 3:  # Drop
-            move = Move(axis=move_stick, x=0, y=-1, num_frames=10)
+            move = Move(axis=move_stick, x=0, y=-1, num_frames=15)
 
         elif action == 4:  # smash left
             move = Move(axis=c_stick,x=-1, y=0, num_frames=10)
@@ -180,6 +182,10 @@ class CharacterEnv(gym.Env):
             self.move_queue.append(m1)
             move = Move(button=melee.Button.BUTTON_Y, num_frames=5)
 
+        elif action == 11: #wait
+            self.move_x = 0
+            move = Move(axis=move_stick, x=0, y=0, num_frames=10)
+
         self.last_action = action
         self.move_queue.append(move)
 
@@ -192,7 +198,6 @@ class CharacterEnv(gym.Env):
             self.deaths = 1
         if opponent.action == melee.Action.ON_HALO_DESCENT and self.kills == 0:
             self.kills = 1
-
 
 
 
