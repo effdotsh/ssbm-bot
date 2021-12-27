@@ -23,7 +23,7 @@ class Move:
 
 class CharacterEnv(gym.Env):
     def __init__(self, player_port, opponent_port, game: gameManager.Game):
-        self.num_actions = 11
+        self.num_actions = 13
 
         self.stage = melee.Stage.BATTLEFIELD
 
@@ -113,20 +113,24 @@ class CharacterEnv(gym.Env):
 
         distance = math.dist((new_player.x, new_player.y), (new_opponent.x, new_opponent.y))
 
-        # damage_dealt = max(0, new_opponent.percent - old_opponent.percent)
-        # damage_recieved = max(0, new_player.percent - old_player.percent)
-
-        # blast_thresh = 30
-        # blastzones = melee.BLASTZONES.get(self.stage)
-        # print(f'P%: {new_player.percent}')
-        # if damage_recieved != 0:
-        #     print(f'Recieved: {damage_recieved} dmg')
-        # if damage_dealt != 0:
-        #     print(f'Dealt: {damage_dealt} dmg')
-
         jump_penalty = 1 if self.overjump == True else 0
 
-        reward = (new_opponent.percent - new_player.percent) / 250 - jump_penalty * 0.3
+
+
+        out_of_bounds = 0
+        edge_position: float = melee.stages.EDGE_POSITION.get(self.game.stage)
+        blastzones = melee.stages.BLASTZONES.get(self.game.stage)
+        if abs(new_player.x) > edge_position:
+            out_of_bounds -= 0.2
+        if abs(new_opponent.x) > edge_position:
+            out_of_bounds += 0.1
+        if new_player.y < blastzones[3]*0.75 or new_player.y > blastzones[2]*0.75:
+            out_of_bounds -=0.4
+        if new_opponent.y < blastzones[3]*0.75 or new_opponent.y > blastzones[2]*0.75:
+            out_of_bounds += 0.2
+
+        reward = (new_opponent.percent - new_player.percent) / 250 - jump_penalty * 0.3 + out_of_bounds
+
 
         if self.kills >= 1:
             reward = 1
@@ -178,7 +182,7 @@ class CharacterEnv(gym.Env):
         elif action == 9:  # special right
             move = Move(axis=move_stick, x=1, y=0, button=melee.Button.BUTTON_B, num_frames=10)
         elif action == 10:  # special down
-            m1 = Move(axis=move_stick, x=0, y=-1, button=melee.Button.BUTTON_B, num_frames=4)
+            m1 = Move(axis=move_stick, x=0, y=-1, button=melee.Button.BUTTON_B, num_frames=5)
             self.move_queue.append(m1)
             move = Move(button=melee.Button.BUTTON_Y, num_frames=5)
 
@@ -186,12 +190,14 @@ class CharacterEnv(gym.Env):
             self.move_x = 0
             move = Move(axis=move_stick, x=0, y=0, num_frames=10)
 
-        elif action == 12: #Recovery
+        elif action == 12: # Recovery
             target_x: float = melee.stages.EDGE_POSITION.get(self.game.stage) * np.sign(player_state.x)
             angle = math.atan2((player_state.x, player_state.y), (target_x, 3))
             m1 = Move(axis=move_stick, x=0, y=1, button=melee.Button.BUTTON_B, num_frames=10)
             self.move_queue.append(m1)
             move = Move(axis=move_stick, x=math.cos(angle), y=math.sin(angle), num_frames=10)
+        elif action == 13: #jab
+            move = Move(button=melee.Button.BUTTON_A, num_frames=5)
 
         self.last_action = action
         self.move_queue.append(move)
