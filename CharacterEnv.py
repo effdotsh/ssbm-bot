@@ -206,6 +206,10 @@ class CharacterEnv(gym.Env):
         if opponent.action == melee.Action.ON_HALO_DESCENT and self.kills == 0:
             self.kills = 1
 
+        if player.action == melee.Action.DEAD_DOWN:
+            self.move_queue = [Move(axis=melee.Button.BUTTON_MAIN, x=1, num_frames=0)]
+
+
 
 
         player_state: melee.PlayerState = self.gamestate.players[self.player_port]
