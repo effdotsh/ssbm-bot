@@ -186,6 +186,13 @@ class CharacterEnv(gym.Env):
             self.move_x = 0
             move = Move(axis=move_stick, x=0, y=0, num_frames=10)
 
+        elif action == 12: #Recovery
+            target_x: float = melee.stages.EDGE_POSITION.get(self.game.stage) * np.sign(player_state.x)
+            angle = math.atan2((player_state.x, player_state.y), (target_x, 3))
+            m1 = Move(axis=move_stick, x=0, y=1, button=melee.Button.BUTTON_B, num_frames=10)
+            self.move_queue.append(m1)
+            move = Move(axis=move_stick, x=math.cos(angle), y=math.sin(angle), num_frames=10)
+
         self.last_action = action
         self.move_queue.append(move)
 
@@ -220,5 +227,9 @@ class CharacterEnv(gym.Env):
         if action.frames_remaining <= 0:
             self.move_queue.pop(0)
             self.controller.release_all()
+
+        if action.axis != melee.Button.BUTTON_MAIN:
+            self.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, self.move_x, 0)
+
 
         return False
