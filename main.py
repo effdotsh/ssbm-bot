@@ -19,6 +19,8 @@ if platform.system() == "Darwin":
     dolphin_path = "/Users/human/Library/Application Support/Slippi Launcher/netplay/Slippi Dolphin.app"
 elif platform.system() == "Windows":
     dolphin_path = "C:/Users/human/AppData/Roaming/Slippi Launcher/netplay/"
+elif platform.system() == "Linux":
+    dolphin_path = "/home/human/.config/Slippi Launcher/netplay/squashfs-root/usr/bin"
 
 print(dolphin_path)
 
