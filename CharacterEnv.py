@@ -11,6 +11,7 @@ import melee
 import utils
 import copy
 
+from movesList import Moves
 
 class Move:
     def __init__(self, button=None, axis=None, x=0, y=0, num_frames=0):
@@ -22,8 +23,9 @@ class Move:
 
 
 class CharacterEnv(gym.Env):
-    def __init__(self, player_port, opponent_port, game: gameManager.Game):
-        self.num_actions = 14
+    def __init__(self, player_port, opponent_port, game: gameManager.Game, moveset):
+        self.moveset = moveset
+        self.num_actions = len(self.moveset)
 
         self.stage = melee.Stage.BATTLEFIELD
 
@@ -55,6 +57,7 @@ class CharacterEnv(gym.Env):
 
         self.move_queue = []
         self.last_action = 0
+        self.last_action_name = ''
 
     def step(self, action: int):
 
@@ -128,7 +131,7 @@ class CharacterEnv(gym.Env):
         if new_opponent.y < blastzones[3] * 0.75 or new_opponent.y > blastzones[2] * 0.75:
             out_of_bounds += 0.2
 
-        reward = (new_opponent.percent - new_player.percent) / 250 - jump_penalty * 0.3 + out_of_bounds
+        reward = (new_opponent.percent - new_player.percent) / 300 - jump_penalty * 0.3 + out_of_bounds
 
         if self.kills >= 1:
             reward = 1
@@ -144,6 +147,9 @@ class CharacterEnv(gym.Env):
         return self.get_observation(self.gamestate)
 
     def queue_action(self, action: int):
+        
+        action_name = self.moveset[action]
+
         self.overjump = False
         # self.controller.release_all()
         # print(action)
@@ -152,52 +158,54 @@ class CharacterEnv(gym.Env):
         c_stick = melee.Button.BUTTON_C
 
         player_state: melee.PlayerState = self.gamestate.players.get(self.player_port)
-        if action == 0:  # Move Left
+        if action_name == Moves.WALK_LEFT:  # Move Left
             move = Move(axis=move_stick, x=-1, y=0, num_frames=10)
             self.move_x = -1
-        elif action == 1:  # Move Right
+        elif action_name == Moves.WALK_RIGHT:  # Move Right
             move = Move(axis=move_stick, x=1, y=0, num_frames=10)
             self.move_x = 1
-        elif action == 2:  # Jump
+        elif action_name == Moves.JUMP:  # Jump
             move = Move(button=melee.Button.BUTTON_Y, num_frames=10)
             if player_state.jumps_left == 0:
                 self.overjump = True
-        elif action == 3:  # Drop
+        elif action_name == Moves.DROP:  # Drop
             move = Move(axis=move_stick, x=0, y=-1, num_frames=15)
 
-        elif action == 4:  # smash left
-            move = Move(axis=c_stick, x=-1, y=0, num_frames=1)
-        elif action == 5:  # smash right
-            move = Move(axis=c_stick, x=1, y=0, num_frames=1)
-        elif action == 6:  # smash up
-            move = Move(axis=c_stick, x=0, y=1, num_frames=1)
-        elif action == 7:  # smash down
-            move = Move(axis=c_stick, x=0, y=-1, num_frames=1)
+        elif action_name == Moves.SMASH_LEFT:  # smash left
+            move = Move(axis=c_stick, x=-1, y=0, num_frames=5)
+        elif action_name == Moves.SMASH_RIGHT:  # smash right
+            move = Move(axis=c_stick, x=1, y=0, num_frames=5)
+        elif action_name == Moves.SMASH_UP:  # smash up
+            move = Move(axis=c_stick, x=0, y=1, num_frames=5)
+        elif action_name == Moves.SMASH_DOWN:  # smash down
+            move = Move(axis=c_stick, x=0, y=-1, num_frames=5)
 
-        elif action == 8:  # special left
-            move = Move(axis=move_stick, x=-1, y=0, button=melee.Button.BUTTON_B, num_frames=1)
-        elif action == 9:  # special right
-            move = Move(axis=move_stick, x=1, y=0, button=melee.Button.BUTTON_B, num_frames=1)
-        elif action == 10:  # special down
+        elif action_name == Moves.SPECIAL_LEFT:  # special left
+            move = Move(axis=move_stick, x=-1, y=0, button=melee.Button.BUTTON_B, num_frames=5)
+        elif action_name == Moves.SPECIAL_RIGHT:  # special right
+            move = Move(axis=move_stick, x=1, y=0, button=melee.Button.BUTTON_B, num_frames=5)
+        elif action_name == Moves.FOX_SPECIAL_DOWN:  # special down
             m1 = Move(axis=move_stick, x=0, y=-1, button=melee.Button.BUTTON_B, num_frames=5)
             self.move_queue.append(m1)
             move = Move(button=melee.Button.BUTTON_Y, num_frames=5)
 
-        elif action == 11:  # wait
+        elif action_name == Moves.WAIT:  # wait
             self.move_x = 0
             move = Move(axis=move_stick, x=0, y=0, num_frames=10)
 
-        elif action == 12:  # Recovery
-            target_x: float = melee.stages.EDGE_POSITION.get(self.game.stage) * np.sign(player_state.x)
+        elif action_name == Moves.FOX_RECOVERY:  # Recovery
+            sign = np.sign(player_state.x)
+            target_x: float = melee.stages.EDGE_POSITION.get(self.game.stage) * sign - 5 * sign
             angle = math.atan2(0.2 - player_state.y, target_x - player_state.x)
             m1 = Move(axis=move_stick, x=0, y=1, button=melee.Button.BUTTON_B, num_frames=3)
             self.move_queue.append(m1)
             move = Move(axis=move_stick, x=math.cos(angle), y=math.sin(angle), button=melee.Button.BUTTON_B,
                         num_frames=50)
-        elif action == 13:  # jab
-            move = Move(button=melee.Button.BUTTON_A, num_frames=1)
+        elif action_name == Moves.JAB:  # jab
+            move = Move(button=melee.Button.BUTTON_A, num_frames=3)
 
         self.last_action = action
+        self.last_action_name = action_name
         self.move_queue.append(move)
 
     def act(self):
@@ -211,7 +219,7 @@ class CharacterEnv(gym.Env):
             self.kills = 1
 
         if player.action == melee.Action.DEAD_DOWN:
-            self.move_queue = [Move(axis=melee.Button.BUTTON_MAIN, x=1, num_frames=0)]
+            self.move_queue = [Move(axis=melee.Button.BUTTON_MAIN, x=1, num_frames=2)]
 
         player_state: melee.PlayerState = self.gamestate.players[self.player_port]
         if len(self.move_queue) == 0:
@@ -233,7 +241,7 @@ class CharacterEnv(gym.Env):
             self.move_queue.pop(0)
             self.controller.release_all()
 
-        if action.axis != melee.Button.BUTTON_MAIN:
-            self.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, self.move_x, 0)
+        # if action.axis != melee.Button.BUTTON_MAIN:
+        #     self.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, self.move_x, 0)
 
         return False

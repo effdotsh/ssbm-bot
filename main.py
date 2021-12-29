@@ -13,6 +13,7 @@ from EasyML.DQNTorch import DQNAgent
 
 from CharacterEnv import CharacterEnv
 
+from  movesList import CharacterMovesets
 
 dolphin_path = ''
 if platform.system() == "Darwin":
@@ -62,12 +63,12 @@ if __name__ == '__main__':
     game = gameManager.Game(args)
     game.enterMatch(cpu_level=6, opponant_character=melee.Character.MARTH)
 
-    env = CharacterEnv(player_port=args.port, opponent_port=args.opponent, game=game)
+    env = CharacterEnv(player_port=args.port, opponent_port=args.opponent, game=game, moveset=CharacterMovesets.FOX)
 
     num_inputs = env.obs.shape[0]
     num_actions = env.num_actions
 
-    model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=5_000, minibatch_size=128,
+    model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=10_000, minibatch_size=128,
                      learning_rate=0.00007, update_target_every=5, discount_factor=0.99995, epsilon_decay=0.9997, epsilon=1)
 
     gamestate = game.console.step()
@@ -96,7 +97,6 @@ if __name__ == '__main__':
             if character_ready:
                 # update model from previous move
                 reward = env.calculate_reward(prev_gamestate, gamestate)
-                print(f'{round(time.time() - start_time, 1)}: {reward}')
                 episode_reward += reward
                 old_obs = env.get_observation(prev_gamestate)
                 obs = env.get_observation(gamestate)
@@ -113,6 +113,9 @@ if __name__ == '__main__':
                 tot_steps += 1
 
                 prev_gamestate = gamestate
+                print(f'{round(time.time() - start_time, 1)}: {reward}')
+
+                print(env.last_action_name)
 
         print('##################################')
         print(f'Epsilon Greedy: {model.epsilon}')
