@@ -13,6 +13,7 @@ import copy
 
 from movesList import Moves
 
+
 class Move:
     def __init__(self, button=None, axis=None, x=0, y=0, num_frames=0):
         self.frames_remaining = num_frames
@@ -24,6 +25,8 @@ class Move:
 
 class CharacterEnv(gym.Env):
     def __init__(self, player_port, opponent_port, game: gameManager.Game, moveset):
+        self.framedata: melee.framedata.FrameData = melee.framedata.FrameData()
+
         self.moveset = moveset
         self.num_actions = len(self.moveset)
 
@@ -59,13 +62,14 @@ class CharacterEnv(gym.Env):
         self.last_action = 0
         self.last_action_name = ''
 
+
     def step(self, action: int):
 
         self.queue_action(action)
 
         obs = self.get_observation(self.gamestate)
 
-        r = self.calculate_reward(self.old_gamestate, self.gamestate)
+        r = self.calculate_state_reward(self.gamestate)
 
         self.kills = 0
         self.deaths = 0
@@ -81,11 +85,8 @@ class CharacterEnv(gym.Env):
         player: melee.PlayerState = gamestate.players.get(self.player_port)
         opponent: melee.PlayerState = gamestate.players.get(self.opponent_port)
 
-        opponent_action = opponent.action
-        self_action = player.action
-
-        opponent_attacking = 1 if opponent_action in utils.attacking_list else 0
-        self_attacking = 1 if self_action in utils.attacking_list else 0
+        opponent_attacking = 1 if self.framedata.attack_state(opponent.character, opponent.action,
+                                                              opponent.action_frame) != melee.AttackState.NOT_ATTACKING else 0
 
         player_facing = 1 if player.facing else -1
         opponent_facing = 1 if player.facing else -1
@@ -108,12 +109,9 @@ class CharacterEnv(gym.Env):
 
         return obs
 
-    def calculate_reward(self, old_gamestate, new_gamestate):
-        new_player: melee.PlayerState = new_gamestate.players.get(self.player_port)
-        new_opponent: melee.PlayerState = new_gamestate.players.get(self.opponent_port)
-
-        old_player: melee.PlayerState = old_gamestate.players.get(self.player_port)
-        old_opponent: melee.PlayerState = old_gamestate.players.get(self.opponent_port)
+    def calculate_state_reward(self, gamestate):
+        new_player: melee.PlayerState = gamestate.players.get(self.player_port)
+        new_opponent: melee.PlayerState = gamestate.players.get(self.opponent_port)
 
         distance = math.dist((new_player.x, new_player.y), (new_opponent.x, new_opponent.y))
 
@@ -143,11 +141,11 @@ class CharacterEnv(gym.Env):
         return reward
 
     def reset(self):
-        # self.old_gamestate = self.game.console.step()
+        self.move_queue = []
         return self.get_observation(self.gamestate)
 
     def queue_action(self, action: int):
-        
+
         action_name = self.moveset[action]
 
         self.overjump = False
@@ -168,41 +166,47 @@ class CharacterEnv(gym.Env):
             move = Move(button=melee.Button.BUTTON_Y, num_frames=10)
             if player_state.jumps_left == 0:
                 self.overjump = True
+        elif action_name == Moves.SHORT_JUMP:  # Jump
+            move = Move(button=melee.Button.BUTTON_Y, num_frames=2)
+            if player_state.jumps_left == 0:
+                self.overjump = True
         elif action_name == Moves.DROP:  # Drop
             move = Move(axis=move_stick, x=0, y=-1, num_frames=15)
 
         elif action_name == Moves.SMASH_LEFT:  # smash left
-            move = Move(axis=c_stick, x=-1, y=0, num_frames=5)
+            move = Move(axis=c_stick, x=-1, y=0, num_frames=1)
         elif action_name == Moves.SMASH_RIGHT:  # smash right
-            move = Move(axis=c_stick, x=1, y=0, num_frames=5)
+            move = Move(axis=c_stick, x=1, y=0, num_frames=1)
         elif action_name == Moves.SMASH_UP:  # smash up
-            move = Move(axis=c_stick, x=0, y=1, num_frames=5)
+            move = Move(axis=c_stick, x=0, y=1, num_frames=1)
         elif action_name == Moves.SMASH_DOWN:  # smash down
             move = Move(axis=c_stick, x=0, y=-1, num_frames=5)
 
         elif action_name == Moves.SPECIAL_LEFT:  # special left
-            move = Move(axis=move_stick, x=-1, y=0, button=melee.Button.BUTTON_B, num_frames=5)
+            move = Move(axis=move_stick, x=-1, y=0, button=melee.Button.BUTTON_B, num_frames=1)
         elif action_name == Moves.SPECIAL_RIGHT:  # special right
-            move = Move(axis=move_stick, x=1, y=0, button=melee.Button.BUTTON_B, num_frames=5)
+            move = Move(axis=move_stick, x=1, y=0, button=melee.Button.BUTTON_B, num_frames=1)
         elif action_name == Moves.FOX_SPECIAL_DOWN:  # special down
-            m1 = Move(axis=move_stick, x=0, y=-1, button=melee.Button.BUTTON_B, num_frames=5)
+            m1 = Move(axis=move_stick, x=0, y=-1, button=melee.Button.BUTTON_B, num_frames=4)
             self.move_queue.append(m1)
-            move = Move(button=melee.Button.BUTTON_Y, num_frames=5)
+            move = Move(button=melee.Button.BUTTON_Y, num_frames=2)
 
         elif action_name == Moves.WAIT:  # wait
             self.move_x = 0
             move = Move(axis=move_stick, x=0, y=0, num_frames=10)
 
         elif action_name == Moves.FOX_RECOVERY:  # Recovery
+            self.move_x=0
+            print(time.time())
             sign = np.sign(player_state.x)
-            target_x: float = melee.stages.EDGE_POSITION.get(self.game.stage) * sign - 5 * sign
+            target_x: float = melee.stages.EDGE_POSITION.get(self.game.stage) * sign
             angle = math.atan2(0.2 - player_state.y, target_x - player_state.x)
-            m1 = Move(axis=move_stick, x=0, y=1, button=melee.Button.BUTTON_B, num_frames=3)
+            m1 = Move(axis=move_stick, x=0, y=1, button=melee.Button.BUTTON_B, num_frames=20)
             self.move_queue.append(m1)
             move = Move(axis=move_stick, x=math.cos(angle), y=math.sin(angle), button=melee.Button.BUTTON_B,
                         num_frames=50)
         elif action_name == Moves.JAB:  # jab
-            move = Move(button=melee.Button.BUTTON_A, num_frames=3)
+            move = Move(button=melee.Button.BUTTON_A, num_frames=1)
 
         self.last_action = action
         self.last_action_name = action_name
@@ -213,21 +217,27 @@ class CharacterEnv(gym.Env):
         player: melee.PlayerState = self.gamestate.players.get(self.player_port)
         opponent: melee.PlayerState = self.gamestate.players.get(self.opponent_port)
 
-        if player.action == melee.Action.ON_HALO_DESCENT and self.deaths == 0:
+        if player.action in utils.dead_list:
             self.deaths = 1
-        if opponent.action == melee.Action.ON_HALO_DESCENT and self.kills == 0:
+            return False
+        if opponent.action in utils.dead_list:
             self.kills = 1
 
-        if player.action == melee.Action.DEAD_DOWN:
-            self.move_queue = [Move(axis=melee.Button.BUTTON_MAIN, x=1, num_frames=2)]
+
 
         player_state: melee.PlayerState = self.gamestate.players[self.player_port]
         if len(self.move_queue) == 0:
-            if player_state.action in utils.attacking_list or player_state.action in utils.dead_list:
-                return False  # No queued action but player is either attacking or in special fall
-            return True
+            if self.framedata.attack_state(player_state.character, player_state.action,
+                                           player_state.action_frame) == melee.AttackState.NOT_ATTACKING and player_state.action not in utils.dead_list:
+                return True
+            return False
 
         action: Move = self.move_queue[0]
+
+        if action.frames_remaining <= 0:
+            self.move_queue.pop(0)
+            self.controller.release_all()
+            return False
 
         if action.button is not None:
             self.controller.press_button(action.button)
@@ -235,11 +245,9 @@ class CharacterEnv(gym.Env):
         if action.axis is not None:
             self.controller.tilt_analog_unit(action.axis, action.x, action.y)
 
-        action.frames_remaining -= 1
 
-        if action.frames_remaining <= 0:
-            self.move_queue.pop(0)
-            self.controller.release_all()
+
+        action.frames_remaining -= 1
 
         # if action.axis != melee.Button.BUTTON_MAIN:
         #     self.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, self.move_x, 0)

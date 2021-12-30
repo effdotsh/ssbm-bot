@@ -68,7 +68,7 @@ if __name__ == '__main__':
     num_inputs = env.obs.shape[0]
     num_actions = env.num_actions
 
-    model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=10_000, minibatch_size=128,
+    model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=3_000, minibatch_size=128,
                      learning_rate=0.00007, update_target_every=5, discount_factor=0.99995, epsilon_decay=0.9997, epsilon=1)
 
     gamestate = game.console.step()
@@ -80,9 +80,11 @@ if __name__ == '__main__':
 
         current_state = env.reset()
         episode_reward = 0
-        step = 0
+        step = 1
         done = False
 
+        gamestate = game.console.step()
+        prev_gamestate = gamestate
         while not done:
 
             gamestate = game.console.step()
@@ -94,13 +96,16 @@ if __name__ == '__main__':
             env.set_gamestate(gamestate)
 
             character_ready = env.act()
+
             if character_ready:
+                done = env.deaths >= 1
+
                 # update model from previous move
-                reward = env.calculate_reward(prev_gamestate, gamestate)
+                reward = env.calculate_state_reward(gamestate)
+                # reward = env.calculate_state_reward(gamestate) - env.calculate_state_reward(prev_gamestate)
                 episode_reward += reward
                 old_obs = env.get_observation(prev_gamestate)
                 obs = env.get_observation(gamestate)
-                done = env.deaths >= 1 or env.kills >=1
 
                 #Don't let the model think that being where the spawn gateis is the bad thing
                 model.update_replay_memory((old_obs, action, reward, obs if env.deaths==0 else old_obs, done))
@@ -108,17 +113,21 @@ if __name__ == '__main__':
                 model.train(done)
                 step += 1
 
-                action = model.predict(env.get_observation(gamestate), True)
+                action = model.predict(env.get_observation(gamestate))
+                print(env.moveset[action])
                 env.step(action)
                 tot_steps += 1
 
                 prev_gamestate = gamestate
-                print(f'{round(time.time() - start_time, 1)}: {reward}')
-
-                print(env.last_action_name)
+                # print(f'{round(time.time() - start_time, 1)}: {reward}')
+                #
+                # print(env.last_action_name)
 
         print('##################################')
         print(f'Epsilon Greedy: {model.epsilon}')
         print(f'Total Steps: {tot_steps}')
         print(f'Replay Size: {len(model.replay_memory)}')
         print(f'Average Reward: {episode_reward/step}')
+        print('##################################')
+
+        env.reset()
