@@ -8,6 +8,7 @@ import numpy as np
 import gameManager
 import melee
 
+import movesList
 import utils
 import copy
 
@@ -28,7 +29,6 @@ class CharacterEnv(gym.Env):
         self.framedata: melee.framedata.FrameData = melee.framedata.FrameData()
 
         self.moveset = moveset
-        self.num_actions = len(self.moveset)
 
         self.stage = melee.Stage.BATTLEFIELD
 
@@ -44,10 +44,6 @@ class CharacterEnv(gym.Env):
         self.gamestate: melee.GameState = self.game.console.step()
         self.old_gamestate = self.game.console.step()
 
-        nun_inputs = self.get_observation(self.gamestate).shape[0]
-        self.observation_space = spaces.Box(shape=np.array([nun_inputs]), dtype=np.float, low=-1, high=1)
-        self.action_space = spaces.Discrete(self.num_actions)
-
         self.rewards = []
 
         self.move_x = 0
@@ -62,6 +58,10 @@ class CharacterEnv(gym.Env):
         self.last_action = 0
         self.last_action_name = ''
 
+        nun_inputs = self.get_observation(self.gamestate).shape[0]
+        self.num_actions = len(self.moveset)
+        self.observation_space = spaces.Box(shape=np.array([nun_inputs]), dtype=np.float, low=-1, high=1)
+        self.action_space = spaces.Discrete(self.num_actions)
 
     def step(self, action: int):
 
@@ -91,12 +91,13 @@ class CharacterEnv(gym.Env):
         player_facing = 1 if player.facing else -1
         opponent_facing = 1 if player.facing else -1
 
-        opponent_vel_x = max(
-            (opponent.speed_air_x_self + opponent.speed_ground_x_self + opponent.speed_x_attack) / 1000, 1)
-        opponent_vel_y = max((opponent.speed_y_self + opponent.speed_y_attack) / 1000, 1)
+        opponent_vel_x = utils.clamp(
+            (opponent.speed_air_x_self + opponent.speed_ground_x_self + opponent.speed_x_attack) / 1000, -1, 1)
+        opponent_vel_y = utils.clamp((opponent.speed_y_self + opponent.speed_y_attack) / 1000, -1, 1)
 
-        self_vel_x = max((player.speed_air_x_self + player.speed_ground_x_self + player.speed_x_attack) / 1000, 1)
-        self_vel_y = max((player.speed_y_self + player.speed_y_attack) / 1000, 1)
+        self_vel_x = utils.clamp((player.speed_air_x_self + player.speed_ground_x_self + player.speed_x_attack) / 1000,
+                                 -1, 1)
+        self_vel_y = utils.clamp((player.speed_y_self + player.speed_y_attack) / 1000, -1, 1)
 
         blastzones = melee.BLASTZONES.get(self.stage)
 
@@ -104,7 +105,7 @@ class CharacterEnv(gym.Env):
             [player.x / blastzones[1], player.y / blastzones[2], opponent.x / blastzones[1], opponent.y / blastzones[2],
              player_facing, opponent_attacking, opponent_facing, opponent_vel_x, opponent_vel_y,
              self_vel_x, self_vel_y, opponent.percent / 300, player.percent / 300, player.jumps_left / 2,
-             opponent.jumps_left / 2])
+             opponent.jumps_left / 2, self.move_x])
         # print(obs)
 
         return obs
@@ -147,7 +148,6 @@ class CharacterEnv(gym.Env):
     def queue_action(self, action: int):
 
         action_name = self.moveset[action]
-
         self.overjump = False
         # self.controller.release_all()
         # print(action)
@@ -174,18 +174,18 @@ class CharacterEnv(gym.Env):
             move = Move(axis=move_stick, x=0, y=-1, num_frames=15)
 
         elif action_name == Moves.SMASH_LEFT:  # smash left
-            move = Move(axis=c_stick, x=-1, y=0, num_frames=1)
+            move = Move(axis=c_stick, x=-1, y=0, num_frames=20)
         elif action_name == Moves.SMASH_RIGHT:  # smash right
-            move = Move(axis=c_stick, x=1, y=0, num_frames=1)
+            move = Move(axis=c_stick, x=1, y=0, num_frames=20)
         elif action_name == Moves.SMASH_UP:  # smash up
-            move = Move(axis=c_stick, x=0, y=1, num_frames=1)
+            move = Move(axis=c_stick, x=0, y=1, num_frames=20)
         elif action_name == Moves.SMASH_DOWN:  # smash down
             move = Move(axis=c_stick, x=0, y=-1, num_frames=5)
 
         elif action_name == Moves.SPECIAL_LEFT:  # special left
-            move = Move(axis=move_stick, x=-1, y=0, button=melee.Button.BUTTON_B, num_frames=1)
+            move = Move(axis=move_stick, x=-1, y=0, button=melee.Button.BUTTON_B, num_frames=20)
         elif action_name == Moves.SPECIAL_RIGHT:  # special right
-            move = Move(axis=move_stick, x=1, y=0, button=melee.Button.BUTTON_B, num_frames=1)
+            move = Move(axis=move_stick, x=1, y=0, button=melee.Button.BUTTON_B, num_frames=20)
         elif action_name == Moves.FOX_SPECIAL_DOWN:  # special down
             m1 = Move(axis=move_stick, x=0, y=-1, button=melee.Button.BUTTON_B, num_frames=4)
             self.move_queue.append(m1)
@@ -193,10 +193,10 @@ class CharacterEnv(gym.Env):
 
         elif action_name == Moves.WAIT:  # wait
             self.move_x = 0
-            move = Move(axis=move_stick, x=0, y=0, num_frames=10)
+            move = Move(axis=move_stick, x=0, y=0, num_frames=20)
 
         elif action_name == Moves.FOX_RECOVERY:  # Recovery
-            self.move_x=0
+            self.move_x = 0
             print(time.time())
             sign = np.sign(player_state.x)
             target_x: float = melee.stages.EDGE_POSITION.get(self.game.stage) * sign
@@ -206,7 +206,7 @@ class CharacterEnv(gym.Env):
             move = Move(axis=move_stick, x=math.cos(angle), y=math.sin(angle), button=melee.Button.BUTTON_B,
                         num_frames=50)
         elif action_name == Moves.JAB:  # jab
-            move = Move(button=melee.Button.BUTTON_A, num_frames=1)
+            move = Move(button=melee.Button.BUTTON_A, num_frames=20)
 
         self.last_action = action
         self.last_action_name = action_name
@@ -214,6 +214,7 @@ class CharacterEnv(gym.Env):
 
     def act(self):
         # Check for deaths
+        self.controller.release_all()
         player: melee.PlayerState = self.gamestate.players.get(self.player_port)
         opponent: melee.PlayerState = self.gamestate.players.get(self.opponent_port)
 
@@ -223,12 +224,14 @@ class CharacterEnv(gym.Env):
         if opponent.action in utils.dead_list:
             self.kills = 1
 
-
-
         player_state: melee.PlayerState = self.gamestate.players[self.player_port]
         if len(self.move_queue) == 0:
             if self.framedata.attack_state(player_state.character, player_state.action,
-                                           player_state.action_frame) == melee.AttackState.NOT_ATTACKING and player_state.action not in utils.dead_list:
+                                           player_state.action_frame) == melee.AttackState.NOT_ATTACKING and player_state.action not in utils.dead_list and not self.framedata.is_attack(
+                player_state.character, player_state.action) and not self.framedata.is_grab(
+                player_state.character, player_state.action) and not self.framedata.is_roll(
+                player_state.character, player_state.action) and not self.framedata.is_bmove(
+                player_state.character, player_state.action):
                 return True
             return False
 
@@ -245,11 +248,8 @@ class CharacterEnv(gym.Env):
         if action.axis is not None:
             self.controller.tilt_analog_unit(action.axis, action.x, action.y)
 
-
-
         action.frames_remaining -= 1
 
-        # if action.axis != melee.Button.BUTTON_MAIN:
-        #     self.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, self.move_x, 0)
-
+        if action.axis != melee.Button.BUTTON_MAIN:
+            self.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, self.move_x, 0)
         return False
