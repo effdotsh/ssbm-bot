@@ -34,7 +34,7 @@ class Game:
         #       bot can actually "see" what's happening in the game
         self.console: melee.Console = melee.Console(path=args.dolphin_executable_path,
                                                     slippi_address=args.address,
-                                                    logger=self.log)
+                                                    logger=self.log, polling_mode=True, online_delay=0)
 
         # Create our Controller object
         #   The controller is the second primary object your bot will interact with
@@ -88,7 +88,8 @@ class Game:
 
     def getState(self) -> melee.GameState:
         gamestate = self.console.step()
-        if gamestate is None:
+        while gamestate is None:
+            gamestate =  self.console.step()
             print("No gamestate")
 
         # The console object keeps track of how long your bot is taking to process frames
@@ -151,6 +152,7 @@ class Game:
         flick_button(melee.Button.BUTTON_A)
 
         time.sleep(1)
+
         flick_axis(melee.Button.BUTTON_MAIN, -1, 0)
         flick_axis(melee.Button.BUTTON_MAIN, 0, -1)
         flick_axis(melee.Button.BUTTON_MAIN, -1, 0)
