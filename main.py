@@ -68,12 +68,12 @@ if __name__ == '__main__':
     num_inputs = env.obs.shape[0]
     num_actions = env.num_actions
 
-    # model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=1500, minibatch_size=16, max_replay_size=5_000,
-    #                  learning_rate=0.00007, update_target_every=5, discount_factor=0.999, epsilon_decay=0.9997, epsilon=1)
+    model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=1500, minibatch_size=128, max_replay_size=300_000,
+                     learning_rate=0.00004, update_target_every=5, discount_factor=0.999, epsilon_decay=0.9997, epsilon=1)
 
-    model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=500, minibatch_size=16, max_replay_size=30_000,
-                     learning_rate=0.00007, update_target_every=2, discount_factor=0.99, epsilon_decay=0,
-                     epsilon=1, min_epsilon=0)
+    # model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=500, minibatch_size=16, max_replay_size=30_000,
+    #                  learning_rate=0.00007, update_target_every=2, discount_factor=0.99, epsilon_decay=0,
+    #                  epsilon=1, min_epsilon=0)
     gamestate = game.console.step()
     while gamestate is None:
         gamestate = game.console.step()
@@ -107,12 +107,12 @@ if __name__ == '__main__':
             env.controller.flush()
             # print(gamestate.players.get(env.player_port).action)
             if character_ready:
-                print(gamestate.players.get(env.player_port).action)
+                # print(gamestate.players.get(env.player_port).action)
 
                 done = env.deaths >= 1
 
                 # update model from previous move
-                reward = env.calculate_state_reward(gamestate)
+                reward = env.calculate_reward(prev_gamestate,gamestate)
                 # reward = env.calculate_state_reward(gamestate) - env.calculate_state_reward(prev_gamestate)
                 episode_reward += reward
                 old_obs = env.get_observation(prev_gamestate)
@@ -126,15 +126,15 @@ if __name__ == '__main__':
 
                 action = model.predict(env.get_observation(gamestate))
                 env.step(action)
-                # print(env.gamestate.players.get(env.player_port).action)
-                # print(env.last_action_name)
-                # print('---')
+                print(env.last_action_name)
+                print(f'{round(time.time() - start_time, 1)}: {reward}')
+
+                print('---')
                 tot_steps += 1
 
                 prev_gamestate = gamestate
-                # print(f'{round(time.time() - start_time, 1)}: {reward}')
                 #
-                print(env.last_action_name)
+                # print(env.last_action_name)
 
         print('##################################')
         print(f'Epsilon Greedy: {model.epsilon}')
