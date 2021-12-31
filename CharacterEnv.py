@@ -69,7 +69,7 @@ class CharacterEnv(gym.Env):
 
         obs = self.get_observation(self.gamestate)
 
-        r = self.calculate_state_reward(self.gamestate)
+        r = self.calculate_reward(self.old_gamestate, self.gamestate)
 
         self.kills = 0
         self.deaths = 0
@@ -110,13 +110,17 @@ class CharacterEnv(gym.Env):
 
         return obs
 
-    def calculate_state_reward(self, gamestate):
-        new_player: melee.PlayerState = gamestate.players.get(self.player_port)
-        new_opponent: melee.PlayerState = gamestate.players.get(self.opponent_port)
+    def calculate_reward(self, old_gamestate, new_gamestate):
+        old_player: melee.PlayerState = old_gamestate.players.get(self.player_port)
+        old_opponent: melee.PlayerState = old_gamestate.players.get(self.opponent_port)
 
-        distance = math.dist((new_player.x, new_player.y), (new_opponent.x, new_opponent.y))
+        new_player: melee.PlayerState = new_gamestate.players.get(self.player_port)
+        new_opponent: melee.PlayerState = new_gamestate.players.get(self.opponent_port)
 
-        jump_penalty = 1 if self.overjump == True else 0
+        damage_dealt = max(0, new_opponent.percent - old_opponent.percent)
+        damage_recieved = max(0, new_player.percent - old_player.percent)
+
+        jump_penalty = 1 if self.overjump else 0
 
         out_of_bounds = 0
         edge_position: float = melee.stages.EDGE_POSITION.get(self.game.stage)
@@ -130,7 +134,7 @@ class CharacterEnv(gym.Env):
         if new_opponent.y < blastzones[3] * 0.75 or new_opponent.y > blastzones[2] * 0.75:
             out_of_bounds += 0.2
 
-        reward = (new_opponent.percent - new_player.percent) / 300 - jump_penalty * 0.3 + out_of_bounds
+        reward = (damage_dealt - damage_recieved) / 40 - jump_penalty * 0.3 + out_of_bounds
 
         if self.kills >= 1:
             reward = 1
@@ -166,12 +170,17 @@ class CharacterEnv(gym.Env):
             move = Move(button=melee.Button.BUTTON_Y, num_frames=10)
             if player_state.jumps_left == 0:
                 self.overjump = True
+                print('Overjump')
         elif action_name == Moves.SHORT_JUMP:  # Jump
             move = Move(button=melee.Button.BUTTON_Y, num_frames=2)
             if player_state.jumps_left == 0:
                 self.overjump = True
+                print('Overjump')
+
         elif action_name == Moves.DROP:  # Drop
-            move = Move(axis=move_stick, x=0, y=-1, num_frames=15)
+            m1 = Move(axis=move_stick, x=0, y=-1, num_frames=30)
+            self.move_queue.append(m1)
+            move = Move(num_frames=30)
 
         elif action_name == Moves.SMASH_LEFT:  # smash left
             move = Move(axis=c_stick, x=-1, y=0, num_frames=20)
@@ -211,6 +220,7 @@ class CharacterEnv(gym.Env):
         self.last_action = action
         self.last_action_name = action_name
         self.move_queue.append(move)
+        self.move_queue.append(Move(num_frames=3)) #Delay
 
     def act(self):
         # Check for deaths
@@ -225,6 +235,11 @@ class CharacterEnv(gym.Env):
             self.kills = 1
 
         player_state: melee.PlayerState = self.gamestate.players[self.player_port]
+
+        if player_state.action in [melee.Action.LYING_GROUND_UP, melee.Action.LYING_GROUND_UP_HIT,
+                                   melee.Action.LYING_GROUND_DOWN]:
+            self.move_queue = [Move(button=melee.Button.BUTTON_Y, num_frames=2)]
+
         if len(self.move_queue) == 0:
             if self.framedata.attack_state(player_state.character, player_state.action,
                                            player_state.action_frame) == melee.AttackState.NOT_ATTACKING and player_state.action not in utils.dead_list and not self.framedata.is_attack(
