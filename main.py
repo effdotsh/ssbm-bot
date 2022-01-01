@@ -60,12 +60,17 @@ args: gameManager.Args = parser.parse_args()
 start_time = time.time()
 if __name__ == '__main__':
     game = gameManager.Game(args)
-    game.enterMatch(cpu_level=6, opponant_character=melee.Character.MARTH)
+    game.enterMatch(cpu_level=0, opponant_character=melee.Character.FOX)
 
-    character = CharacterController(port=args.port, opponent_port=args.opponent, game=game, moveset=CharacterMovesets.FOX, min_replay_size=1500, minibatch_size=128, max_replay_size=300_000,
-                     learning_rate=0.00004, update_target_every=5, discount_factor=0.999, epsilon_decay=0.9997, epsilon=1)
+    agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game, moveset=CharacterMovesets.FOX, min_replay_size=1500, minibatch_size=128, max_replay_size=300_000,
+                                 learning_rate=0.00004, update_target_every=5, discount_factor=0.999, epsilon_decay=0.9997, epsilon=1)
 
+    agent2 = CharacterController(port=args.opponent, opponent_port=args.port, game=game, moveset=CharacterMovesets.FOX, min_replay_size=1500, minibatch_size=128, max_replay_size=300_000,
+                                 learning_rate=0.00004, update_target_every=5, discount_factor=0.999, epsilon_decay=0.9997, epsilon=1)
+
+    agent2.model = agent1.model
 
     while True:
         gamestate = game.console.step()
-        character.run_frame(gamestate)
+        agent1.run_frame(gamestate, log=True)
+        agent2.run_frame(gamestate, log=False)

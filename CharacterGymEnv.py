@@ -211,9 +211,9 @@ class CharacterEnv(gym.Env):
             sign = np.sign(player_state.x)
             target_x: float = melee.stages.EDGE_POSITION.get(self.game.stage) * sign
             angle = math.atan2(0.2 - player_state.y, target_x - player_state.x)
-            m1 = Move(axis=move_stick, x=0, y=1, button=melee.Button.BUTTON_B, num_frames=20)
+            m1 = Move(axis=move_stick, x=0, y=1, button=melee.Button.BUTTON_B, num_frames=15)
             self.move_queue.append(m1)
-            move = Move(axis=move_stick, x=int(math.cos(angle)), y=int(math.sin(angle)), button=melee.Button.BUTTON_B,
+            move = Move(axis=move_stick, x=math.cos(angle), y=math.sin(angle), button=melee.Button.BUTTON_B,
                         num_frames=50)
         elif action_name == Moves.JAB:  # jab
             move = Move(button=melee.Button.BUTTON_A, num_frames=20)
