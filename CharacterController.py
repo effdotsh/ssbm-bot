@@ -1,3 +1,4 @@
+import random
 import time
 
 import melee
@@ -42,15 +43,14 @@ class CharacterController:
                 print(f'Average Reward: {self.episode_reward / self.step}')
                 print('##################################')
 
-            self.current_state = self.env.reset()
             self.episode_reward = 0
             self.step = 1
             self.done = False
 
+            self.prev_gamestate = self.gamestate
             self.gamestate = gamestate
             if gamestate is None:
                 return
-            self.prev_gamestate = gamestate
 
         else:
             if gamestate is None:
@@ -67,8 +67,10 @@ class CharacterController:
             # print(gamestate.players.get(env.player_port).action)
             if character_ready:
                 # print(gamestate.players.get(env.player_port).action)
+                #
+                # self.done = self.env.deaths >= 1
+                self.done = self.step > 100
 
-                self.done = self.env.deaths >= 1
 
                 # update model from previous move
                 reward = self.env.calculate_reward(self.prev_gamestate, gamestate)

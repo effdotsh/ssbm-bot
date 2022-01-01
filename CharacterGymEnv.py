@@ -86,7 +86,7 @@ class CharacterEnv(gym.Env):
         opponent: melee.PlayerState = gamestate.players.get(self.opponent_port)
 
         opponent_attacking = 1 if self.framedata.attack_state(opponent.character, opponent.action,
-                                                              opponent.action_frame) != melee.AttackState.NOT_ATTACKING else 0
+                                                              opponent.action_frame) != melee.AttackState.NOT_ATTACKING else -1
 
         player_facing = 1 if player.facing else -1
         opponent_facing = 1 if player.facing else -1
@@ -95,17 +95,25 @@ class CharacterEnv(gym.Env):
             (opponent.speed_air_x_self + opponent.speed_ground_x_self + opponent.speed_x_attack) / 1000, -1, 1)
         opponent_vel_y = utils.clamp((opponent.speed_y_self + opponent.speed_y_attack) / 1000, -1, 1)
 
-        self_vel_x = utils.clamp((player.speed_air_x_self + player.speed_ground_x_self + player.speed_x_attack) / 1000,
-                                 -1, 1)
-        self_vel_y = utils.clamp((player.speed_y_self + player.speed_y_attack) / 1000, -1, 1)
-
         blastzones = melee.BLASTZONES.get(self.stage)
+        edge = melee.EDGE_POSITION.get(self.stage)
+
+        player_on_ground = 1 if player.on_ground else -1
+        opponent_on_ground = 1 if opponent.on_ground else -1
+
+        player_off_stage = 1 if player.off_stage else -1
+        opponent_off_stage = 1 if opponent.off_stage else -1
 
         obs = np.array(
-            [player.x / blastzones[1], player.y / blastzones[2], opponent.x / blastzones[1], opponent.y / blastzones[2],
-             player_facing, opponent_attacking, opponent_facing, opponent_vel_x, opponent_vel_y,
-             self_vel_x, self_vel_y, opponent.percent / 300, player.percent / 300, player.jumps_left / 2,
-             opponent.jumps_left / 2, self.move_x])
+            [(edge - player.position[0]) / 100, (-edge - player.position[0]) / 100, (edge - opponent.position[0]) / 100,
+             (-edge - opponent.position[0]) / 100,
+             player.position[0] / 100, opponent.position[0] / 100, player.position[1] / 100, opponent.position[1] / 100,
+             opponent_attacking, player_facing,
+             opponent_attacking, opponent.speed_air_x_self / 10, opponent.speed_ground_x_self / 10,
+             opponent.speed_x_attack / 10, opponent.speed_y_attack / 10, opponent.speed_y_self,
+             player.speed_air_x_self / 10, player.speed_ground_x_self / 10,
+             player.speed_x_attack / 10, player.speed_y_attack / 10, player.speed_y_self, player.percent / 300,
+             opponent.percent / 300, player_on_ground, opponent_on_ground, player_off_stage, opponent_off_stage, 1])
         # print(obs)
 
         return obs
@@ -140,14 +148,14 @@ class CharacterEnv(gym.Env):
             reward = 1
         if self.deaths >= 1:
             reward = -1 - 1 / int(new_player.percent / 20 + 1)
+            self.move_queue = []
+            self.move_x = 0
         # tanh_reward = 2 / (1 + math.pow(math.e, -4.4 * reward)) - 1
 
         # return tanh_reward
         return reward
 
     def reset(self):
-        self.move_queue = []
-        self.move_x = 0
         return self.get_observation(self.gamestate)
 
     def queue_action(self, action: int):
@@ -222,7 +230,7 @@ class CharacterEnv(gym.Env):
         self.last_action = action
         self.last_action_name = action_name
         self.move_queue.append(move)
-        self.move_queue.append(Move(num_frames=3)) #Delay
+        self.move_queue.append(Move(num_frames=3))  # Delay
 
     def act(self):
         # Check for deaths
