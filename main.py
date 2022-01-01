@@ -11,9 +11,11 @@ import platform
 
 from EasyML.DQNTorch import DQNAgent
 
-from CharacterEnv import CharacterEnv
+from CharacterGymEnv import CharacterEnv
 
 from  movesList import CharacterMovesets
+
+from CharacterController import CharacterController
 
 dolphin_path = ''
 if platform.system() == "Darwin":
@@ -55,92 +57,15 @@ parser.add_argument('--iso', default='SSBM.iso', type=str,
 
 args: gameManager.Args = parser.parse_args()
 
-flipper = False
-
-rewards = []
 start_time = time.time()
 if __name__ == '__main__':
     game = gameManager.Game(args)
     game.enterMatch(cpu_level=6, opponant_character=melee.Character.MARTH)
 
-    env = CharacterEnv(player_port=args.port, opponent_port=args.opponent, game=game, moveset=CharacterMovesets.FOX)
-
-    num_inputs = env.obs.shape[0]
-    num_actions = env.num_actions
-
-    model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=1500, minibatch_size=128, max_replay_size=300_000,
+    character = CharacterController(port=args.port, opponent_port=args.opponent, game=game, moveset=CharacterMovesets.FOX, min_replay_size=1500, minibatch_size=128, max_replay_size=300_000,
                      learning_rate=0.00004, update_target_every=5, discount_factor=0.999, epsilon_decay=0.9997, epsilon=1)
 
-    # model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=500, minibatch_size=16, max_replay_size=30_000,
-    #                  learning_rate=0.00007, update_target_every=2, discount_factor=0.99, epsilon_decay=0,
-    #                  epsilon=1, min_epsilon=0)
-    gamestate = game.console.step()
-    while gamestate is None:
-        gamestate = game.console.step()
-    prev_gamestate = gamestate
-    env.set_gamestate(gamestate)
-    action = 0
-    tot_steps = 0
+
     while True:
-
-        current_state = env.reset()
-        episode_reward = 0
-        step = 1
-        done = False
-
         gamestate = game.console.step()
-        if gamestate is None:
-            continue
-        prev_gamestate = gamestate
-        while not done:
-            gamestate = game.console.step()
-            if gamestate is None:
-                continue
-            # if gamestate is None:
-            #     continue
-            # if game.console.processingtime * 1000 > 30:
-            #     print("WARNING: Last frame took " + str(game.console.processingtime * 1000) + "ms to process.")
-
-            env.set_gamestate(gamestate)
-
-            character_ready = env.act()
-            env.controller.flush()
-            # print(gamestate.players.get(env.player_port).action)
-            if character_ready:
-                # print(gamestate.players.get(env.player_port).action)
-
-                done = env.deaths >= 1
-
-                # update model from previous move
-                reward = env.calculate_reward(prev_gamestate,gamestate)
-                # reward = env.calculate_state_reward(gamestate) - env.calculate_state_reward(prev_gamestate)
-                episode_reward += reward
-                old_obs = env.get_observation(prev_gamestate)
-                obs = env.get_observation(gamestate)
-
-                #Don't let the model think that being where the spawn gateis is the bad thing
-                model.update_replay_memory((old_obs, action, reward, obs if env.deaths==0 else old_obs, done))
-
-                model.train(done)
-                step += 1
-
-                action = model.predict(env.get_observation(gamestate))
-                env.step(action)
-                print(env.last_action_name)
-                print(f'{round(time.time() - start_time, 1)}: {reward}')
-
-                print('---')
-                tot_steps += 1
-
-                prev_gamestate = gamestate
-                #
-                # print(env.last_action_name)
-
-        print('##################################')
-        print(f'Epsilon Greedy: {model.epsilon}')
-        print(f'Total Steps: {tot_steps}')
-        print(f'Replay Size: {len(model.replay_memory)}')
-        print(f'Average Reward: {episode_reward/step}')
-        print('##################################')
-
-        env.reset()
+        character.run_frame(gamestate)

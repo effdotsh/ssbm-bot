@@ -147,6 +147,7 @@ class CharacterEnv(gym.Env):
 
     def reset(self):
         self.move_queue = []
+        self.move_x = 0
         return self.get_observation(self.gamestate)
 
     def queue_action(self, action: int):
@@ -212,11 +213,12 @@ class CharacterEnv(gym.Env):
             angle = math.atan2(0.2 - player_state.y, target_x - player_state.x)
             m1 = Move(axis=move_stick, x=0, y=1, button=melee.Button.BUTTON_B, num_frames=20)
             self.move_queue.append(m1)
-            move = Move(axis=move_stick, x=math.cos(angle), y=math.sin(angle), button=melee.Button.BUTTON_B,
+            move = Move(axis=move_stick, x=int(math.cos(angle)), y=int(math.sin(angle)), button=melee.Button.BUTTON_B,
                         num_frames=50)
         elif action_name == Moves.JAB:  # jab
             move = Move(button=melee.Button.BUTTON_A, num_frames=20)
-
+        else:
+            print("ACTION MISSING")
         self.last_action = action
         self.last_action_name = action_name
         self.move_queue.append(move)

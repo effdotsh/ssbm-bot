@@ -22,4 +22,4 @@ class Moves(Enum):
 
 
 class CharacterMovesets:
-    FOX= [Moves.JUMP, Moves.SHORT_JUMP,Moves.WALK_LEFT, Moves.WALK_LEFT, Moves.DROP, Moves.SMASH_DOWN, Moves.SMASH_LEFT, Moves.SMASH_RIGHT, Moves.SMASH_UP, Moves.FOX_SPECIAL_DOWN, Moves.SPECIAL_LEFT, Moves.SPECIAL_RIGHT, Moves.SMASH_UP, Moves.WAIT, Moves.FOX_RECOVERY]
+    FOX= [Moves.JUMP, Moves.WALK_LEFT, Moves.WALK_LEFT, Moves.DROP, Moves.SMASH_DOWN, Moves.SMASH_LEFT, Moves.SMASH_RIGHT, Moves.SMASH_UP, Moves.FOX_SPECIAL_DOWN, Moves.SPECIAL_LEFT, Moves.SPECIAL_RIGHT, Moves.SMASH_UP, Moves.WAIT, Moves.FOX_RECOVERY]
