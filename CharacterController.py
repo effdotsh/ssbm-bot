@@ -30,16 +30,17 @@ class CharacterController:
         self.start_time = time.time()
 
 
-    def run_frame(self, gamestate: melee.GameState):
+    def run_frame(self, gamestate: melee.GameState, log: bool):
 
         if self.done:
 
-            print('##################################')
-            print(f'Epsilon Greedy: {self.model.epsilon}')
-            print(f'Total Steps: {self.tot_steps}')
-            print(f'Replay Size: {len(self.model.replay_memory)}')
-            print(f'Average Reward: {self.episode_reward / self.step}')
-            print('##################################')
+            if log:
+                print('##################################')
+                print(f'Epsilon Greedy: {self.model.epsilon}')
+                print(f'Total Steps: {self.tot_steps}')
+                print(f'Replay Size: {len(self.model.replay_memory)}')
+                print(f'Average Reward: {self.episode_reward / self.step}')
+                print('##################################')
 
             self.current_state = self.env.reset()
             self.episode_reward = 0
@@ -84,12 +85,11 @@ class CharacterController:
 
                 action = self.model.predict(self.env.get_observation(gamestate))
                 self.env.step(action)
-                print(self.env.last_action_name)
-                print(f'{round(time.time() - self.start_time, 1)}: {reward}')
 
-                print('---')
                 self.tot_steps += 1
 
                 self.prev_gamestate = gamestate
-                #
-                # print(env.last_action_name)
+                if log:
+                    print(self.env.last_action_name)
+                    print(f'{round(time.time() - self.start_time, 1)}: {reward}')
+                    print('---')
