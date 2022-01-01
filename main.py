@@ -62,11 +62,10 @@ if __name__ == '__main__':
     game = gameManager.Game(args)
     game.enterMatch(cpu_level=0, opponant_character=melee.Character.FOX)
 
-    agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game, moveset=CharacterMovesets.FOX, min_replay_size=1500, minibatch_size=128, max_replay_size=300_000,
-                                 learning_rate=0.00004, update_target_every=5, discount_factor=0.999, epsilon_decay=0.9997, epsilon=1)
+    agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game, moveset=CharacterMovesets.FOX, min_replay_size=2000, minibatch_size=128, max_replay_size=300_000,
+                                 learning_rate=0.00004, update_target_every=2, discount_factor=0.999, epsilon_decay=0.9997, epsilon=1)
 
-    agent2 = CharacterController(port=args.opponent, opponent_port=args.port, game=game, moveset=CharacterMovesets.FOX, min_replay_size=1500, minibatch_size=128, max_replay_size=300_000,
-                                 learning_rate=0.00004, update_target_every=5, discount_factor=0.999, epsilon_decay=0.9997, epsilon=1)
+    agent2 = CharacterController(port=args.opponent, opponent_port=args.port, game=game, moveset=CharacterMovesets.FOX)
 
     agent2.model = agent1.model
 
