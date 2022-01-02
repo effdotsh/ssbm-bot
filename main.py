@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 import argparse
-import math
 import time
 
 import torch
@@ -9,11 +8,7 @@ import gameManager
 import melee
 import platform
 
-# from EasyML.Spartnn import Overseer
-
-from EasyML.DQNTorch import DQNAgent
-
-from CharacterGymEnv import CharacterEnv
+import os
 
 from  movesList import CharacterMovesets
 
@@ -37,7 +32,6 @@ def check_port(value):
                                          Must be 1, 2, 3, or 4." % value)
     return ivalue
 
-
 parser = argparse.ArgumentParser(description='Example of libmelee in action')
 parser.add_argument('--port', '-p', type=check_port,
                     help='The controller port (1-4) your AI will play on',
@@ -56,11 +50,13 @@ parser.add_argument('--connect_code', '-t', default="",
                     help='Direct connect code to connect to in Slippi Online')
 parser.add_argument('--iso', default='SSBM.iso', type=str,
                     help='Path to melee iso.')
+parser.add_argument('--model_path', default='model/dqn', type=str)
 
 args: gameManager.Args = parser.parse_args()
 
 start_time = time.time()
 if __name__ == '__main__':
+    os.makedirs(args.model_path)
     character = melee.Character.FOX
 
     game = gameManager.Game(args)
@@ -83,6 +79,6 @@ if __name__ == '__main__':
         # agent2.run_frame(gamestate, log=False)
 
         if (step %1000 == 0):
-            torch.save(agent1.model.model.state_dict(), f'model/dqn/dqn_{character.name}_{step}')
+            torch.save(agent1.model.model.state_dict(), f'{args.model_path}/dqn_{character.name}_{step}')
 
         step += 1

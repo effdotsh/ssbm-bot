@@ -13,6 +13,7 @@ class Args:
     dolphin_executable_path: str
     connect_code: str
     iso: str
+    model_path: str
 
 class Game:
     def __init__(self, args: Args):
