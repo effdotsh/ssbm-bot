@@ -185,7 +185,7 @@ class Game:
                                                 stage,
                                                 self.args.connect_code,
                                                 costume=3,
-                                                autostart=False,
+                                                autostart=True,
                                                 swag=False)
             melee.MenuHelper.menu_helper_simple(gamestate,
                                                 self.controller_opponent,
@@ -194,12 +194,12 @@ class Game:
                                                 self.args.connect_code,
                                                 cpu_level=cpu_level,
                                                 costume=0,
-                                                autostart=True,
-                                                swag=False)  # If we're not in game, don't log the frame
-            # melee.MenuHelper.
-            if self.log:
-                self.log.skipframe()
-
+                                                autostart=False,
+                                                swag=False)
+            # p1: melee.PlayerState = gamestate.players.get(self.controller.port)
+            # p2: melee.PlayerState = gamestate.players.get(self.controller_opponent.port)
+            # if p1.coin_down and p2.coin_down:
+            #     self.controller.press_button(melee.Button.BUTTON_START)
         # self.first_match_started = True
     def getController(self, port) -> melee.Controller:
         if (port == self.args.port):
