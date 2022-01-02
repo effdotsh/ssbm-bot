@@ -1,9 +1,8 @@
-import random
 import time
 
 import melee
 import movesList
-from EasyML.DQNTorch import DQNAgent
+from DQNTorch import DQNAgent
 from CharacterGymEnv import CharacterEnv
 class CharacterController:
     def __init__(self, port: int, opponent_port: int, game, moveset: movesList.Moves, min_replay_size=1500, minibatch_size=128, max_replay_size=300_000,
