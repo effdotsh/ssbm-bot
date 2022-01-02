@@ -31,4 +31,4 @@ class CharacterMovesets(Enum):
            Moves.SMASH_UP, Moves.WAIT, Moves.FOX_RECOVERY]
     JIGGLYPUFF = [Moves.JUMP, Moves.WALK_LEFT, Moves.WALK_RIGHT, Moves.DROP, Moves.SMASH_DOWN, Moves.SMASH_LEFT,
                   Moves.SMASH_RIGHT, Moves.SMASH_UP, Moves.SPECIAL_DOWN, Moves.SPECIAL_LEFT, Moves.SPECIAL_RIGHT,
-                  Moves.SMASH_UP, Moves.WAIT]
+                  Moves.SPECIAL_UP, Moves.WAIT]
