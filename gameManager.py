@@ -6,6 +6,8 @@ import melee
 from utils import clamp
 
 class Args:
+    load_from = -1
+
     port: int
     opponent: int
     address: str

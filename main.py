@@ -69,20 +69,20 @@ if __name__ == '__main__':
 
     if args.load_from < 0:  # Start training against CPU
         agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game,
-                                     moveset=CharacterMovesets[character.name], min_replay_size=2000, minibatch_size=128,
+                                     moveset=CharacterMovesets[character.name].value, min_replay_size=2000, minibatch_size=128,
                                      max_replay_size=300_000,
                                      learning_rate=0.00004, update_target_every=2, discount_factor=0.999,
                                      epsilon_decay=0.9997, epsilon=1)
 
     else:  # Use TLto self-train
         agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game,
-                                     moveset=CharacterMovesets[character.name], min_replay_size=2000, minibatch_size=128,
+                                     moveset=CharacterMovesets[character.name].value, min_replay_size=2000, minibatch_size=128,
                                      max_replay_size=300_000,
                                      learning_rate=0.00004, update_target_every=2, discount_factor=0.999,
                                      epsilon_decay=0.999, epsilon=0.3)
 
         agent2 = CharacterController(port=args.opponent, opponent_port=args.port, game=game,
-                                     moveset=CharacterMovesets[character.name])
+                                     moveset=CharacterMovesets[character.name].value)
 
         agent1.model.model.load_state_dict(torch.load(f'{args.model_path}/{character.name}_{step}'))
         agent2.model = agent1.model
