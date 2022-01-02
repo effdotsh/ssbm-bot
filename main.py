@@ -10,7 +10,7 @@ import platform
 
 import os
 
-from  movesList import CharacterMovesets
+from movesList import CharacterMovesets
 
 from CharacterController import CharacterController
 
@@ -32,6 +32,7 @@ def check_port(value):
                                          Must be 1, 2, 3, or 4." % value)
     return ivalue
 
+
 parser = argparse.ArgumentParser(description='Example of libmelee in action')
 parser.add_argument('--port', '-p', type=check_port,
                     help='The controller port (1-4) your AI will play on',
@@ -51,34 +52,48 @@ parser.add_argument('--connect_code', '-t', default="",
 parser.add_argument('--iso', default='SSBM.iso', type=str,
                     help='Path to melee iso.')
 parser.add_argument('--model_path', default='model/dqn', type=str)
+parser.add_argument('--load_from', default=-1, type=int)
 
 args: gameManager.Args = parser.parse_args()
 
 start_time = time.time()
 if __name__ == '__main__':
     os.makedirs(args.model_path)
-    character = melee.Character.FOX
+    character = melee.Character.JIGGLYPUFF
 
     game = gameManager.Game(args)
-    game.enterMatch(cpu_level=9, opponant_character=character, player_character=character)
+    game.enterMatch(cpu_level=9 if args.load_from < 0 else 0, opponant_character=character, player_character=character)
+    step = args.load_from
 
-    agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game, moveset=CharacterMovesets.FOX, min_replay_size=2000, minibatch_size=128, max_replay_size=300_000,
-                                 learning_rate=0.00004, update_target_every=2, discount_factor=0.999, epsilon_decay=0.9997, epsilon=1)
+    if args.load_from < 0:  # Start training against CPU
+        agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game,
+                                     moveset=CharacterMovesets[character.name], min_replay_size=2000, minibatch_size=128,
+                                     max_replay_size=300_000,
+                                     learning_rate=0.00004, update_target_every=2, discount_factor=0.999,
+                                     epsilon_decay=0.9997, epsilon=1)
 
-    # agent2 = CharacterController(port=args.opponent, opponent_port=args.port, game=game, moveset=CharacterMovesets.FOX)
-    #
-    # agent2.model = agent1.model
+    else:  # Use TLto self-train
+        agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game,
+                                     moveset=CharacterMovesets[character.name], min_replay_size=2000, minibatch_size=128,
+                                     max_replay_size=300_000,
+                                     learning_rate=0.00004, update_target_every=2, discount_factor=0.999,
+                                     epsilon_decay=0.999, epsilon=0.3)
 
+        agent2 = CharacterController(port=args.opponent, opponent_port=args.port, game=game,
+                                     moveset=CharacterMovesets[character.name])
 
-    step = 0
-    while True:
+        agent1.model.model.load_state_dict(torch.load(f'{args.model_path}/{character.name}_{step}'))
+        agent2.model = agent1.model
+
+    while True:  # Training loop
         gamestate = game.console.step()
         if gamestate is None:
             continue
         agent1.run_frame(gamestate, log=True)
-        # agent2.run_frame(gamestate, log=False)
+        if args.load_from >= 0:
+            agent2.run_frame(gamestate, log=False)
 
-        if (step %1000 == 0):
-            torch.save(agent1.model.model.state_dict(), f'{args.model_path}/dqn_{character.name}_{step}')
+        if (step % 1000 == 0):
+            torch.save(agent1.model.model.state_dict(), f'{args.model_path}/{character.name}_{step}')
 
         step += 1
