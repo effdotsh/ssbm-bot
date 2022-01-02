@@ -105,16 +105,16 @@ class CharacterEnv(gym.Env):
         opponent_off_stage = 1 if opponent.off_stage else -1
 
         obs = np.array(
-            [(edge - player.position[0]) / 100, (-edge - player.position[0]) / 100, (edge - opponent.position[0]) / 100,
-             (-edge - opponent.position[0]) / 100,
-             player.position[0] / 100, opponent.position[0] / 100, player.position[1] / 100, opponent.position[1] / 100,
+            [(edge - player.position.x) / 100, (-edge - player.position.x) / 100, (edge - opponent.position.x) / 100,
+             (-edge - opponent.position.x) / 100,
+             player.position.x / 100, opponent.position.x / 100, player.position.y / 100, opponent.position.y / 100,
              opponent_attacking, player_facing,
              opponent_attacking, opponent.speed_air_x_self / 10, opponent.speed_ground_x_self / 10,
              opponent.speed_x_attack / 10, opponent.speed_y_attack / 10, opponent.speed_y_self,
              player.speed_air_x_self / 10, player.speed_ground_x_self / 10,
              player.speed_x_attack / 10, player.speed_y_attack / 10, player.speed_y_self, player.percent / 300,
              opponent.percent / 300, player_on_ground, opponent_on_ground, player_off_stage, opponent_off_stage, 1])
-        # print(obs)
+        print(obs)
 
         return obs
 
