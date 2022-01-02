@@ -105,7 +105,7 @@ class CharacterEnv(gym.Env):
         opponent_off_stage = 1 if opponent.off_stage else -1
 
         player_jumps_left = player.jumps_left / self.framedata.max_jumps(player.character)
-        opponent_jumps_left = opponent_off_stage.jumps_left / self.framedata.max_jumps(opponent.character)
+        opponent_jumps_left = opponent.jumps_left / self.framedata.max_jumps(opponent.character)
 
         obs = np.array(
             [(edge - player.position.x) / 300, (-edge - player.position.x) / 300, (edge - opponent.position.x) / 300,
