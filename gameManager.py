@@ -164,7 +164,6 @@ class Game:
         flick_button(melee.Button.BUTTON_B)
 
     def enterMatch(self, player_character: melee.Character = melee.Character.FOX, opponant_character: melee.Character = melee.Character.FOX, stage: melee.Stage = melee.Stage.BATTLEFIELD, cpu_level: int = 0):
-        costume = 0
         self.stage = stage
         # "step" to the next frame
         gamestate = self.getState()
@@ -183,7 +182,7 @@ class Game:
                                                 player_character,
                                                 stage,
                                                 self.args.connect_code,
-                                                costume=costume,
+                                                costume=3,
                                                 autostart=False,
                                                 swag=False)
             melee.MenuHelper.menu_helper_simple(gamestate,
@@ -192,7 +191,7 @@ class Game:
                                                 stage,
                                                 self.args.connect_code,
                                                 cpu_level=cpu_level,
-                                                costume=costume,
+                                                costume=0,
                                                 autostart=True,
                                                 swag=False)  # If we're not in game, don't log the frame
             # melee.MenuHelper.
