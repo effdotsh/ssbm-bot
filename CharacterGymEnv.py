@@ -149,7 +149,7 @@ class CharacterEnv(gym.Env):
         if self.kills >= 1:
             reward = 1
         if self.deaths >= 1:
-            reward = -1 - 1 / int(new_player.percent / 20 + 1)
+            reward = -1
             self.move_queue = []
             self.move_x = 0
         # tanh_reward = 2 / (1 + math.pow(math.e, -4.4 * reward)) - 1
@@ -172,13 +172,13 @@ class CharacterEnv(gym.Env):
 
         player_state: melee.PlayerState = self.gamestate.players.get(self.player_port)
         if action_name == Moves.WALK_LEFT:  # Move Left
-            move = Move(axis=move_stick, x=-1, y=0, num_frames=10)
+            move = Move(axis=move_stick, x=-1, y=0, num_frames=5)
             self.move_x = -1
         elif action_name == Moves.WALK_RIGHT:  # Move Right
-            move = Move(axis=move_stick, x=1, y=0, num_frames=10)
+            move = Move(axis=move_stick, x=1, y=0, num_frames=5)
             self.move_x = 1
         elif action_name == Moves.JUMP:  # Jump
-            move = Move(button=melee.Button.BUTTON_Y, num_frames=10)
+            move = Move(button=melee.Button.BUTTON_Y, num_frames=5)
             if player_state.jumps_left == 0:
                 self.overjump = True
                 print('Overjump')
@@ -189,32 +189,39 @@ class CharacterEnv(gym.Env):
                 print('Overjump')
 
         elif action_name == Moves.DROP:  # Drop
-            m1 = Move(axis=move_stick, x=0, y=-1, num_frames=30)
+            m1 = Move(num_frames=5)
             self.move_queue.append(m1)
-            move = Move(num_frames=30)
+            m2 = Move(axis=move_stick, x=0, y=-1, num_frames=20)
+            self.move_queue.append(m2)
+            move = Move(num_frames=5)
 
         elif action_name == Moves.SMASH_LEFT:  # smash left
-            move = Move(axis=c_stick, x=-1, y=0, num_frames=20)
+            move = Move(axis=c_stick, x=-1, y=0, num_frames=5)
         elif action_name == Moves.SMASH_RIGHT:  # smash right
-            move = Move(axis=c_stick, x=1, y=0, num_frames=20)
+            move = Move(axis=c_stick, x=1, y=0, num_frames=5)
         elif action_name == Moves.SMASH_UP:  # smash up
-            move = Move(axis=c_stick, x=0, y=1, num_frames=20)
+            move = Move(axis=c_stick, x=0, y=1, num_frames=5)
         elif action_name == Moves.SMASH_DOWN:  # smash down
             move = Move(axis=c_stick, x=0, y=-1, num_frames=5)
 
         elif action_name == Moves.SPECIAL_LEFT:  # special left
-            move = Move(axis=move_stick, x=-1, y=0, button=melee.Button.BUTTON_B, num_frames=20)
+            move = Move(axis=move_stick, x=-1, y=0, button=melee.Button.BUTTON_B, num_frames=5)
         elif action_name == Moves.SPECIAL_RIGHT:  # special right
-            move = Move(axis=move_stick, x=1, y=0, button=melee.Button.BUTTON_B, num_frames=20)
-        elif action_name == Moves.FOX_SPECIAL_DOWN:  # special down
-            m1 = Move(axis=move_stick, x=0, y=-1, button=melee.Button.BUTTON_B, num_frames=4)
-            self.move_queue.append(m1)
-            move = Move(button=melee.Button.BUTTON_Y, num_frames=2)
+            move = Move(axis=move_stick, x=1, y=0, button=melee.Button.BUTTON_B, num_frames=5)
+        elif action_name == Moves.SPECIAL_DOWN:  # special down
+            move = Move(axis=move_stick, x=0, y=-1, button=melee.Button.BUTTON_B, num_frames=5)
+        elif action_name == Moves.SPECIAL_UP:  # special down
+            move = Move(axis=move_stick, x=0, y=1, button=melee.Button.BUTTON_B, num_frames=5)
 
         elif action_name == Moves.WAIT:  # wait
             self.move_x = 0
             move = Move(axis=move_stick, x=0, y=0, num_frames=20)
 
+
+        elif action_name == Moves.FOX_SPECIAL_DOWN:  # special down
+            m1 = Move(axis=move_stick, x=0, y=-1, button=melee.Button.BUTTON_B, num_frames=4)
+            self.move_queue.append(m1)
+            move = Move(button=melee.Button.BUTTON_Y, num_frames=2)
         elif action_name == Moves.FOX_RECOVERY:  # Recovery
             self.move_x = 0
             print(time.time())
