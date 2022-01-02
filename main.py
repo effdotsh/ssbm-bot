@@ -62,14 +62,14 @@ args: gameManager.Args = parser.parse_args()
 start_time = time.time()
 if __name__ == '__main__':
     game = gameManager.Game(args)
-    game.enterMatch(cpu_level=0, opponant_character=melee.Character.FOX)
+    game.enterMatch(cpu_level=9, opponant_character=melee.Character.FOX)
 
     agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game, moveset=CharacterMovesets.FOX, min_replay_size=2000, minibatch_size=128, max_replay_size=300_000,
                                  learning_rate=0.00004, update_target_every=2, discount_factor=0.999, epsilon_decay=0.9997, epsilon=1)
 
-    agent2 = CharacterController(port=args.opponent, opponent_port=args.port, game=game, moveset=CharacterMovesets.FOX)
-
-    agent2.model = agent1.model
+    # agent2 = CharacterController(port=args.opponent, opponent_port=args.port, game=game, moveset=CharacterMovesets.FOX)
+    #
+    # agent2.model = agent1.model
 
 
     step = 0
@@ -78,7 +78,7 @@ if __name__ == '__main__':
         if gamestate is None:
             continue
         agent1.run_frame(gamestate, log=True)
-        agent2.run_frame(gamestate, log=False)
+        # agent2.run_frame(gamestate, log=False)
 
         if (step %1000 == 0):
             torch.save(agent1.model.model.state_dict(), f'model/dqn/dqn_{step}')
