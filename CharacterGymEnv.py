@@ -247,7 +247,7 @@ class CharacterEnv(gym.Env):
 
         if player_state.action in [melee.Action.LYING_GROUND_UP, melee.Action.LYING_GROUND_UP_HIT,
                                    melee.Action.LYING_GROUND_DOWN]:
-            self.move_queue = [Move(button=melee.Button.BUTTON_Y, num_frames=2)]
+            self.move_queue = [Move(axis=melee.Button.BUTTON_MAIN, x=-1, num_frames=2)]
 
         if len(self.move_queue) == 0:
             if self.framedata.attack_state(player_state.character, player_state.action,
