@@ -84,13 +84,13 @@ class CharacterController:
                 self.model.train(self.done)
                 self.step += 1
 
-                action = self.model.predict(self.env.get_observation(gamestate))
+                action = self.model.predict(self.env.get_observation(gamestate), out_eps=True)
                 self.env.step(action)
 
                 self.tot_steps += 1
 
                 self.prev_gamestate = gamestate
                 if log:
-                    print(self.env.last_action_name)
                     print(f'{round(time.time() - self.start_time, 1)}: {reward}')
                     print('---')
+                    print(self.env.last_action_name)
