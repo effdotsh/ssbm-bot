@@ -71,5 +71,7 @@ if __name__ == '__main__':
 
     while True:
         gamestate = game.console.step()
+        if gamestate is None:
+            continue
         agent1.run_frame(gamestate, log=True)
         agent2.run_frame(gamestate, log=False)
