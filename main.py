@@ -58,8 +58,10 @@ args: gameManager.Args = parser.parse_args()
 
 start_time = time.time()
 if __name__ == '__main__':
-    os.makedirs(args.model_path)
     character = melee.Character.JIGGLYPUFF
+
+    if not os.path.isdir(f'{args.model_path}/{character.name}'):
+        os.makedirs(f'{args.model_path}/{character.name}')
 
     game = gameManager.Game(args)
     game.enterMatch(cpu_level=9 if args.load_from < 0 else 0, opponant_character=character, player_character=character)
@@ -94,6 +96,6 @@ if __name__ == '__main__':
             agent2.run_frame(gamestate, log=False)
 
         if (step % 1000 == 0):
-            torch.save(agent1.model.model.state_dict(), f'{args.model_path}/{character.name}_{step}')
+            torch.save(agent1.model.model.state_dict(), f'{args.model_path}/{character.name}/{character.name}_{step}')
 
         step += 1
