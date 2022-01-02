@@ -257,7 +257,7 @@ class CharacterEnv(gym.Env):
         player: melee.PlayerState = self.gamestate.players.get(self.player_port)
         opponent: melee.PlayerState = self.gamestate.players.get(self.opponent_port)
 
-        if player.action in utils.dead_list:
+        if player.action in utils.dead_list or player.action == melee.Action.ON_HALO_DESCENT:
             self.deaths = 1
             return False
         if opponent.action in utils.dead_list:
@@ -266,7 +266,7 @@ class CharacterEnv(gym.Env):
         player_state: melee.PlayerState = self.gamestate.players[self.player_port]
 
         if player_state.action in [melee.Action.LYING_GROUND_UP, melee.Action.LYING_GROUND_UP_HIT,
-                                   melee.Action.LYING_GROUND_DOWN]:
+                                   melee.Action.LYING_GROUND_DOWN, melee.Action.ON_HALO_WAIT]:
             self.move_queue = [Move(axis=melee.Button.BUTTON_MAIN, x=-1, num_frames=2)]
 
         if len(self.move_queue) == 0:
