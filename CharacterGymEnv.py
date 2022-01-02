@@ -2,6 +2,8 @@ import time
 
 import gym
 import random
+
+import numpy
 from gym import spaces
 import math
 import numpy as np
@@ -262,6 +264,10 @@ class CharacterEnv(gym.Env):
             return False
         if opponent.action in utils.dead_list:
             self.kills = 1
+
+        if opponent.action in [melee.Action.SPECIAL_FALL_BACK, melee.Action.SPECIAL_FALL_FORWARD]:
+            self.move_queue = [Move(axis=melee.Button.BUTTON_MAIN, x=-numpy.sign(player.x), num_frames=10)]
+
 
         player_state: melee.PlayerState = self.gamestate.players[self.player_port]
 
