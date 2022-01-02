@@ -107,6 +107,9 @@ class CharacterEnv(gym.Env):
         player_jumps_left = player.jumps_left / self.framedata.max_jumps(player.character)
         opponent_jumps_left = opponent.jumps_left / self.framedata.max_jumps(opponent.character)
 
+        player_grabbed = 1 if player.action in [melee.Action.GRABBED, melee.Action.GRABBED_WAIT_HIGH] else -1
+        opponent_grabbed = 1 if player.action in [melee.Action.GRABBED, melee.Action.GRABBED_WAIT_HIGH] else -1
+
         obs = np.array(
             [(edge - player.position.x) / 300, (-edge - player.position.x) / 300, (edge - opponent.position.x) / 300,
              (-edge - opponent.position.x) / 300, player.position.x / blastzones[0],
@@ -116,7 +119,7 @@ class CharacterEnv(gym.Env):
              opponent.speed_y_self, player.speed_air_x_self / 10, player.speed_ground_x_self / 10,
              player.speed_x_attack / 10, player.speed_y_attack / 10, player.speed_y_self, player.percent / 300,
              opponent.percent / 300, player_on_ground, opponent_on_ground, player_off_stage, opponent_off_stage,
-             self.move_x, player_jumps_left, opponent_jumps_left, 1])
+             self.move_x, player_jumps_left, opponent_jumps_left, player_grabbed, opponent_grabbed, 1])
 
         return obs
 
@@ -216,6 +219,11 @@ class CharacterEnv(gym.Env):
         elif action_name == Moves.WAIT:  # wait
             self.move_x = 0
             move = Move(axis=move_stick, x=0, y=0, num_frames=20)
+        elif action_name == Moves.GRAB:
+            self.move_x = 0
+            move = Move(button=melee.Button.BUTTON_Z, num_frames=5)
+
+
 
 
         elif action_name == Moves.FOX_SPECIAL_DOWN:  # special down
@@ -238,8 +246,10 @@ class CharacterEnv(gym.Env):
             print("ACTION MISSING")
         self.last_action = action
         self.last_action_name = action_name
-        self.move_queue.append(move)
-        self.move_queue.append(Move(num_frames=3))  # Delay
+
+        if action_name not in [Moves.GRAB]:
+            self.move_queue.append(move)
+            self.move_queue.append(Move(num_frames=3))  # Delay
 
     def act(self):
         # Check for deaths

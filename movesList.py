@@ -18,6 +18,7 @@ class Moves(Enum):
     SPECIAL_UP = 2332
 
     JAB = 11
+    GRAB=1212
 
     WAIT = 12
     FOX_SPECIAL_DOWN = 13
@@ -28,7 +29,7 @@ class Moves(Enum):
 class CharacterMovesets(Enum):
     FOX = [Moves.JUMP, Moves.WALK_LEFT, Moves.WALK_RIGHT, Moves.DROP, Moves.SMASH_DOWN, Moves.SMASH_LEFT,
            Moves.SMASH_RIGHT, Moves.SMASH_UP, Moves.FOX_SPECIAL_DOWN, Moves.SPECIAL_LEFT, Moves.SPECIAL_RIGHT,
-           Moves.SMASH_UP, Moves.WAIT, Moves.FOX_RECOVERY]
+           Moves.SMASH_UP, Moves.WAIT, Moves.FOX_RECOVERY, Moves.GRAB]
     JIGGLYPUFF = [Moves.JUMP, Moves.WALK_LEFT, Moves.WALK_RIGHT, Moves.DROP, Moves.SMASH_DOWN, Moves.SMASH_LEFT,
                   Moves.SMASH_RIGHT, Moves.SMASH_UP, Moves.SPECIAL_DOWN, Moves.SPECIAL_LEFT, Moves.SPECIAL_RIGHT,
-                  Moves.SPECIAL_UP, Moves.WAIT]
+                  Moves.SPECIAL_UP, Moves.WAIT, Moves.GRAB]
