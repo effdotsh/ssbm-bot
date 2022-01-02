@@ -3,6 +3,8 @@ import argparse
 import math
 import time
 
+import torch
+
 import gameManager
 import melee
 import platform
@@ -69,9 +71,14 @@ if __name__ == '__main__':
 
     agent2.model = agent1.model
 
+
+    step = 0
     while True:
         gamestate = game.console.step()
         if gamestate is None:
             continue
         agent1.run_frame(gamestate, log=True)
         agent2.run_frame(gamestate, log=False)
+
+        if (step %1000 == 0):
+            torch.save(agent1.model.model.state_dict(), f'model/dqn_{step}')
