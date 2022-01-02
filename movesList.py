@@ -25,7 +25,7 @@ class Moves(Enum):
     SHORT_JUMP = 15
 
 
-class CharacterMovesets:
+class CharacterMovesets(Enum):
     FOX = [Moves.JUMP, Moves.WALK_LEFT, Moves.WALK_RIGHT, Moves.DROP, Moves.SMASH_DOWN, Moves.SMASH_LEFT,
            Moves.SMASH_RIGHT, Moves.SMASH_UP, Moves.FOX_SPECIAL_DOWN, Moves.SPECIAL_LEFT, Moves.SPECIAL_RIGHT,
            Moves.SMASH_UP, Moves.WAIT, Moves.FOX_RECOVERY]
