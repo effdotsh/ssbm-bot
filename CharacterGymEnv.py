@@ -119,7 +119,7 @@ class CharacterEnv(gym.Env):
              opponent.speed_y_self, player.speed_air_x_self / 10, player.speed_ground_x_self / 10,
              player.speed_x_attack / 10, player.speed_y_attack / 10, player.speed_y_self, player.percent / 300,
              opponent.percent / 300, player_on_ground, opponent_on_ground, player_off_stage, opponent_off_stage,
-             self.move_x, player_jumps_left, opponent_jumps_left, player_grabbed, opponent_grabbed, 1])
+             self.move_x, player_jumps_left, opponent_jumps_left, player_grabbed, opponent_grabbed, gamestate.distance/500, 1])
 
         return obs
 
