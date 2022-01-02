@@ -81,4 +81,6 @@ if __name__ == '__main__':
         agent2.run_frame(gamestate, log=False)
 
         if (step %1000 == 0):
-            torch.save(agent1.model.model.state_dict(), f'model/dqn_{step}')
+            torch.save(agent1.model.model.state_dict(), f'model/dqn/dqn_{step}')
+
+        step += 1
