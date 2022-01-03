@@ -5,6 +5,7 @@ import time
 import melee
 from utils import clamp
 
+
 class Args:
     load_from = -1
 
@@ -17,11 +18,10 @@ class Args:
     iso: str
     model_path: str
 
+
 class Game:
     def __init__(self, args: Args):
         self.args: Args = args
-
-
 
         self.first_match_started = False
         # This logger object is useful for retroactively debugging issues in your bot
@@ -37,19 +37,20 @@ class Game:
         #       bot can actually "see" what's happening in the game
         self.console: melee.Console = melee.Console(path=args.dolphin_executable_path,
                                                     slippi_address=args.address,
-                                                    logger=self.log, polling_mode=True, online_delay=0)
+                                                    logger=self.log, polling_mode=False, online_delay=0,
+                                                    blocking_input=True)
 
         # Create our Controller object
         #   The controller is the second primary object your bot will interact with
         #   Your controller is your way of sending button presses to the game, whether
         #   virtual or physical.
         self.controller = melee.Controller(console=self.console,
-                                      port=args.port,
-                                      type=melee.ControllerType.STANDARD)
+                                           port=args.port,
+                                           type=melee.ControllerType.STANDARD)
 
         self.controller_opponent = melee.Controller(console=self.console,
-                                               port=args.opponent,
-                                               type=melee.ControllerType.STANDARD)
+                                                    port=args.opponent,
+                                                    type=melee.ControllerType.STANDARD)
 
         signal.signal(signal.SIGINT, self.signal_handler)
 
@@ -92,7 +93,7 @@ class Game:
     def getState(self) -> melee.GameState:
         gamestate = self.console.step()
         while gamestate is None:
-            gamestate =  self.console.step()
+            gamestate = self.console.step()
             print("No gamestate")
 
         # The console object keeps track of how long your bot is taking to process frames
@@ -108,7 +109,7 @@ class Game:
         return gamestate
 
     def set_rules(self):
-        #Sets rules to be time with no time limit
+        # Sets rules to be time with no time limit
         def move_cursor(x, y):
             while True:
                 gamestate = self.getState()
@@ -121,6 +122,7 @@ class Game:
                 self.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, moveX, moveY)
                 if (x == self.cursor_x and y == self.cursor_y):
                     return
+
         def flick_button(button):
             gamestate = self.getState()
             self.controller.press_button(button)
@@ -132,9 +134,6 @@ class Game:
             gamestate = self.getState()
             self.controller.tilt_analog_unit(button, x, y)
             gamestate = self.getState()
-            t = time.time()
-            while time.time() - t < 0.2:
-                gamestate = self.getState()
             self.controller.tilt_analog_unit(button, 0, 0)
             gamestate = self.getState()
 
@@ -142,7 +141,7 @@ class Game:
         t = time.time()
         while time.time() - t < 1:
             gamestate = self.getState()
-            melee.MenuHelper.choose_character(melee.Character.PICHU,gamestate, self.controller)
+            melee.MenuHelper.choose_character(melee.Character.PICHU, gamestate, self.controller)
             # melee.MenuHelper.
             if self.log:
                 self.log.skipframe()
@@ -154,18 +153,23 @@ class Game:
 
         flick_button(melee.Button.BUTTON_A)
 
-        time.sleep(1)
+        t = time.time()
+        while time.time() - t < 1:
+            gmaestate = self.getState()
 
         flick_axis(melee.Button.BUTTON_MAIN, -1, 0)
         flick_axis(melee.Button.BUTTON_MAIN, 0, -1)
         flick_axis(melee.Button.BUTTON_MAIN, -1, 0)
         flick_axis(melee.Button.BUTTON_MAIN, -1, 0)
 
+        # flick_axis(melee.Button.BUTTON_MAIN, -1, 0)
+
         flick_button(melee.Button.BUTTON_B)
-        time.sleep(0.3)
         flick_button(melee.Button.BUTTON_B)
 
-    def enterMatch(self, player_character: melee.Character = melee.Character.FOX, opponant_character: melee.Character = melee.Character.FOX, stage: melee.Stage = melee.Stage.BATTLEFIELD, cpu_level: int = 0):
+    def enterMatch(self, player_character: melee.Character = melee.Character.FOX,
+                   opponant_character: melee.Character = melee.Character.FOX,
+                   stage: melee.Stage = melee.Stage.BATTLEFIELD, cpu_level: int = 0):
         self.stage = stage
         # "step" to the next frame
         gamestate = self.getState()
@@ -201,6 +205,7 @@ class Game:
             # if p1.coin_down and p2.coin_down:
             #     self.controller.press_button(melee.Button.BUTTON_START)
         # self.first_match_started = True
+
     def getController(self, port) -> melee.Controller:
         if (port == self.args.port):
             return self.controller
