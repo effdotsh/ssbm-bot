@@ -8,6 +8,7 @@ matplotlib
 tqdm
 
 torch
+tensorflow
 
 git+https://github.com/AI-Spawn/torchsample.git#egg=torchsample
 nibabel
