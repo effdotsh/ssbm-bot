@@ -7,6 +7,8 @@ from utils import clamp
 
 
 class Args:
+    compete: bool
+
     load_from = -1
 
     port: int

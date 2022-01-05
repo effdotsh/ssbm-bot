@@ -113,7 +113,7 @@ class CharacterEnv(gym.Env):
         opponent_grabbed = 1 if player.action in [melee.Action.GRABBED, melee.Action.GRABBED_WAIT_HIGH] else -1
 
         obs = np.array(
-            [(edge - player.position.x) / 300, (-edge - player.position.x) / 300, (edge - opponent.position.x) / 300,
+            [(edge - player.position.x) / 300, (-edge - player.position.x) / 300, (player.position.x - opponent.position.x)/100, (edge - opponent.position.x) / 300,
              (-edge - opponent.position.x) / 300, player.position.x / blastzones[0],
              opponent.position.x / blastzones[0], player.position.y / 100, opponent.position.y / 100,
              opponent_attacking, player_facing, opponent_attacking, opponent.speed_air_x_self / 10,
@@ -121,7 +121,8 @@ class CharacterEnv(gym.Env):
              opponent.speed_y_self, player.speed_air_x_self / 10, player.speed_ground_x_self / 10,
              player.speed_x_attack / 10, player.speed_y_attack / 10, player.speed_y_self, player.percent / 300,
              opponent.percent / 300, player_on_ground, opponent_on_ground, player_off_stage, opponent_off_stage,
-             self.move_x, player_jumps_left, opponent_jumps_left, player_grabbed, opponent_grabbed, gamestate.distance/500, 1])
+             # self.move_x,
+             player_jumps_left, opponent_jumps_left, player_grabbed, opponent_grabbed, gamestate.distance/500, 1])
 
         return obs
 
@@ -140,6 +141,12 @@ class CharacterEnv(gym.Env):
         out_of_bounds = 0
         edge_position: float = melee.stages.EDGE_POSITION.get(self.game.stage)
         blastzones = melee.stages.BLASTZONES.get(self.game.stage)
+
+
+        delta_dist =  (new_gamestate.distance - old_gamestate.distance)/1000
+        if new_opponent.speed_y_attack != 0 or new_opponent.speed_x_attack != 0:
+            delta_dist = -0.1
+
         if abs(new_player.x) > edge_position:
             out_of_bounds -= 0.2
         if abs(new_opponent.x) > edge_position:
@@ -149,7 +156,7 @@ class CharacterEnv(gym.Env):
         if new_opponent.y < blastzones[3] * 0.75 or new_opponent.y > blastzones[2] * 0.75:
             out_of_bounds += 0.2
 
-        reward = (damage_dealt - damage_recieved) / 40 - jump_penalty * 0.3 + out_of_bounds
+        reward = (damage_dealt - damage_recieved) / 40 - jump_penalty * 0.3 + out_of_bounds - delta_dist
 
         if self.kills >= 1:
             reward = 1
@@ -300,6 +307,6 @@ class CharacterEnv(gym.Env):
 
         action.frames_remaining -= 1
 
-        if action.axis != melee.Button.BUTTON_MAIN:
-            self.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, self.move_x, 0)
+        # if action.axis != melee.Button.BUTTON_MAIN:
+        #     self.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, self.move_x, 0)
         return False

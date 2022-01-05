@@ -68,7 +68,7 @@ class CharacterController:
                 # print(gamestate.players.get(env.player_port).action)
                 #
                 # self.done = self.env.deaths >= 1
-                self.done = self.step > 100
+                self.done = self.step > 20
 
 
                 # update model from previous move

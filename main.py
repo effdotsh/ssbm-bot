@@ -53,6 +53,7 @@ parser.add_argument('--iso', default='SSBM.iso', type=str,
                     help='Path to melee iso.')
 parser.add_argument('--model_path', default='model/dqn', type=str)
 parser.add_argument('--load_from', default=-1, type=int)
+parser.add_argument('--compete', default=False,action='store_true')
 
 args: gameManager.Args = parser.parse_args()
 
@@ -64,35 +65,42 @@ if __name__ == '__main__':
         os.makedirs(f'{args.model_path}/{character.name}')
 
     game = gameManager.Game(args)
-    game.enterMatch(cpu_level=7 if args.load_from < 0 else 0, opponant_character=character, player_character=character)
+    game.enterMatch(cpu_level=0 if args.load_from < 0 else 0, opponant_character=character, player_character=character)
     step = args.load_from
 
-    if args.load_from < 0:  # Start training against CPU
+    if not args.compete:  # Start training against CPU
         agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game,
-                                     moveset=CharacterMovesets[character.name].value, min_replay_size=5000, minibatch_size=128,
+                                     moveset=CharacterMovesets[character.name].value, min_replay_size=1000, minibatch_size=16,
                                      max_replay_size=300_000,
-                                     learning_rate=0.00004, update_target_every=10, discount_factor=0.999,
+                                     learning_rate=3e-4, update_target_every=10, discount_factor=0.999,
                                      epsilon_decay=0.9997, epsilon=1)
 
+        agent2 = agent1
+
     else:  # Use TLto self-train
+        print("Self-Play!!!")
         agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game,
                                      moveset=CharacterMovesets[character.name].value, min_replay_size=2000, minibatch_size=128,
                                      max_replay_size=300_000,
-                                     learning_rate=0.00004, update_target_every=2, discount_factor=0.999,
+                                     learning_rate=3e-4, update_target_every=2, discount_factor=0.999,
                                      epsilon_decay=0.999, epsilon=0.3)
 
         agent2 = CharacterController(port=args.opponent, opponent_port=args.port, game=game,
                                      moveset=CharacterMovesets[character.name].value)
 
-        agent1.model.model.load_state_dict(torch.load(f'{args.model_path}/{character.name}_{step}'))
         agent2.model = agent1.model
+
+    if args.load_from >= 0:
+        print('Loading!!!')
+        agent1.model.model.load_state_dict(torch.load(f'{args.model_path}/{character.name}_{step}'))
+
 
     while True:  # Training loop
         gamestate = game.console.step()
         if gamestate is None:
             continue
         agent1.run_frame(gamestate, log=True)
-        if args.load_from >= 0:
+        if args.compete:
             agent2.run_frame(gamestate, log=False)
 
         if (step % 1000 == 0):

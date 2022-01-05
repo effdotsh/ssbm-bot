@@ -38,7 +38,7 @@ class DQNetwork(nn.Module):
 
 class DQNAgent:
     def __init__(self, num_inputs, num_outputs, learning_rate=0.001, min_replay_size=10_000, max_replay_size=50_000,
-                 minibatch_size=128, discount_factor=0.9, update_target_every=5, epsilon=1, min_epsilon=0.01,
+                 minibatch_size=16, discount_factor=0.9, update_target_every=5, epsilon=1, min_epsilon=0.01,
                  epsilon_decay=0.99):
         # Gets Trained
         self.model = self.create_model(num_inputs=num_inputs, num_outputs=num_outputs)
@@ -139,7 +139,7 @@ class DQNAgent:
         #                callbacks=None, use_multiprocessing=True)
         # print(torch.Tensor(y))
         self.trainer.fit(torch.Tensor(X).to(device), torch.Tensor(y).to(device), batch_size=self.minibatch_size, verbose=0)
-
+        self.trainer.history
         if terminal_state:
             self.target_update_counter += 1
 
