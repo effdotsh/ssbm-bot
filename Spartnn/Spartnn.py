@@ -6,61 +6,14 @@ from torch import nn
 from tqdm import tqdm
 
 from typing import List
+from collections import deque
+
+from PredictorModules import RewardPredictor, StatePredictor, generate_input_tensor
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(device)
 
-def generate_input_tensor(num_choices, chosen_action: int, inputs) -> torch.Tensor:
-    if isinstance(inputs, torch.Tensor):
-        inputs = inputs.detach().numpy()
 
-    input_tensor = np.zeros(num_choices).astype(float)
-    input_tensor[chosen_action] = 1.0
-    input_tensor = np.append(input_tensor, inputs).astype(float)
-
-    input_tensor = torch.tensor(input_tensor)
-    input_tensor = input_tensor.float()
-    return input_tensor
-
-
-class RewardPredictor(nn.Module):
-    def __init__(self, num_inputs, num_choices, layers=None):
-        super().__init__()
-        if layers is None:
-            self.layers = nn.Sequential(
-                nn.Linear(num_inputs + num_choices, 256),
-                nn.Tanh(),
-                nn.Linear(256, 256),
-                nn.Tanh(),
-                nn.Linear(256, 256),
-                nn.Tanh(),
-                nn.Linear(256, 1),
-            )
-        else:
-            self.layers = layers
-
-    def forward(self, inputs) -> torch.Tensor:
-        return self.layers(inputs)
-
-
-class StatePredictor(nn.Module):
-    def __init__(self, num_inputs, num_choices, layers=None):
-        super().__init__()
-
-        if (layers is None):
-            self.layers = nn.Sequential(
-                nn.Linear(num_inputs + num_choices, 256),
-                nn.Linear(256, 256),
-                nn.Tanh(),
-                nn.Linear(256, 256),
-                nn.Tanh(),
-                nn.Linear(256, num_inputs),
-            )
-        else:
-            self.layers = layers
-
-    def forward(self, inputs) -> torch.Tensor:
-        return self.layers(inputs)
 
 
 class Node:
@@ -135,10 +88,11 @@ class Node:
 
 
 class Overseer:
-    # The goal of this network is to guess the reward returned by an acrtion in ad=vance, and use backprop to update from an observed reward. An action can be chosen by testing each input through the reward predictor and choosing the one with the highest reward
+    # The goal of this network is to guess the reward returned by an acrtion in advance, and use backprop to update from an observed reward. An action can be chosen by testing each input through the reward predictor and choosing the one with the highest reward
     def __init__(self, num_inputs, num_choices, epsilon_greedy_chance=1, epsilon_greedy_decay=0.9999,
                  reward_network_learning_rate=0.00003, state_network_learning_rate=0.0003, search_depth=2,
-                 discount_factor=0.999, reward_network_layers=None, state_network_layers=None):
+                 discount_factor=0.999, reward_network_layers=None, state_network_layers=None,
+                 max_replay_size=10_000_000, min_replay_size=10_000, batch_size=128, update_every=1_000):
         self.search_depth = search_depth
         self.discount_factor = discount_factor
         self.num_inputs: int = num_inputs
@@ -163,6 +117,8 @@ class Overseer:
 
         self.rewards = []
         self.frame = 0
+
+        self.replay_memory = deque(maxlen=max_replay_size)
 
     def predict(self, inputs, out_eps=False):
         # output = 0
@@ -191,7 +147,6 @@ class Overseer:
             output = new_out
         if self.epsilon_greedy_chance > 0:
             self.epsilon_greedy_chance *= self.epsilon_greedy_decay
-
 
         return output
 
@@ -232,6 +187,8 @@ class Overseer:
         self.state_network_loss.append(loss.item())
 
     def update_replay_memory(self, transition):
+        self.repl
+
         self.learn_state(chosen_action=transition[1], old_state=transition[0], new_state=transition[3])
         self.learn_reward(chosen_action=transition[1], inputs=transition[0], observed_reward=transition[2])
 
