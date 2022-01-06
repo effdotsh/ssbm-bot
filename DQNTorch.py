@@ -21,15 +21,11 @@ class DQNetwork(nn.Module):
     def __init__(self, num_inputs: int, num_outputs: int):
         super().__init__()
         self.layers = nn.Sequential(
-            nn.Linear(num_inputs, 256),
-            nn.Tanh(),
-            nn.Linear(256, 128),
-            nn.Tanh(),
-            nn.Linear(128, 128),
-            nn.Tanh(),
-            nn.Linear(128, 128),
-            nn.Tanh(),
-            nn.Linear(128, num_outputs)
+            nn.Linear(num_inputs, 32),
+            nn.ReLU(),
+            nn.Linear(32, 32),
+            nn.ReLU(),
+            nn.Linear(32, num_outputs)
         )
 
     def forward(self, inputs):
@@ -80,7 +76,7 @@ class DQNAgent:
         return self.model.forward(state_tensor)
 
     def predict(self, state, out_eps=False):
-        randVal = np.random.random()
+        randVal = random.random()
         if randVal < self.epsilon:
             # Random action
             action = np.random.randint(0, self.num_outputs)
@@ -90,7 +86,9 @@ class DQNAgent:
                 print(f'{real_prediction} -> {action}')
         else:
             # q-table action
-            action = np.argmax(self.get_qs(state).detach().cpu().numpy())
+            qs = self.get_qs(state).detach().cpu().numpy()
+            print(qs)
+            action = np.argmax(qs)
 
         if self.first_train:
             self.epsilon *= self.epsilon_decay
@@ -139,10 +137,11 @@ class DQNAgent:
         #                callbacks=None, use_multiprocessing=True)
         # print(torch.Tensor(y))
         self.trainer.fit(torch.Tensor(X).to(device), torch.Tensor(y).to(device), batch_size=self.minibatch_size, verbose=0)
-        self.trainer.history
+        print(self.trainer.history.batch_metrics)
         if terminal_state:
             self.target_update_counter += 1
 
         if self.target_update_counter > self.update_target_every:
             #TODO: Same as above
             self.target_model = copy.deepcopy(self.model)
+            self.target_update_counter = 0

@@ -2,8 +2,8 @@ from enum import Enum
 
 
 class Moves(Enum):
-    WALK_LEFT = 0
-    WALK_RIGHT = 1
+    DASH_LEFT = 0
+    DASH_RIGHT = 1
     JUMP = 2
     DROP = 3
 
@@ -27,9 +27,12 @@ class Moves(Enum):
 
 
 class CharacterMovesets(Enum):
-    FOX = [Moves.JUMP, Moves.WALK_LEFT, Moves.WALK_RIGHT, Moves.DROP, Moves.SMASH_DOWN, Moves.SMASH_LEFT,
+    FOX = [Moves.JUMP, Moves.DASH_LEFT, Moves.DASH_RIGHT, Moves.DROP, Moves.SMASH_DOWN, Moves.SMASH_LEFT,
            Moves.SMASH_RIGHT, Moves.SMASH_UP, Moves.FOX_SPECIAL_DOWN, Moves.SPECIAL_LEFT, Moves.SPECIAL_RIGHT,
            Moves.SMASH_UP, Moves.WAIT, Moves.FOX_RECOVERY, Moves.GRAB]
-    JIGGLYPUFF = [Moves.JUMP, Moves.WALK_LEFT, Moves.WALK_RIGHT, Moves.DROP, Moves.SMASH_DOWN, Moves.SMASH_LEFT,
+    JIGGLYPUFF = [Moves.JUMP, Moves.DASH_LEFT, Moves.DASH_RIGHT, Moves.DROP, Moves.SMASH_DOWN, Moves.SMASH_LEFT,
                   Moves.SMASH_RIGHT, Moves.SMASH_UP, Moves.SPECIAL_DOWN, Moves.SPECIAL_LEFT, Moves.SPECIAL_RIGHT,
                   Moves.SPECIAL_UP, Moves.WAIT, Moves.GRAB]
+
+
+    POS_TEST = [Moves.JUMP, Moves.DASH_LEFT, Moves.DASH_RIGHT, Moves.WAIT, Moves.SMASH_RIGHT, Moves.SMASH_LEFT, Moves.DROP]

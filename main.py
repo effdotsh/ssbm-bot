@@ -60,27 +60,29 @@ args: gameManager.Args = parser.parse_args()
 start_time = time.time()
 if __name__ == '__main__':
     character = melee.Character.FOX
+    # moveset = CharacterMovesets[character.name].value
+    moveset = CharacterMovesets.POS_TEST.value
 
     if not os.path.isdir(f'{args.model_path}/{character.name}'):
         os.makedirs(f'{args.model_path}/{character.name}')
 
     game = gameManager.Game(args)
-    game.enterMatch(cpu_level=0 if args.load_from < 0 else 0, opponant_character=character, player_character=character)
+    game.enterMatch(cpu_level=0 if args.load_from < 0 else 0, opponant_character=character, player_character=character, stage=melee.Stage.FINAL_DESTINATION)
     step = args.load_from
 
     if not args.compete:  # Start training against CPU
         agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game,
-                                     moveset=CharacterMovesets[character.name].value, min_replay_size=1000, minibatch_size=16,
+                                     moveset=moveset, min_replay_size=1000, minibatch_size=128,
                                      max_replay_size=300_000,
-                                     learning_rate=3e-4, update_target_every=10, discount_factor=0.999,
-                                     epsilon_decay=0.9997, epsilon=1)
+                                     learning_rate=3e-3, update_target_every=10, discount_factor=0.999,
+                                     epsilon_decay=0.995, epsilon=1)
 
         agent2 = agent1
 
     else:  # Use TLto self-train
         print("Self-Play!!!")
         agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game,
-                                     moveset=CharacterMovesets[character.name].value, min_replay_size=2000, minibatch_size=128,
+                                     movesetm=moveset, min_replay_size=2000, minibatch_size=128,
                                      max_replay_size=300_000,
                                      learning_rate=3e-4, update_target_every=2, discount_factor=0.999,
                                      epsilon_decay=0.999, epsilon=0.3)
@@ -90,9 +92,9 @@ if __name__ == '__main__':
 
         agent2.model = agent1.model
 
-    if args.load_from >= 0:
-        print('Loading!!!')
-        agent1.model.model.load_state_dict(torch.load(f'{args.model_path}/{character.name}_{step}'))
+    # if args.load_from >= 0:
+    #     print('Loading!!!')
+    #     agent1.model.model.load_state_dict(torch.load(f'{args.model_path}/{character.name}_{step}'))
 
 
     while True:  # Training loop
@@ -103,7 +105,7 @@ if __name__ == '__main__':
         if args.compete:
             agent2.run_frame(gamestate, log=False)
 
-        if (step % 1000 == 0):
-            torch.save(agent1.model.model.state_dict(), f'{args.model_path}/{character.name}/{character.name}_{step}')
+        # if (step % 1000 == 0):
+        #     torch.save(agent1.model.model.state_dict(), f'{args.model_path}/{character.name}/{character.name}_{step}')
 
         step += 1

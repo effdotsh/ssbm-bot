@@ -1,28 +1,41 @@
 from DQNTorch import DQNAgent
-import random
-import numpy as np
 from tqdm import tqdm
-from matplotlib import pyplot
-agent = DQNAgent(num_inputs=1, num_outputs=2, min_replay_size=100, update_target_every=1, epsilon_decay=0.5)
-rewards = []
-
-for i in tqdm(range(100_000)): #epoch
-        target_x = 1 if random.random() > 0.5 else -1
+import numpy as np
+''
+from randNumEnv import TestEnv
 
 
-        action = agent.predict(np.array([target_x])) * 2 -1
+env = TestEnv()
 
-        reward = 1 if action == target_x else 0
-        agent.update_replay_memory(
-            (np.array([target_x]), action, reward, np.array([target_x]), True)
-        )
+num_episodes=1_000
+
+agent = DQNAgent(num_inputs=2, num_outputs=2, min_replay_size=128)
 
 
-            # print(f'{current_x}, {target_x}')
+# Iterate over episodes
+for episode in tqdm(range(1, num_episodes + 1)):
+    # Restarting episode - reset episode reward and step number
+    episode_reward = 0
+    step = 1
 
-        rewards.append(reward)
-        if i % 100 == 0:
-            agent.train(True)
+    current_state = env.reset()
+
+    done = False
+    while not done:
+
+        action = agent.predict(current_state)
+
+        new_state, reward, done, _callback = env.step(action)
+
+        episode_reward += reward
+
+
+        agent.update_replay_memory((current_state, action, reward, new_state, done))
+        agent.train(done)
+
+        current_state = new_state
+        step += 1
+
 
 
 
@@ -34,4 +47,5 @@ def graph(points):
     pyplot.plot(graph)
     pyplot.show()
 if __name__ == '__main__':
-    graph(rewards)
+    from  matplotlib import pyplot
+    graph(env.rewards)

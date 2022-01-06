@@ -112,18 +112,21 @@ class CharacterEnv(gym.Env):
         player_grabbed = 1 if player.action in [melee.Action.GRABBED, melee.Action.GRABBED_WAIT_HIGH] else -1
         opponent_grabbed = 1 if player.action in [melee.Action.GRABBED, melee.Action.GRABBED_WAIT_HIGH] else -1
 
-        obs = np.array(
-            [(edge - player.position.x) / 300, (-edge - player.position.x) / 300, (player.position.x - opponent.position.x)/100, (edge - opponent.position.x) / 300,
-             (-edge - opponent.position.x) / 300, player.position.x / blastzones[0],
-             opponent.position.x / blastzones[0], player.position.y / 100, opponent.position.y / 100,
-             opponent_attacking, player_facing, opponent_attacking, opponent.speed_air_x_self / 10,
-             opponent.speed_ground_x_self / 10, opponent.speed_x_attack / 10, opponent.speed_y_attack / 10,
-             opponent.speed_y_self, player.speed_air_x_self / 10, player.speed_ground_x_self / 10,
-             player.speed_x_attack / 10, player.speed_y_attack / 10, player.speed_y_self, player.percent / 300,
-             opponent.percent / 300, player_on_ground, opponent_on_ground, player_off_stage, opponent_off_stage,
-             # self.move_x,
-             player_jumps_left, opponent_jumps_left, player_grabbed, opponent_grabbed, gamestate.distance/500, 1])
+        # obs = np.array(
+        #     [(edge - player.position.x) / 300, (-edge - player.position.x) / 300, (player.position.x - opponent.position.x)/100, (edge - opponent.position.x) / 300,
+        #      (-edge - opponent.position.x) / 300, player.position.x / blastzones[0],
+        #      opponent.position.x / blastzones[0], player.position.y / 100, opponent.position.y / 100,
+        #      opponent_attacking, player_facing, opponent_attacking, opponent.speed_air_x_self / 10,
+        #      opponent.speed_ground_x_self / 10, opponent.speed_x_attack / 10, opponent.speed_y_attack / 10,
+        #      opponent.speed_y_self, player.speed_air_x_self / 10, player.speed_ground_x_self / 10,
+        #      player.speed_x_attack / 10, player.speed_y_attack / 10, player.speed_y_self, player.percent / 300,
+        #      opponent.percent / 300, player_on_ground, opponent_on_ground, player_off_stage, opponent_off_stage,
+        #      # self.move_x,
+        #      player_jumps_left, opponent_jumps_left, player_grabbed, opponent_grabbed, gamestate.distance/500, 1])
 
+        obs = np.array([
+            player.position.x/100, player.position.y/100, opponent.position.x/100, opponent.position.y/100
+        ])
         return obs
 
     def calculate_reward(self, old_gamestate, new_gamestate):
@@ -158,6 +161,7 @@ class CharacterEnv(gym.Env):
 
         reward = (damage_dealt - damage_recieved) / 40 - jump_penalty * 0.3 + out_of_bounds - delta_dist
 
+        reward = (damage_dealt - damage_recieved) / 20 - (new_gamestate.distance - old_gamestate.distance)/300
         if self.kills >= 1:
             reward = 1
         if self.deaths >= 1:
@@ -167,7 +171,11 @@ class CharacterEnv(gym.Env):
         # tanh_reward = 2 / (1 + math.pow(math.e, -4.4 * reward)) - 1
 
         # return tanh_reward
+
+        # # reward = -delta_dist * 75
+        # reward = -new_gamestate.distance/1000
         return reward
+
 
     def reset(self):
         return self.get_observation(self.gamestate)
@@ -183,10 +191,10 @@ class CharacterEnv(gym.Env):
         c_stick = melee.Button.BUTTON_C
 
         player_state: melee.PlayerState = self.gamestate.players.get(self.player_port)
-        if action_name == Moves.WALK_LEFT:  # Move Left
+        if action_name == Moves.DASH_LEFT:  # Move Left
             move = Move(axis=move_stick, x=-1, y=0, num_frames=10)
             self.move_x = -1
-        elif action_name == Moves.WALK_RIGHT:  # Move Right
+        elif action_name == Moves.DASH_RIGHT:  # Move Right
             move = Move(axis=move_stick, x=1, y=0, num_frames=10)
             self.move_x = 1
         elif action_name == Moves.JUMP:  # Jump
