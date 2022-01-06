@@ -2,7 +2,6 @@ import time
 
 import melee
 import movesList
-from DQNKeras import DQNAgent
 from CharacterGymEnv import CharacterEnv
 
 from Spartnn import Overseer

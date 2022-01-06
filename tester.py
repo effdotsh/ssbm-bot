@@ -1,4 +1,4 @@
-from DQNTorch import DQNAgent
+from Spartnn.DQNTorch import DQNAgent
 from tqdm import tqdm
 import numpy as np
 ''
