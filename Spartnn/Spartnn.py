@@ -17,7 +17,7 @@ class Overseer:
     def __init__(self, num_inputs, num_outputs, epsilon_greedy_chance=1, epsilon_greedy_decay=0.9999,
                  reward_network_learning_rate=0.00003, state_network_learning_rate=0.0003, search_depth=2,
                  discount_factor=0.999, reward_network_layers=None, state_network_layers=None,
-                 max_replay_size=10_000_000, min_replay_size=10_000, batch_size=128, update_every=1_000):
+                 max_replay_size=10_000_000, min_replay_size=10_000, batch_size=256, update_every=500):
         self.update_every = update_every
         self.batch_size = batch_size
         self.min_replay_size = min_replay_size
@@ -65,7 +65,7 @@ class Overseer:
                 print(f'{output} -> {new_out}')
             output = new_out
 
-        if self.epsilon_greedy_chance > 0 and self.first_run:
+        if self.first_run:
             self.epsilon_greedy_chance *= self.epsilon_greedy_decay
 
         return output
@@ -81,7 +81,6 @@ class Overseer:
         loss.backward()
         self.reward_network_optimizer.step()
         self.reward_network_loss.append(loss.item())
-        self.frame += 1
         self.rewards.append(observed_reward)
 
     def learn_state(self, chosen_action, old_state: np.ndarray, new_state: np.ndarray):
@@ -109,30 +108,33 @@ class Overseer:
     def update_replay_memory(self, transition):
         self.replay_memory.append(transition)
         self.step += 1
+        self.frame += 1
 
         if self.step % self.update_every == 0:
             self.train()
+            self.log()
 
     def train(self):
         if len(self.replay_memory) < self.min_replay_size or len(self.replay_memory) < self.batch_size:
             return
 
-        self.first_run=True
-        batch_indices = np.unique([random.randint(0, len(self.replay_memory)-1) for i in range(len(self.replay_memory))])
+        self.first_run = True
+        batch_indices = np.unique(
+            [random.randint(0, len(self.replay_memory) - 1) for i in range(len(self.replay_memory))])
         batch_indices.sort()
 
         for e, index in enumerate(batch_indices):
 
-            transition = self.replay_memory[index-e]
+            transition = self.replay_memory[index - e]
             # transition is tuple (old_state, action, reward, new_state, done)
             self.learn_reward(chosen_action=transition[1], inputs=transition[0], observed_reward=transition[2])
             if not transition[4]:
                 self.learn_state(chosen_action=transition[1], old_state=transition[0], new_state=transition[3])
 
             # Remove transition from replay memory
-            del self.replay_memory[index-e]
+            del self.replay_memory[index - e]
 
-    def log(self, history: int):
+    def log(self, history: int = 400):
         history = min([history, len(self.rewards), len(self.state_network_loss), len(self.reward_network_loss)])
         state_network_avg_loss = np.mean(self.state_network_loss[-history:])
         reward_network_avg_loss = np.mean(self.reward_network_loss[-history:])
