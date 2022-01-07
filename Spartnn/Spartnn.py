@@ -3,109 +3,41 @@ import random
 import numpy as np
 import torch
 from torch import nn
-from tqdm import tqdm
 
-from typing import List
 from collections import deque
 
-from PredictorModules import RewardPredictor, StatePredictor, generate_input_tensor
+from Spartnn.spartnn_components import RewardPredictor, StatePredictor, Node, generate_input_tensor
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(device)
 
 
-
-
-class Node:
-    def __init__(self, inputs, state_predictor, reward_predictor, discount_factor, num_choices, max_depth, depth=0):
-        self.num_choices = num_choices
-        self.max_depth = max_depth
-        self.inputs: np.ndarray = inputs
-        self.children: List[Node] = []
-
-        self.state_predictor: StatePredictor = state_predictor
-        self.reward_predictor: RewardPredictor = reward_predictor
-
-        self.depth: int = depth
-        self.discount_factor: float = discount_factor
-
-        # Generate children
-        if depth < max_depth:
-            for i in range(num_choices):
-                generated_inputs = generate_input_tensor(num_choices=self.num_choices, chosen_action=i,
-                                                         inputs=self.inputs)
-                predicted_state = self.state_predictor.forward(generated_inputs)
-                child: Node = Node(inputs=predicted_state, state_predictor=self.state_predictor,
-                                   reward_predictor=self.reward_predictor, discount_factor=self.discount_factor,
-                                   num_choices=self.num_choices, max_depth=self.max_depth, depth=self.depth + 1)
-                self.children.append(child)
-
-    def compute_value(self) -> int:
-        max_val = -1 * 10e10
-
-        if self.max_depth == self.depth:
-            for i in range(self.num_choices):
-                generated_inputs = generate_input_tensor(num_choices=self.num_choices, chosen_action=i,
-                                                         inputs=self.inputs)
-                cval = self.reward_predictor.forward(generated_inputs).item()
-                if cval > max_val:
-                    max_val = cval
-            return max_val
-
-        for i, c in enumerate(self.children):
-            generated_inputs = generate_input_tensor(num_choices=self.num_choices, chosen_action=i, inputs=self.inputs)
-
-            cval = c.compute_value() * self.discount_factor + self.reward_predictor.forward(
-                inputs=generated_inputs).item()
-            if cval > max_val:
-                max_val = cval
-
-        return max_val
-
-    def get_action(self) -> int:
-        action = 0
-        max_reward = -1 * 10e10
-
-        if self.depth == self.max_depth:
-            for i in range(self.num_choices):
-                generated_inputs = generate_input_tensor(num_choices=self.num_choices, chosen_action=i,
-                                                         inputs=self.inputs)
-                cval = self.reward_predictor.forward(generated_inputs).item()
-                if cval > max_reward:
-                    max_reward = cval
-                    action = i
-
-            return action
-        for i, child in enumerate(self.children):
-            generated_inputs = generate_input_tensor(num_choices=self.num_choices, chosen_action=i, inputs=self.inputs)
-
-            cval = child.compute_value() * self.discount_factor + self.reward_predictor(generated_inputs)
-            if cval > max_reward:
-                action = i
-                max_reward = cval
-
-        return action
-
-
 class Overseer:
     # The goal of this network is to guess the reward returned by an acrtion in advance, and use backprop to update from an observed reward. An action can be chosen by testing each input through the reward predictor and choosing the one with the highest reward
-    def __init__(self, num_inputs, num_choices, epsilon_greedy_chance=1, epsilon_greedy_decay=0.9999,
+    def __init__(self, num_inputs, num_outputs, epsilon_greedy_chance=1, epsilon_greedy_decay=0.9999,
                  reward_network_learning_rate=0.00003, state_network_learning_rate=0.0003, search_depth=2,
                  discount_factor=0.999, reward_network_layers=None, state_network_layers=None,
                  max_replay_size=10_000_000, min_replay_size=10_000, batch_size=128, update_every=1_000):
+        self.update_every = update_every
+        self.batch_size = batch_size
+        self.min_replay_size = min_replay_size
+        self.max_replay_size = max_replay_size
+        self.step = 0
+        self.first_run = False
+
         self.search_depth = search_depth
         self.discount_factor = discount_factor
         self.num_inputs: int = num_inputs
-        self.num_choices: int = num_choices
+        self.num_outputs: int = num_outputs
 
-        self.reward_network = RewardPredictor(num_inputs=num_inputs, num_choices=num_choices,
+        self.reward_network = RewardPredictor(num_inputs=num_inputs, num_choices=num_outputs,
                                               layers=reward_network_layers)
         self.reward_network_criterion = nn.MSELoss()
         self.reward_network_optimizer = torch.optim.Adam(self.reward_network.parameters(),
                                                          lr=reward_network_learning_rate)
         self.reward_network_loss = []
 
-        self.state_predictor = StatePredictor(num_inputs=num_inputs, num_choices=num_choices,
+        self.state_predictor = StatePredictor(num_inputs=num_inputs, num_choices=num_outputs,
                                               layers=state_network_layers)
         self.state_network_criterion = nn.MSELoss()
         self.state_network_optimizer = torch.optim.Adam(self.reward_network.parameters(),
@@ -121,31 +53,19 @@ class Overseer:
         self.replay_memory = deque(maxlen=max_replay_size)
 
     def predict(self, inputs, out_eps=False):
-        # output = 0
-        # max_reward = -1 * 10e10
-        #
-        # for i in range(self.num_choices):
-        #     network_in: torch.Tensor = generate_input_tensor(num_choices=self.num_choices, chosen_action=i,
-        #                                                      inputs=inputs)
-        #
-        #     predicted_reward_tensor: torch.Tensor = self.reward_network.forward(network_in)
-        #     predicted_reward: float = predicted_reward_tensor.item()
-        #     if predicted_reward > max_reward:
-        #         max_reward = predicted_reward
-        #         output = i
-
         base_node = Node(inputs=inputs, state_predictor=self.state_predictor,
                          reward_predictor=self.reward_network, discount_factor=self.discount_factor,
-                         num_choices=self.num_choices, max_depth=self.search_depth)
+                         num_choices=self.num_outputs, max_depth=self.search_depth)
         output = base_node.get_action()
 
         # Implement epsilon greedy policy
         if random.random() < self.epsilon_greedy_chance:
-            new_out = random.randint(0, self.num_choices - 1)
+            new_out = random.randint(0, self.num_outputs - 1)
             if out_eps:
                 print(f'{output} -> {new_out}')
             output = new_out
-        if self.epsilon_greedy_chance > 0:
+
+        if self.epsilon_greedy_chance > 0 and self.first_run:
             self.epsilon_greedy_chance *= self.epsilon_greedy_decay
 
         return output
@@ -153,7 +73,7 @@ class Overseer:
     def learn_reward(self, chosen_action, inputs: np.ndarray, observed_reward: float):
         inputs = inputs.astype(float)
 
-        network_in = generate_input_tensor(num_choices=self.num_choices, chosen_action=chosen_action, inputs=inputs)
+        network_in = generate_input_tensor(num_choices=self.num_outputs, chosen_action=chosen_action, inputs=inputs)
         predicted_reward_tensor = self.reward_network.forward(network_in)
         loss = self.reward_network_criterion(predicted_reward_tensor.float(), torch.tensor([observed_reward]).float())
         self.reward_network_optimizer.zero_grad()
@@ -177,7 +97,7 @@ class Overseer:
         old_state = old_state.astype(np.float32)
         new_state = new_state.astype(np.float32)
 
-        network_in = generate_input_tensor(num_choices=self.num_choices, chosen_action=chosen_action, inputs=old_state)
+        network_in = generate_input_tensor(num_choices=self.num_outputs, chosen_action=chosen_action, inputs=old_state)
         predicted_state_tensor = self.state_predictor.forward(network_in)
 
         loss = self.state_network_criterion(predicted_state_tensor, torch.tensor(new_state))
@@ -187,10 +107,30 @@ class Overseer:
         self.state_network_loss.append(loss.item())
 
     def update_replay_memory(self, transition):
-        self.repl
+        self.replay_memory.append(transition)
+        self.step += 1
 
-        self.learn_state(chosen_action=transition[1], old_state=transition[0], new_state=transition[3])
-        self.learn_reward(chosen_action=transition[1], inputs=transition[0], observed_reward=transition[2])
+        if self.step % self.update_every == 0:
+            self.train()
+
+    def train(self):
+        if len(self.replay_memory) < self.min_replay_size or len(self.replay_memory) < self.batch_size:
+            return
+
+        self.first_run=True
+        batch_indices = np.unique([random.randint(0, len(self.replay_memory)-1) for i in range(len(self.replay_memory))])
+        batch_indices.sort()
+
+        for e, index in enumerate(batch_indices):
+
+            transition = self.replay_memory[index-e]
+            # transition is tuple (old_state, action, reward, new_state, done)
+            self.learn_reward(chosen_action=transition[1], inputs=transition[0], observed_reward=transition[2])
+            if not transition[4]:
+                self.learn_state(chosen_action=transition[1], old_state=transition[0], new_state=transition[3])
+
+            # Remove transition from replay memory
+            del self.replay_memory[index-e]
 
     def log(self, history: int):
         history = min([history, len(self.rewards), len(self.state_network_loss), len(self.reward_network_loss)])
