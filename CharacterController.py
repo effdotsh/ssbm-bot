@@ -4,7 +4,7 @@ import melee
 import movesList
 from CharacterGymEnv import CharacterEnv
 
-from Spartnn import Overseer
+from Spartnn.Spartnn import Overseer
 
 class CharacterController:
     def __init__(self, port: int, opponent_port: int, game, moveset: movesList.Moves, min_replay_size=1500, minibatch_size=128, max_replay_size=300_000,
@@ -18,7 +18,7 @@ class CharacterController:
         # self.model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=min_replay_size, minibatch_size=minibatch_size, max_replay_size=max_replay_size,
         #              learning_rate=learning_rate, update_target_every=update_target_every, discount_factor=discount_factor, epsilon_decay=epsilon_decay, epsilon=epsilon)
 
-        self.model = Overseer(num_inputs=num_inputs, num_choices=num_actions)
+        self.model = Overseer(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=5_000, batch_size=64)
 
         self.current_state = self.env.reset()
         self.episode_reward = 0
@@ -86,7 +86,7 @@ class CharacterController:
 
                 self.model.update_replay_memory((old_obs, self.action, reward, obs, False))
 
-                # self.model.train(self.done)
+                self.model.train()
                 self.step += 1
 
                 action = self.model.predict(self.env.get_observation(gamestate), out_eps=True)
