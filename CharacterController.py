@@ -4,7 +4,7 @@ import melee
 import movesList
 from CharacterGymEnv import CharacterEnv
 
-from Spartnn.Spartnn import Overseer
+from EasyML.Spartnn import Overseer
 
 class CharacterController:
     def __init__(self, port: int, opponent_port: int, game, moveset: movesList.Moves, min_replay_size=1500, minibatch_size=128, max_replay_size=300_000,
@@ -18,7 +18,7 @@ class CharacterController:
         # self.model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=min_replay_size, minibatch_size=minibatch_size, max_replay_size=max_replay_size,
         #              learning_rate=learning_rate, update_target_every=update_target_every, discount_factor=discount_factor, epsilon_decay=epsilon_decay, epsilon=epsilon)
 
-        self.model = Overseer(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=5_000, batch_size=64)
+        self.model = Overseer(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=1000, batch_size=64, search_depth=1, update_every=500)
 
         self.current_state = self.env.reset()
         self.episode_reward = 0

@@ -128,8 +128,8 @@ class Overseer:
             transition = self.replay_memory[index - e]
             # transition is tuple (old_state, action, reward, new_state, done)
             self.learn_reward(chosen_action=transition[1], inputs=transition[0], observed_reward=transition[2])
-            if not transition[4]:
-                self.learn_state(chosen_action=transition[1], old_state=transition[0], new_state=transition[3])
+            # if not transition[4]:
+            self.learn_state(chosen_action=transition[1], old_state=transition[0], new_state=transition[3])
 
             # Remove transition from replay memory
             del self.replay_memory[index - e]
