@@ -56,6 +56,7 @@ while True:  # Run until solved
 
             # Apply the sampled action in our environment
             state, reward, done, _ = env.step(action)
+            env.render()
             rewards_history.append(reward)
             episode_reward += reward
 
@@ -100,8 +101,12 @@ while True:  # Run until solved
             )
 
         # Backpropagation
+        # print(model.trainable_variables)
+        # wedewf
         loss_value = sum(actor_losses) + sum(critic_losses)
         grads = tape.gradient(loss_value, model.trainable_variables)
+
+
         optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
         # Clear the loss and reward history
