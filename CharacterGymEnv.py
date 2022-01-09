@@ -18,7 +18,7 @@ from movesList import Moves
 
 
 class Move:
-    def __init__(self, button=None, axis=None, x=0, y=0, num_frames=0):
+    def __init__(self, button=None, axis=None, x=0., y=0., num_frames=0):
         self.frames_remaining = num_frames
         self.y = y
         self.x = x
@@ -125,7 +125,7 @@ class CharacterEnv(gym.Env):
         #      player_jumps_left, opponent_jumps_left, player_grabbed, opponent_grabbed, gamestate.distance/500, 1])
 
         obs = np.array([
-            player.position.x/100, player.position.y/100, opponent.position.x/100, opponent.position.y/100
+            player.position.x/100, player.position.y/100, opponent.position.x/100, opponent.position.y/100,player.percent/200, opponent.percent/200
         ])
         return obs
 
@@ -161,8 +161,8 @@ class CharacterEnv(gym.Env):
 
         # reward = (damage_dealt - damage_recieved) / 40 - jump_penalty * 0.3 + out_of_bounds - delta_dist
         #
-        # reward = (damage_dealt - damage_recieved) / 20 - (new_gamestate.distance - old_gamestate.distance)/300
-        reward = (new_opponent.percent - new_player.percent)/100 - new_gamestate.distance/1000
+        reward = (damage_dealt - damage_recieved) / 20
+        # reward = (new_opponent.percent - new_player.percent)/100 - new_gamestate.distance/1000
         if self.kills >= 1:
             reward = 1
         if self.deaths >= 1:
@@ -199,7 +199,9 @@ class CharacterEnv(gym.Env):
             move = Move(axis=move_stick, x=1, y=0, num_frames=10)
             self.move_x = 1
         elif action_name == Moves.JUMP:  # Jump
-            move = Move(button=melee.Button.BUTTON_Y, num_frames=10)
+            m1 = Move(button=melee.Button.BUTTON_Y, num_frames=5)
+            self.move_queue.append(m1)
+            move = Move(num_frames=20)
             if player_state.jumps_left == 0:
                 self.overjump = True
                 print('Overjump')
