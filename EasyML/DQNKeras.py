@@ -30,6 +30,8 @@ class DQNAgent:
         self.replay_memory = deque(maxlen=max_replay_size)
 
         self.target_update_counter = 0
+        self.num_updates = 0
+
         self.minibatch_size = minibatch_size
         self.discount_factor = discount_factor
         self.update_target_every = update_target_every
@@ -75,9 +77,6 @@ class DQNAgent:
             # q-table action
             action = np.argmax(self.get_qs(state))
 
-        if self.first_train:
-            self.epsilon *= self.epsilon_decay
-            self.epsilon = max(self.min_epsilon, self.epsilon)
 
         return action
 
@@ -86,6 +85,10 @@ class DQNAgent:
             return
 
         self.first_train = True
+        self.epsilon *= self.epsilon_decay ** self.minibatch_size
+        self.epsilon = max(self.min_epsilon, self.epsilon)
+        self.num_updates += self.minibatch_size
+
         minibatch = random.sample(self.replay_memory, self.minibatch_size)
 
         current_states = np.array([transition[0] for transition in minibatch])
@@ -115,7 +118,6 @@ class DQNAgent:
         self.model.fit(np.array(X), np.array(y), batch_size=self.minibatch_size, verbose=0, shuffle=False,
                        callbacks=None, use_multiprocessing=True)
 
-        print(self.model.history.batch_metrics)
         if terminal_state:
             self.target_update_counter += 1
 
