@@ -161,8 +161,8 @@ class CharacterEnv(gym.Env):
 
         # reward = (damage_dealt - damage_recieved) / 40 - jump_penalty * 0.3 + out_of_bounds - delta_dist
         #
-        reward = (damage_dealt - damage_recieved) / 20
-        # reward = (new_opponent.percent - new_player.percent)/100 - new_gamestate.distance/1000
+        # reward = (damage_dealt - damage_recieved) / 20
+        reward = (new_opponent.percent - new_player.percent)/100 - new_gamestate.distance/1000
         if self.kills >= 1:
             reward = 1
         if self.deaths >= 1:
