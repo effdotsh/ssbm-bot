@@ -35,4 +35,4 @@ class CharacterMovesets(Enum):
                   Moves.SPECIAL_UP, Moves.WAIT, Moves.GRAB]
 
 
-    POS_TEST = [Moves.JUMP, Moves.DASH_LEFT, Moves.DASH_RIGHT, Moves.WAIT, Moves.SMASH_RIGHT, Moves.SMASH_LEFT, Moves.DROP]
+    POS_TEST = [Moves.DASH_LEFT, Moves.DASH_RIGHT, Moves.WAIT, Moves.SMASH_RIGHT, Moves.SMASH_LEFT]

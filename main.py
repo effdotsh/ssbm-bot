@@ -75,7 +75,7 @@ if __name__ == '__main__':
                                      moveset=moveset, min_replay_size=10_000, minibatch_size=128,
                                      max_replay_size=3_000_000,
                                      learning_rate=3e-4, update_target_every=5, discount_factor=0.9999,
-                                     epsilon_decay=0.9997, epsilon=1)
+                                     epsilon_decay=0.99995, epsilon=1)
 
         agent2 = agent1
 
