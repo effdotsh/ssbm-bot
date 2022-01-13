@@ -60,9 +60,9 @@ class CharacterEnv(gym.Env):
         self.last_action = 0
         self.last_action_name = ''
 
-        nun_inputs = self.get_observation(self.gamestate).shape[0]
+        num_inputs = self.get_observation(self.gamestate).shape[0]
         self.num_actions = len(self.moveset)
-        self.observation_space = spaces.Box(shape=np.array([nun_inputs]), dtype=np.float, low=-1, high=1)
+        self.observation_space = spaces.Box(shape=np.array([num_inputs]), dtype=np.float, low=-1, high=1)
         self.action_space = spaces.Discrete(self.num_actions)
 
     def step(self, action: int):
