@@ -162,7 +162,7 @@ class CharacterEnv(gym.Env):
         # reward = (damage_dealt - damage_recieved) / 40 - jump_penalty * 0.3 + out_of_bounds - delta_dist
         #
         # reward = (damage_dealt - damage_recieved) / 20
-        reward = (new_opponent.percent - new_player.percent)/100 - new_gamestate.distance/1000
+        reward = (new_opponent.percent - new_player.percent)/100 - new_gamestate.distance/700
         if self.kills >= 1:
             reward = 1
         if self.deaths >= 1:
@@ -193,10 +193,10 @@ class CharacterEnv(gym.Env):
 
         player_state: melee.PlayerState = self.gamestate.players.get(self.player_port)
         if action_name == Moves.DASH_LEFT:  # Move Left
-            move = Move(axis=move_stick, x=-1, y=0, num_frames=10)
+            move = Move(axis=move_stick, x=-0.5, y=0, num_frames=10)
             self.move_x = -1
         elif action_name == Moves.DASH_RIGHT:  # Move Right
-            move = Move(axis=move_stick, x=1, y=0, num_frames=10)
+            move = Move(axis=move_stick, x=0.5, y=0, num_frames=10)
             self.move_x = 1
         elif action_name == Moves.JUMP:  # Jump
             m1 = Move(button=melee.Button.BUTTON_Y, num_frames=5)
@@ -269,7 +269,7 @@ class CharacterEnv(gym.Env):
 
         if action_name not in [Moves.GRAB]:
             self.move_queue.append(move)
-            self.move_queue.append(Move(num_frames=3))  # Delay
+            self.move_queue.append(Move(num_frames=5))  # Delay
 
     def act(self):
         # Check for deaths
