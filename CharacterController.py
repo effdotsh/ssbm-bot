@@ -90,7 +90,7 @@ class CharacterController:
                 print(obs)
 
 
-            if self.step % 200 == 0:
+            if self.tot_steps % 1024 == 0:
                 if(self.update_model):
                     self.model.train(True)
                 # self.model.log(200)
