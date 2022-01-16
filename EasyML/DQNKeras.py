@@ -47,15 +47,16 @@ class DQNAgent:
     def create_model(self, num_inputs, num_outputs, learning_rate):
         model = Sequential()
         model.add(Dense(num_inputs, input_shape=[num_inputs]))
-        model.add(Dense(32, activation='relu'))
-        model.add(Dense(32, activation='relu'))
-        # model.add(Dense(128, activation='tanh'))
+        model.add(Dense(32, activation='tanh'))
+        model.add(Dense(32, activation='tanh'))
+        model.add(Dense(32, activation='tanh'))
         # model.add(Dense(128, activation='tanh'))
         # model.add(Dense(64, activation='relu'))
         model.add(Dense(num_outputs, activation='linear'))
 
         model.compile(loss="mse", optimizer=Adam(learning_rate=learning_rate), metrics=['accuracy'])
         # model.build(input_shape=[1 for i in range(num_inputs)])
+
         return model
 
     def update_replay_memory(self, transition):

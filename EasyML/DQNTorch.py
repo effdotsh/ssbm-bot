@@ -17,11 +17,14 @@ import datetime
 device = 'cpu'
 print(device)
 
+
 class DQNetwork(nn.Module):
     def __init__(self, num_inputs: int, num_outputs: int):
         super().__init__()
         self.layers = nn.Sequential(
             nn.Linear(num_inputs, 32),
+            nn.ReLU(),
+            nn.Linear(32, 32),
             nn.ReLU(),
             nn.Linear(32, 32),
             nn.ReLU(),
@@ -63,6 +66,7 @@ class DQNAgent:
         self.epsilon = epsilon
 
         self.first_train = False
+
     def create_model(self, num_inputs: int, num_outputs: int):
         model = DQNetwork(num_inputs, num_outputs)
 
@@ -136,12 +140,13 @@ class DQNAgent:
         # self.model.fit(np.array(X), np.array(y), batch_size=self.minibatch_size, verbose=0, shuffle=False,
         #                callbacks=None, use_multiprocessing=True)
         # print(torch.Tensor(y))
-        self.trainer.fit(torch.Tensor(X).to(device), torch.Tensor(y).to(device), batch_size=self.minibatch_size, verbose=0)
+        self.trainer.fit(torch.Tensor(X).to(device), torch.Tensor(y).to(device), batch_size=self.minibatch_size,
+                         verbose=0)
         print(self.trainer.history.batch_metrics)
         if terminal_state:
             self.target_update_counter += 1
 
         if self.target_update_counter > self.update_target_every:
-            #TODO: Same as above
+            # TODO: Same as above
             self.target_model = copy.deepcopy(self.model)
             self.target_update_counter = 0

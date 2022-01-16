@@ -53,7 +53,7 @@ parser.add_argument('--iso', default='SSBM.iso', type=str,
                     help='Path to melee iso.')
 parser.add_argument('--model_path', default='model/dqn', type=str)
 parser.add_argument('--load_from', default=-1, type=int)
-parser.add_argument('--compete', default=False,action='store_true')
+parser.add_argument('--compete', default=False, action='store_true')
 
 args: gameManager.Args = parser.parse_args()
 
@@ -67,35 +67,35 @@ if __name__ == '__main__':
         os.makedirs(f'{args.model_path}/{character.name}')
 
     game = gameManager.Game(args)
-    game.enterMatch(cpu_level=0 if args.load_from < 0 else 0, opponant_character=character, player_character=character, stage=melee.Stage.FINAL_DESTINATION)
+    game.enterMatch(cpu_level=1 if not args.compete else 0, opponant_character=melee.Character.FALCO, player_character=character,
+                    stage=melee.Stage.FINAL_DESTINATION)
     step = args.load_from
 
     if not args.compete:  # Start training against CPU
         agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game,
-                                     moveset=moveset, min_replay_size=10_000, minibatch_size=128,
+                                     moveset=moveset, min_replay_size=1_000, minibatch_size=128,
                                      max_replay_size=3_000_000,
                                      learning_rate=3e-4, update_target_every=5, discount_factor=0.9999,
                                      epsilon_decay=0.99995, epsilon=1)
 
         agent2 = agent1
 
-    # else:  # Use TLto self-train
-    #     print("Self-Play!!!")
-    #     agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game,
-    #                                  movesetm=moveset, min_replay_size=2000, minibatch_size=128,
-    #                                  max_replay_size=300_000,
-    #                                  learning_rate=3e-4, update_target_every=2, discount_factor=0.999,
-    #                                  epsilon_decay=0.999, epsilon=0.3)
-    #
-    #     agent2 = CharacterController(port=args.opponent, opponent_port=args.port, game=game,
-    #                                  moveset=CharacterMovesets[character.name].value)
-    #
-    #     agent2.model = agent1.model
+    else:  # self-train
+        print("Self-Play!!!")
+        agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game,
+                                     moveset=moveset, min_replay_size=1_000, minibatch_size=128,
+                                     max_replay_size=3_000_000,
+                                     learning_rate=3e-4, update_target_every=5, discount_factor=0.9999,
+                                     epsilon_decay=0.99995, epsilon=1)
+
+        agent2 = CharacterController(port=args.opponent, opponent_port=args.port, game=game,
+                                     moveset=moveset, update_model=False)
+
+        agent2.model = agent1.model
 
     # if args.load_from >= 0:
     #     print('Loading!!!')
     #     agent1.model.model.load_state_dict(torch.load(f'{args.model_path}/{character.name}_{step}'))
-
 
     while True:  # Training loop
         gamestate = game.console.step()

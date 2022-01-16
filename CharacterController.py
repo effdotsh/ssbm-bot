@@ -10,7 +10,8 @@ from EasyML.DQNKeras import DQNAgent
 
 class CharacterController:
     def __init__(self, port: int, opponent_port: int, game, moveset: movesList.Moves, min_replay_size=1500, minibatch_size=128, max_replay_size=300_000,
-                     learning_rate=0.00004, update_target_every=5, discount_factor=0.999, epsilon_decay=0.9997, epsilon=1):
+                     learning_rate=0.00004, update_target_every=5, discount_factor=0.999, epsilon_decay=0.9997, epsilon=1, update_model=True):
+        self.update_model = update_model
         self.game = game
         self.env = CharacterEnv(player_port=port, opponent_port=opponent_port, game=game, moveset=moveset)
 
@@ -61,6 +62,7 @@ class CharacterController:
                 print(f'Replay Size: {len(self.model.replay_memory)}')
                 print(f'Average Reward: {self.episode_reward / self.step}')
                 print(f'Num Updates: {self.model.num_updates}')
+                print(f'Network Loss: {self.model.model.loss[-1] if len(self.model.model.loss)>0 else "N/A"}')
                 print('##################################')
             # update model from previous move
             reward = self.env.calculate_reward(self.prev_gamestate, gamestate)
@@ -89,7 +91,8 @@ class CharacterController:
 
 
             if self.step % 200 == 0:
-                self.model.train(True)
+                if(self.update_model):
+                    self.model.train(True)
                 # self.model.log(200)
 
                 self.episode_reward = 0
