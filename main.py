@@ -83,9 +83,9 @@ if __name__ == '__main__':
     else:  # self-train
         print("Self-Play!!!")
         agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game,
-                                     moveset=moveset, min_replay_size=1_000, minibatch_size=128,
+                                     moveset=moveset, min_replay_size=1_000, minibatch_size=512,
                                      max_replay_size=3_000_000,
-                                     learning_rate=3e-4, update_target_every=5, discount_factor=0.9999,
+                                     learning_rate=6e-4, update_target_every=2, discount_factor=0.9999,
                                      epsilon_decay=0.99995, epsilon=1)
 
         agent2 = CharacterController(port=args.opponent, opponent_port=args.port, game=game,
