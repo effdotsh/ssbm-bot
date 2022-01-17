@@ -62,7 +62,6 @@ class CharacterController:
                 print(f'Replay Size: {len(self.model.replay_memory)}')
                 print(f'Average Reward: {self.episode_reward / self.step}')
                 print(f'Num Updates: {self.model.num_updates}')
-                print(f'Network Loss: {self.model.model.loss[-1] if len(self.model.model.loss)>0 else "N/A"}')
                 print('##################################')
             # update model from previous move
             reward = self.env.calculate_reward(self.prev_gamestate, gamestate)
@@ -73,11 +72,12 @@ class CharacterController:
 
             done = self.env.deaths >= 1
 
-            self.model.update_replay_memory((old_obs, self.action, reward, obs, done))
+            if(self.update_model):
+                self.model.update_replay_memory((old_obs, self.action, reward, obs, done))
 
             self.step += 1
 
-            action = self.model.predict(self.env.get_observation(gamestate), out_eps=True)
+            action = self.model.predict(self.env.get_observation(gamestate), out_eps=log)
             self.env.step(action)
 
             self.tot_steps += 1
@@ -87,7 +87,6 @@ class CharacterController:
                 print(f'{round(time.time() - self.start_time, 1)}: {reward}')
                 print('---')
                 print(self.env.last_action_name)
-                print(obs)
 
 
             if self.tot_steps % 1024 == 0:
