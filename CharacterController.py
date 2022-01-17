@@ -70,7 +70,7 @@ class CharacterController:
             old_obs = self.env.get_observation(self.prev_gamestate)
             obs = self.env.get_observation(gamestate)
 
-            done = self.env.deaths >= 1
+            done = self.env.deaths >= 1 or self.env.kills >= 1
 
             if(self.update_model):
                 self.model.update_replay_memory((old_obs, self.action, reward, obs, done))

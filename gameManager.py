@@ -19,6 +19,7 @@ class Args:
     connect_code: str
     iso: str
     model_path: str
+    cpu_level: int
 
 
 class Game:
