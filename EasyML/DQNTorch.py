@@ -91,7 +91,7 @@ class DQNAgent:
         else:
             # q-table action
             qs = self.get_qs(state).detach().cpu().numpy()
-            print(qs)
+            # print(qs)
             action = np.argmax(qs)
 
         if self.first_train:
@@ -142,7 +142,7 @@ class DQNAgent:
         # print(torch.Tensor(y))
         self.trainer.fit(torch.Tensor(X).to(device), torch.Tensor(y).to(device), batch_size=self.minibatch_size,
                          verbose=0)
-        print(self.trainer.history.batch_metrics)
+        # print(self.trainer.history.batch_metrics)
         if terminal_state:
             self.target_update_counter += 1
 
