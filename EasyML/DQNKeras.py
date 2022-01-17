@@ -66,7 +66,7 @@ class DQNAgent:
     def get_qs(self, state):
         return self.model.predict(np.array(state).reshape(-1, *state.shape))[0]
 
-    def predict(self, state, out_eps):
+    def predict(self, state, out_eps=False):
         randVal = np.random.random()
         if randVal < self.epsilon:
             # Random action

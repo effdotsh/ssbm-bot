@@ -1,55 +1,51 @@
-from DQNKeras import DQNAgent #2:02
-
-
-import numpy as np
+from DQNTorch import DQNAgent
 from tqdm import tqdm
+import numpy as np
+''
 from randNumEnv import TestEnv
-from matplotlib import pyplot as plt
 
-from torch import nn
+
+env = TestEnv()
+
+num_episodes=1_000
+
+agent = DQNAgent(num_inputs=2, num_outputs=2, min_replay_size=128)
+
+
+# Iterate over episodes
+for episode in tqdm(range(1, num_episodes + 1)):
+    # Restarting episode - reset episode reward and step number
+    episode_reward = 0
+    step = 1
+
+    current_state = env.reset()
+
+    done = False
+    while not done:
+
+        action = agent.predict(current_state)
+
+        new_state, reward, done, _callback = env.step(action)
+
+        episode_reward += reward
+
+
+        agent.update_replay_memory((current_state, action, reward, new_state, done))
+        agent.train(done)
+
+        current_state = new_state
+        step += 1
+
+
+
+
 def graph(points):
     avg = 200
     graph = []
     for i in range(avg, len(points)):
         graph.append(np.mean(points[i - avg:i]))
-    plt.plot(graph)
-    plt.show()
-
-if __name__ =='__main__':
-
-
-    env = TestEnv()
-    nn = DQNAgent(num_inputs=2, num_outputs=2, epsilon=1, epsilon_decay=0.9995, discount_factor=0, update_target_every=2, min_replay_size=1_000, learning_rate=1e-3)
-    #
-    # env = TestEnv()
-    # nn = Overseer(num_inputs=2, num_choices=2, epsilon_greedy_chance=1, epsilon_greedy_decrease=0.0001, search_depth=0)
-
-
-
-
-    rewards = []
-    state = env.reset()
-    for i in tqdm(range(100_000)):
-        action = nn.predict(state)
-        next_state, reward, done, _callback = env.step(action)
-        rewards.append(reward)
-        # nn.learn_reward(chosen_action=action, inputs=state, observed_reward=reward)
-        nn.update_replay_memory((state, action, reward, next_state, True))
-        if i % 500 == 0:
-            nn.train(True)
-
-    #
-    # rewards = []
-    # state = env.reset()
-    # for i in tqdm(range(500_000)):
-    #     action = nn.predict(state)
-    #     next_state, reward, done, _callback = env.step(action)
-    #
-    #     nn.learn(chosen_action=action, inputs=state, observed_reward=reward)
-    #     state = next_state
-    #     rewards.append(reward)
-
-
-    graph(rewards)
-    # graph(nn.)
-    # graph(nn.state_network_loss)
+    pyplot.plot(graph)
+    pyplot.show()
+if __name__ == '__main__':
+    from  matplotlib import pyplot
+    graph(env.rewards)
