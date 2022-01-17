@@ -100,19 +100,12 @@ class CharacterEnv(gym.Env):
         new_player: melee.PlayerState = new_gamestate.players.get(self.player_port)
         new_opponent: melee.PlayerState = new_gamestate.players.get(self.opponent_port)
 
-        damage_dealt = max(0, new_opponent.percent - old_opponent.percent)
-        damage_recieved = max(0, new_player.percent - old_player.percent)
-
-        jump_penalty = 1 if self.overjump else 0
 
         out_of_bounds = 0
         edge_position: float = melee.stages.EDGE_POSITION.get(self.game.stage)
         blastzones = melee.stages.BLASTZONES.get(self.game.stage)
 
 
-        delta_dist =  (new_gamestate.distance - old_gamestate.distance)/1000
-        if new_opponent.speed_y_attack != 0 or new_opponent.speed_x_attack != 0:
-            delta_dist = -0.1
 
         if abs(new_player.x) > edge_position:
             out_of_bounds -= 0.2
@@ -126,7 +119,7 @@ class CharacterEnv(gym.Env):
         # reward = (damage_dealt - damage_recieved) / 40 - jump_penalty * 0.3 + out_of_bounds - delta_dist
         #
         # reward = (damage_dealt - damage_recieved) / 20
-        reward = (new_opponent.percent - new_player.percent)/100 - new_gamestate.distance/700
+        reward = (new_opponent.percent - new_player.percent)/100 + out_of_bounds
         if self.kills >= 1:
             reward = 1
         if self.deaths >= 1:

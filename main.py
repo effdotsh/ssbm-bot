@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import argparse
+import copy
 import time
 
 import torch
@@ -13,6 +14,7 @@ import os
 from movesList import CharacterMovesets
 
 from CharacterController import CharacterController
+from colorama import Fore, Back, Style
 
 dolphin_path = ''
 if platform.system() == "Darwin":
@@ -81,7 +83,7 @@ if __name__ == '__main__':
         agent2 = agent1
 
     else:  # self-train
-        print("Self-Play!!!")
+        print(f"{Fore.GREEN}Self-Play!!!{Style.RESET_ALL}")
         agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game,
                                      moveset=moveset, min_replay_size=1_000, minibatch_size=512,
                                      max_replay_size=3_000_000,
@@ -89,9 +91,8 @@ if __name__ == '__main__':
                                      epsilon_decay=0.99995, epsilon=1)
 
         agent2 = CharacterController(port=args.opponent, opponent_port=args.port, game=game,
-                                     moveset=moveset, update_model=False)
+                                     moveset=moveset, update_model=False, epsilon=0)
 
-        agent2.model = agent1.model
 
     # if args.load_from >= 0:
     #     print('Loading!!!')
@@ -104,6 +105,9 @@ if __name__ == '__main__':
         agent1.run_frame(gamestate, log=True)
         if args.compete:
             agent2.run_frame(gamestate, log=False)
+            if agent1.tot_steps % 500 == 0:
+                agent2.model.model.set_weights(agent1.model.model.get_weights())
+                print(f"{Fore.RED}Cloning Model{Style.RESET_ALL}")
 
         # if (step % 1000 == 0):
         #     torch.save(agent1.model.model.state_dict(), f'{args.model_path}/{character.name}/{character.name}_{step}')
