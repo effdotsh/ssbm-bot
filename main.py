@@ -56,6 +56,7 @@ parser.add_argument('--iso', default='SSBM.iso', type=str,
 parser.add_argument('--model_path', default='model/dqn', type=str)
 parser.add_argument('--load_from', default=-1, type=int)
 parser.add_argument('--compete', default=False, action='store_true')
+parser.add_argument('--cpu_level', default=0, type=int)
 
 args: gameManager.Args = parser.parse_args()
 
@@ -69,18 +70,18 @@ if __name__ == '__main__':
         os.makedirs(f'{args.model_path}/{character.name}')
 
     game = gameManager.Game(args)
-    game.enterMatch(cpu_level=1 if not args.compete else 0, opponant_character=melee.Character.FALCO, player_character=character,
+    game.enterMatch(cpu_level=args.cpu_level if not args.compete else 0, opponant_character=melee.Character.FALCO, player_character=character,
                     stage=melee.Stage.FINAL_DESTINATION)
     step = args.load_from
 
     if not args.compete:  # Start training against CPU
         agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game,
-                                     moveset=moveset, min_replay_size=1_000, minibatch_size=128,
-                                     max_replay_size=3_000_000,
-                                     learning_rate=3e-4, update_target_every=5, discount_factor=0.9999,
-                                     epsilon_decay=0.99995, epsilon=1)
+                                     moveset=moveset, min_replay_size=1_000, minibatch_size=512,
+                                     max_replay_size=50_000,
+                                     learning_rate=1e-3, update_target_every=2, discount_factor=0.9999,
+                                     epsilon_decay=0.9995, epsilon=1)
 
-        agent2 = agent1
+        # agent2 = agent1
 
     else:  # self-train
         print(f"{Fore.GREEN}Self-Play!!!{Style.RESET_ALL}")
@@ -106,7 +107,9 @@ if __name__ == '__main__':
         if args.compete:
             agent2.run_frame(gamestate, log=False)
             if agent1.tot_steps % 500 == 0:
-                agent2.model.model.set_weights(agent1.model.model.get_weights())
+                # agent2.model.model.set_weights(agent1.model.model.get_weights())
+                agent2.model.model = copy.deepcopy(agent1.model.model)
+                agent1.tot_steps += 1
                 print(f"{Fore.RED}Cloning Model{Style.RESET_ALL}")
 
         # if (step % 1000 == 0):

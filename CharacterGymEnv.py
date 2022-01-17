@@ -88,8 +88,8 @@ class CharacterEnv(gym.Env):
         opponent: melee.PlayerState = gamestate.players.get(self.opponent_port)
 
         obs = np.array([
-            player.position.x/100, player.position.y/100, opponent.position.x/100, opponent.position.y/100,
-            player.percent/200, opponent.percent/200, numpy.sign(player.position.x - opponent.position.x)
+            player.position.x / 100, player.position.y / 100, opponent.position.x / 100, opponent.position.y / 100,
+            player.percent / 200, opponent.percent / 200, numpy.sign(player.position.x - opponent.position.x)
         ])
         return obs
 
@@ -100,12 +100,9 @@ class CharacterEnv(gym.Env):
         new_player: melee.PlayerState = new_gamestate.players.get(self.player_port)
         new_opponent: melee.PlayerState = new_gamestate.players.get(self.opponent_port)
 
-
         out_of_bounds = 0
         edge_position: float = melee.stages.EDGE_POSITION.get(self.game.stage)
         blastzones = melee.stages.BLASTZONES.get(self.game.stage)
-
-
 
         if abs(new_player.x) > edge_position:
             out_of_bounds -= 0.2
@@ -116,24 +113,17 @@ class CharacterEnv(gym.Env):
         if new_opponent.y < blastzones[3] * 0.75 or new_opponent.y > blastzones[2] * 0.75:
             out_of_bounds += 0.2
 
-        # reward = (damage_dealt - damage_recieved) / 40 - jump_penalty * 0.3 + out_of_bounds - delta_dist
-        #
-        # reward = (damage_dealt - damage_recieved) / 20
-        reward = (new_opponent.percent - new_player.percent)/100 + out_of_bounds
-        if self.kills >= 1:
-            reward = 1
-        if self.deaths >= 1:
-            reward = -1
-            self.move_queue = []
-            self.move_x = 0
-        # tanh_reward = 2 / (1 + math.pow(math.e, -4.4 * reward)) - 1
 
-        # return tanh_reward
+        reward = (new_opponent.percent - new_player.percent) / 100 + out_of_bounds
+        reward = new_player.x/120
+        # if self.kills >= 1:
+        #     reward = 1
+        # if self.deaths >= 1:
+        #     reward = -1
+        #     self.move_queue = []
+        #     self.move_x = 0
 
-        # # reward = -delta_dist * 75
-        # reward = -new_gamestate.distance/1000
         return reward
-
 
     def reset(self):
         return self.get_observation(self.gamestate)
@@ -243,7 +233,6 @@ class CharacterEnv(gym.Env):
         if opponent.action in [melee.Action.SPECIAL_FALL_BACK, melee.Action.SPECIAL_FALL_FORWARD]:
             self.move_queue = [Move(axis=melee.Button.BUTTON_MAIN, x=-numpy.sign(player.x), num_frames=10)]
 
-
         player_state: melee.PlayerState = self.gamestate.players[self.player_port]
 
         if player_state.action in [melee.Action.LYING_GROUND_UP, melee.Action.LYING_GROUND_UP_HIT,
@@ -252,7 +241,9 @@ class CharacterEnv(gym.Env):
 
         if len(self.move_queue) == 0:
             if self.framedata.attack_state(player_state.character, player_state.action,
-                                           player_state.action_frame) == melee.AttackState.NOT_ATTACKING and player_state.action not in utils.dead_list and not self.framedata.is_attack(
+                player_state.action_frame) == melee.AttackState.NOT_ATTACKING \
+                and player_state.action not in utils.dead_list and opponent.action not in utils.dead_list \
+                and not self.framedata.is_attack(
                 player_state.character, player_state.action) and not self.framedata.is_grab(
                 player_state.character, player_state.action) and not self.framedata.is_roll(
                 player_state.character, player_state.action) and not self.framedata.is_bmove(
