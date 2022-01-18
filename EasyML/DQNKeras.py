@@ -48,9 +48,9 @@ class DQNAgent:
     def create_model(self, num_inputs, num_outputs, learning_rate):
         model = Sequential()
         model.add(Dense(num_inputs, input_shape=[num_inputs]))
-        model.add(Dense(32, activation='relu'))
-        model.add(Dense(32, activation='relu'))
-        model.add(Dense(32, activation='relu'))
+        model.add(Dense(16, activation='relu'))
+        # model.add(Dense(32, activation='relu'))
+        # model.add(Dense(32, activation='relu'))
         # model.add(Dense(128, activation='tanh'))
         # model.add(Dense(64, activation='relu'))
         model.add(Dense(num_outputs, activation='linear'))

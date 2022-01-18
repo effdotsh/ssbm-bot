@@ -69,15 +69,15 @@ class CharacterEnv(gym.Env):
 
         self.queue_action(action)
 
-        obs = self.get_observation(self.gamestate)
+        # obs = self.get_observation(self.gamestate)
+        #
+        # r = self.calculate_reward(self.old_gamestate, self.gamestate)
 
-        r = self.calculate_reward(self.old_gamestate, self.gamestate)
+        # self.kills = 0
+        # self.deaths = 0
 
-        self.kills = 0
-        self.deaths = 0
-
-        return [obs, r, self.deaths > 1,
-                {}]  # These returns don't work for this environment, coded differently in main.py
+        # return [obs, r, self.deaths > 1,
+        #         {}]  # These returns don't work for this environment, coded differently in main.py
 
     def set_gamestate(self, gamestate: melee.GameState):
         self.old_gamestate = self.gamestate
@@ -87,10 +87,11 @@ class CharacterEnv(gym.Env):
         player: melee.PlayerState = gamestate.players.get(self.player_port)
         opponent: melee.PlayerState = gamestate.players.get(self.opponent_port)
 
-        obs = np.array([
-            player.position.x / 100, player.position.y / 100, opponent.position.x / 100, opponent.position.y / 100,
-            player.percent / 200, opponent.percent / 200, numpy.sign(player.position.x - opponent.position.x)
-        ])
+        # obs = np.array([
+        #     player.position.x / 100, player.position.y / 100, opponent.position.x / 100, opponent.position.y / 100,
+        #     player.percent / 200, opponent.percent / 200, numpy.sign(player.position.x - opponent.position.x)
+        # ])
+        obs = np.array([1])
         return obs
 
     def calculate_reward(self, old_gamestate, new_gamestate):
@@ -113,9 +114,10 @@ class CharacterEnv(gym.Env):
         if new_opponent.y < blastzones[3] * 0.75 or new_opponent.y > blastzones[2] * 0.75:
             out_of_bounds += 0.2
 
-
         reward = (new_opponent.percent - new_player.percent) / 100 + out_of_bounds
-        reward = new_player.x/120
+        reward = new_player.x / 120
+        reward = (new_player.x - old_player.x)/50
+        print(f'REEEE: {reward}')
         # if self.kills >= 1:
         #     reward = 1
         # if self.deaths >= 1:
@@ -241,9 +243,9 @@ class CharacterEnv(gym.Env):
 
         if len(self.move_queue) == 0:
             if self.framedata.attack_state(player_state.character, player_state.action,
-                player_state.action_frame) == melee.AttackState.NOT_ATTACKING \
-                and player_state.action not in utils.dead_list and opponent.action not in utils.dead_list \
-                and not self.framedata.is_attack(
+                                           player_state.action_frame) == melee.AttackState.NOT_ATTACKING \
+                    and player_state.action not in utils.dead_list and opponent.action not in utils.dead_list \
+                    and not self.framedata.is_attack(
                 player_state.character, player_state.action) and not self.framedata.is_grab(
                 player_state.character, player_state.action) and not self.framedata.is_roll(
                 player_state.character, player_state.action) and not self.framedata.is_bmove(

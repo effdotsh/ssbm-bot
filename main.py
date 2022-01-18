@@ -76,10 +76,10 @@ if __name__ == '__main__':
 
     if not args.compete:  # Start training against CPU
         agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game,
-                                     moveset=moveset, min_replay_size=1_000, minibatch_size=512,
+                                     moveset=moveset, min_replay_size=100, minibatch_size=16,
                                      max_replay_size=50_000,
                                      learning_rate=1e-3, update_target_every=2, discount_factor=0.9999,
-                                     epsilon_decay=0.9995, epsilon=1)
+                                     epsilon_decay=0.99995, epsilon=1)
 
         # agent2 = agent1
 
