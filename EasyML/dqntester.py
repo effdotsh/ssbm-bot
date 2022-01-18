@@ -1,4 +1,4 @@
-from DQNKeras import DQNAgent #2:02
+from DQNTorch import DQNAgent #2:02
 
 
 import numpy as np
