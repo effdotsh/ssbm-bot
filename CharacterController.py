@@ -96,16 +96,10 @@ class CharacterController:
             if log:
                 print(self.env.last_action_name)
 
-            if(self.update_model):
-                if self.tot_steps %32 == 0:
-                    # self.model.train(False)
-                    pass
-                elif self.tot_steps % 64 == 0:
+            if self.update_model and self.tot_steps % 64 == 0:
                     self.model.train(True)
                     # self.model.log(200)
 
                     self.episode_reward = 0
                     self.step = 1
                     self.done = False
-                else:
-                    self.model.train(False)
