@@ -85,6 +85,7 @@ class CharacterController:
 
             action = self.model.predict(obs, out_eps=log)
             print(action)
+            self.action = action
             self.env.step(action)
 
             self.tot_steps += 1
