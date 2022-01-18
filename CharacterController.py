@@ -17,11 +17,12 @@ class CharacterController:
 
         num_inputs = self.env.obs.shape[0]
         num_actions = self.env.num_actions
+        #
+        # self.model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=min_replay_size, minibatch_size=minibatch_size, max_replay_size=max_replay_size,
+        #              learning_rate=learning_rate, update_target_every=update_target_every, discount_factor=discount_factor, epsilon_decay=epsilon_decay, epsilon=epsilon)
 
-        self.model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=min_replay_size, minibatch_size=minibatch_size, max_replay_size=max_replay_size,
-                     learning_rate=learning_rate, update_target_every=update_target_every, discount_factor=discount_factor, epsilon_decay=epsilon_decay, epsilon=epsilon)
-
-        # self.model = Overseer(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=1000, batch_size=64, search_depth=1, update_every=500)
+        self.model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions)
+                              # self.model = Overseer(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=1000, batch_size=64, search_depth=1, update_every=500)
 
         self.current_state = self.env.reset()
         self.episode_reward = 0
@@ -72,28 +73,38 @@ class CharacterController:
 
             done = self.env.deaths >= 1 or self.env.kills >= 1
 
-            if(self.update_model):
+            print(obs)
+            print(old_obs)
+            if(self.update_model) and not done:
                 self.model.update_replay_memory((old_obs, self.action, reward, obs, done))
+            if log:
+                print(f'{round(time.time() - self.start_time, 1)}: {reward}')
+                print('---')
 
             self.step += 1
 
-            action = self.model.predict(self.env.get_observation(gamestate), out_eps=log)
+            action = self.model.predict(obs, out_eps=log)
+            print(action)
             self.env.step(action)
 
             self.tot_steps += 1
 
             self.prev_gamestate = gamestate
+            self.env.kills = 0
+            self.env.deaths = 0
             if log:
-                print(f'{round(time.time() - self.start_time, 1)}: {reward}')
-                print('---')
                 print(self.env.last_action_name)
 
-
-            if self.tot_steps % 1024 == 0:
-                if(self.update_model):
+            if(self.update_model):
+                if self.tot_steps %32 == 0:
+                    # self.model.train(False)
+                    pass
+                elif self.tot_steps % 64 == 0:
                     self.model.train(True)
-                # self.model.log(200)
+                    # self.model.log(200)
 
-                self.episode_reward = 0
-                self.step = 1
-                self.done = False
+                    self.episode_reward = 0
+                    self.step = 1
+                    self.done = False
+                else:
+                    self.model.train(False)

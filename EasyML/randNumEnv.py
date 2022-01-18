@@ -16,10 +16,12 @@ class TestEnv(gym.Env):
 
     def step(self, action: int):
         # r = random.random()/3
-        r=0.0
-        if (action == 0 and self.state[0] > self.state[1]) or (action == 1 and self.state[1] > self.state[0]):
-            # r += 0.7
-            r=1.0
+        # r = 0.0
+        # if (action == 0 and self.state[0] > self.state[1]) or (action == 1 and self.state[1] > self.state[0]):
+        #     # r += 0.7
+        #     r = 1.0
+
+        r = 1 if action == 0 else 0
         self.reset()
         self.rewards.append(r)
         return [self.state, r, True, {}]
