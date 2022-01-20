@@ -3,7 +3,7 @@ import random
 import keras.callbacks
 import tensorflow as tf
 import tensorflow.python.keras.callbacks
-from tensorflow.keras.layers import Dense, Dropout, Conv2D
+from tensorflow.keras.layers import Dense, Dropout, Conv2D, Activation
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
 import time
@@ -48,9 +48,10 @@ class DQNAgent:
     def create_model(self, num_inputs, num_outputs, learning_rate):
         model = Sequential()
         model.add(Dense(num_inputs, input_shape=[num_inputs]))
-        model.add(Dense(128, activation='relu'))
-        model.add(Dense(128, activation='relu'))
-        model.add(Dense(128, activation='relu'))
+        model.add(Dense(128))
+        model.add(tf.keras.layers.LeakyReLU(alpha=0.01))
+        model.add(Dense(128))
+        model.add(tf.keras.layers.LeakyReLU(alpha=0.01))
         # model.add(Dense(128, activation='tanh'))
         # model.add(Dense(64, activation='relu'))
         model.add(Dense(num_outputs, activation='linear'))
@@ -77,7 +78,9 @@ class DQNAgent:
 
         else:
             # q-table action
-            action = np.argmax(self.get_qs(state))
+            qs = self.get_qs(state)
+            print(qs)
+            action = np.argmax(qs)
 
 
         return action
