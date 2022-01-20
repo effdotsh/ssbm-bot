@@ -64,35 +64,31 @@ start_time = time.time()
 if __name__ == '__main__':
     character = melee.Character.FOX
     # moveset = CharacterMovesets[character.name].value
-    moveset = CharacterMovesets.POS_TEST.value
+    moveset = CharacterMovesets.FOX.value
 
     if not os.path.isdir(f'{args.model_path}/{character.name}'):
         os.makedirs(f'{args.model_path}/{character.name}')
 
     game = gameManager.Game(args)
-    game.enterMatch(cpu_level=args.cpu_level if not args.compete else 0, opponant_character=melee.Character.FALCO, player_character=character,
+    game.enterMatch(cpu_level=args.cpu_level if not args.compete else 0, opponant_character=melee.Character.CPTFALCON, player_character=character,
                     stage=melee.Stage.FINAL_DESTINATION)
     step = args.load_from
 
-    if not args.compete:  # Start training against CPU
-        agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game,
-                                     moveset=moveset, min_replay_size=100, minibatch_size=16,
-                                     max_replay_size=50_000,
-                                     learning_rate=1e-3, update_target_every=2, discount_factor=0.9999,
-                                     epsilon_decay=0.99995, epsilon=1)
+    agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game,
+                                 moveset=moveset, min_replay_size=2_000, minibatch_size=800,
+                                 max_replay_size=15_000,
+                                 learning_rate=1e-4, update_target_every=2, discount_factor=0.9,
+                                 epsilon_decay=0.99995, epsilon=1)
 
-        # agent2 = agent1
+    # agent2 = agent1
 
-    else:  # self-train
+    if args.compete:  # self-train
         print(f"{Fore.GREEN}Self-Play!!!{Style.RESET_ALL}")
-        agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game,
-                                     moveset=moveset, min_replay_size=1_000, minibatch_size=512,
-                                     max_replay_size=3_000_000,
-                                     learning_rate=6e-4, update_target_every=2, discount_factor=0.9999,
-                                     epsilon_decay=0.99995, epsilon=1)
 
         agent2 = CharacterController(port=args.opponent, opponent_port=args.port, game=game,
                                      moveset=moveset, update_model=False, epsilon=0)
+        agent2.model=agent1.model
+
 
 
     # if args.load_from >= 0:
@@ -106,11 +102,11 @@ if __name__ == '__main__':
         agent1.run_frame(gamestate, log=True)
         if args.compete:
             agent2.run_frame(gamestate, log=False)
-            if agent1.tot_steps % 500 == 0:
-                # agent2.model.model.set_weights(agent1.model.model.get_weights())
-                agent2.model.model = copy.deepcopy(agent1.model.model)
-                agent1.tot_steps += 1
-                print(f"{Fore.RED}Cloning Model{Style.RESET_ALL}")
+            # if agent1.tot_steps % 500 == 0:
+            #     # agent2.model.model.set_weights(agent1.model.model.get_weights())
+            #     agent2.model.model = copy.deepcopy(agent1.model.model)
+            #     agent1.tot_steps += 1
+            #     print(f"{Fore.RED}Cloning Model{Style.RESET_ALL}")
 
         # if (step % 1000 == 0):
         #     torch.save(agent1.model.model.state_dict(), f'{args.model_path}/{character.name}/{character.name}_{step}')
