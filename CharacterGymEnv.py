@@ -253,7 +253,6 @@ class CharacterEnv(gym.Env):
 
         if action_name not in [Moves.GRAB]:
             self.move_queue.append(move)
-            self.move_queue.append(Move(num_frames=5))  # Delay
 
     def act(self):
         # Check for deaths
