@@ -125,7 +125,7 @@ class CharacterEnv(gym.Env):
 
         return obs
 
-    def calculate_reward(self, old_gamestate, new_gamestate):
+    def calculate_reward(self, old_gamestate: melee.GameState, new_gamestate: melee.GameState):
         old_player: melee.PlayerState = old_gamestate.players.get(self.player_port)
         old_opponent: melee.PlayerState = old_gamestate.players.get(self.opponent_port)
 
@@ -145,9 +145,12 @@ class CharacterEnv(gym.Env):
         if new_opponent.y < blastzones[3] * 0.75 or new_opponent.y > blastzones[2] * 0.75:
             out_of_bounds += 0.2
 
+
+        time_penalty = -1/200 * (new_gamestate.frame - old_gamestate.frame)
+
         reward = math.tanh((new_opponent.percent - new_player.percent) / 200) + out_of_bounds - new_gamestate.distance/1000
 
-        reward = -0.1 + math.tanh(((new_opponent.percent - old_opponent.percent) - (new_player.percent - old_player.percent))/50)
+        reward = time_penalty + math.tanh(((new_opponent.percent - old_opponent.percent) - (new_player.percent - old_player.percent))/50)
         # reward = new_player.x / 120
         # reward = (new_player.x - old_player.x)/50
         # print(f'REEEE: {reward}')
@@ -222,7 +225,7 @@ class CharacterEnv(gym.Env):
 
         elif action_name == Moves.WAIT:  # wait
             self.move_x = 0
-            move = Move(axis=move_stick, x=0, y=0, num_frames=20)
+            move = Move(axis=move_stick, x=0, y=0, num_frames=3)
         elif action_name == Moves.GRAB:
             self.move_x = 0
             move = Move(button=melee.Button.BUTTON_Z, num_frames=10)
