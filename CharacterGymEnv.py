@@ -146,7 +146,7 @@ class CharacterEnv(gym.Env):
             out_of_bounds += 0.2
 
 
-        time_penalty = -1/200 * (new_gamestate.frame - old_gamestate.frame)
+        time_penalty = -1/800 * (new_gamestate.frame - old_gamestate.frame)
 
         reward = math.tanh((new_opponent.percent - new_player.percent) / 200) + out_of_bounds - new_gamestate.distance/1000
 
