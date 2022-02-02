@@ -29,10 +29,10 @@ class Moves(Enum):
 class CharacterMovesets(Enum):
     FOX = [Moves.JUMP, Moves.DASH_LEFT, Moves.DASH_RIGHT, Moves.DROP, Moves.SMASH_DOWN, Moves.SMASH_LEFT,
            Moves.SMASH_RIGHT, Moves.SMASH_UP, Moves.FOX_SPECIAL_DOWN, Moves.SPECIAL_LEFT, Moves.SPECIAL_RIGHT,
-           Moves.SMASH_UP, Moves.WAIT, Moves.FOX_RECOVERY, Moves.GRAB]
+           Moves.SMASH_UP, Moves.WAIT, Moves.FOX_RECOVERY]
     JIGGLYPUFF = [Moves.DASH_LEFT, Moves.DASH_RIGHT, Moves.DROP, Moves.SMASH_DOWN, Moves.SMASH_LEFT,
                   Moves.SMASH_RIGHT, Moves.SMASH_UP, Moves.SPECIAL_DOWN, Moves.SPECIAL_LEFT, Moves.SPECIAL_RIGHT,
-                  Moves.SPECIAL_UP, Moves.WAIT, Moves.GRAB]
+                  Moves.SPECIAL_UP, Moves.WAIT]
 
 
     POS_TEST = [Moves.DASH_LEFT, Moves.DASH_RIGHT, Moves.WAIT, Moves.SMASH_RIGHT, Moves.SMASH_LEFT]
