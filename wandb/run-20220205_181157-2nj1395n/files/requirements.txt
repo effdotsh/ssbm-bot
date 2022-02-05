@@ -349,7 +349,7 @@ traitlets==5.1.0
 twisted==21.7.0
 typed-ast==1.4.3
 typing-extensions==4.0.1
-ujson==4.0.2
+ujson==5.1.0
 umap-learn==0.5.2
 umap==0.1.1
 unicodecsv==0.14.1
