@@ -22,13 +22,11 @@ class DQNetwork(nn.Module):
     def __init__(self, num_inputs: int, num_outputs: int):
         super().__init__()
         self.layers = nn.Sequential(
-            nn.Linear(num_inputs, 32),
-            nn.ReLU(),
-            nn.Linear(32, 32),
-            nn.ReLU(),
-            nn.Linear(32, 32),
-            nn.ReLU(),
-            nn.Linear(32, num_outputs)
+            nn.Linear(num_inputs, 128),
+            nn.LeakyReLU(),
+            nn.Linear(128, 128),
+            nn.LeakyReLU(),
+            nn.Linear(128, num_outputs)
         )
 
     def forward(self, inputs):
