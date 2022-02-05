@@ -7,8 +7,10 @@ import movesList
 from CharacterGymEnv import CharacterEnv
 
 # from EasyML.Spartnn import Overseer
-from EasyML.DQNTorch import DQNAgent
-
+# from EasyML.DQN.DQN import DQN as MLAgent
+from EasyML.SAC.SAC import SAC as MLAgent
+from collections import deque
+import numpy as np
 
 class CharacterController:
     def __init__(self, port: int, opponent_port: int, game: gameManager.Game, min_replay_size=1500,
@@ -22,16 +24,16 @@ class CharacterController:
         num_inputs = self.env.obs.shape[0]
         num_actions = self.env.num_actions
         #
-        self.model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=min_replay_size,
-                              minibatch_size=minibatch_size, max_replay_size=max_replay_size,
-                              learning_rate=learning_rate, update_target_every=update_target_every,
-                              discount_factor=discount_factor, epsilon_decay=epsilon_decay, epsilon=epsilon)
+        self.model = MLAgent(num_inputs=num_inputs, num_actions=num_actions, min_replay_size=min_replay_size,
+                             batch_size=minibatch_size, max_replay_size=max_replay_size,
+                             learning_rate=learning_rate,
+                             discount_factor=discount_factor)
 
         # self.model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions)
         # self.model = Overseer(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=1000, batch_size=64, search_depth=1, update_every=500)
 
         self.current_state = self.env.reset()
-        self.episode_reward = 0
+        self.reward_history = deque(maxlen=100)
         self.step = 1
         self.tot_steps = 0
         self.done = False
@@ -62,31 +64,28 @@ class CharacterController:
         # self.done = self.env.deaths >= 1
         reward = self.env.calculate_reward(self.prev_gamestate, gamestate)
 
-        if self.step % 60*5 == 0 and log:
-            print('##################################')
-            print(f'Epsilon Greedy: {self.model.epsilon}')
-            print(f'Total Steps: {self.tot_steps}')
-            print(f'Replay Size: {len(self.model.replay_memory)}')
-            print(f'Average Reward: {self.episode_reward / self.step}')
+        if self.step % 60 * 5 == 0 and log :
+            if len(self.model.stats) > 0:
+                policy_loss, alpha_loss, bellmann_error1, bellmann_error2, current_alpha = self.model.stats
+                print('##################################')
+                print(f'Policy Loss: {policy_loss}')
+                print(f'Alpha Loss: {alpha_loss}')
+            print(f'Replay Size: {len(self.model.buffer.memory)}')
+            print(f'Average Reward: {np.mean(self.reward_history)}')
             print(f'Current Reward: {reward}')
-
-            print(f'Num Updates: {self.model.num_updates}')
             print('##################################')
         # update model from previous move
-        # reward = env.calculate_state_reward(gamestate) - env.calculate_state_reward(prev_gamestate)
-        self.episode_reward += reward
+        self.reward_history.append(reward)
         old_obs = self.env.get_observation(self.prev_gamestate)
         obs = self.env.get_observation(gamestate)
 
         done = self.env.deaths >= 1 or self.env.kills >= 1
 
-
-        self.model.update_replay_memory((old_obs, self.action, reward, obs, False))
-
+        self.model.update_replay_memory(old_obs, self.action, reward, obs, False)
 
         self.step += 1
 
-        action = self.model.predict(obs, out_eps=False)
+        action = self.model.predict(obs)
         self.action = action
         self.env.step(action)
 
@@ -97,7 +96,7 @@ class CharacterController:
         self.env.deaths = 0
 
         if self.update_model and self.tot_steps % 1024 == 0:
-            self.model.train(True)
+            self.model.train()
             # self.model.log(200)
 
             self.episode_reward = 0
