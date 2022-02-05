@@ -15,3 +15,4 @@ nibabel
 pandas
 
 colorama
+wandb

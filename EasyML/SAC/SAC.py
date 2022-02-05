@@ -48,3 +48,6 @@ class SAC:
         # policy_loss, alpha_loss, bellmann_error1, bellmann_error2, current_alpha\
         self.stats = self.agent.learn(self.steps, self.buffer.sample())
         return True
+
+    def save(self, name="model", wandb=None, ep=0):
+        save(name, model=self.agent.actor_local, wandb=wandb, ep=ep)
