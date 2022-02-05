@@ -75,7 +75,7 @@ if __name__ == '__main__':
     agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game,
                                  min_replay_size=2_000, minibatch_size=800,
                                  max_replay_size=15_000,
-                                 learning_rate=1e-4, update_target_every=2, discount_factor=0.9,
+                                 learning_rate=1e-4, update_target_every=2, discount_factor=0.994,
                                  epsilon_decay=0.99995, epsilon=1)
 
     # agent2 = agent1

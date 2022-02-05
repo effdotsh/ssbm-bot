@@ -98,7 +98,7 @@ class CharacterEnv(gym.Env):
              opponent.speed_y_self, player.speed_air_x_self / 10, player.speed_ground_x_self / 10,
              player.speed_x_attack / 10, player.speed_y_attack / 10, player.speed_y_self, player.percent / 300,
              opponent.percent / 300, player_on_ground, opponent_on_ground, player_off_stage, opponent_off_stage,
-             self.move_x, player_jumps_left, opponent_jumps_left, player_grabbed, opponent_grabbed, gamestate.distance/500, 1])
+             self.move_x, player_jumps_left, opponent_jumps_left, player_grabbed, opponent_grabbed, gamestate.distance/500, player.shield_strength/60, opponent.shield_strength/60 ,1])
 
         return obs
 
@@ -122,14 +122,9 @@ class CharacterEnv(gym.Env):
         if new_opponent.y < blastzones[3] * 0.75 or new_opponent.y > blastzones[2] * 0.75:
             out_of_bounds += 0.2
 
+        reward = math.tanh((new_opponent.percent - new_player.percent) / 200) + out_of_bounds 
 
-        time_penalty = -1/800 * (new_gamestate.frame - old_gamestate.frame)
 
-        reward = math.tanh((new_opponent.percent - new_player.percent) / 200) + out_of_bounds - new_gamestate.distance/1000
-
-        reward = time_penalty + math.tanh(((new_opponent.percent - old_opponent.percent) - (new_player.percent - old_player.percent))/50)
-        # reward = new_player.x / 120
-        # reward = (new_player.x - old_player.x)/50
         # print(f'REEEE: {reward}')
         if self.kills >= 1:
             reward = 0.99

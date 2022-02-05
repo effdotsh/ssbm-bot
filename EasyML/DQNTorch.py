@@ -53,6 +53,8 @@ class DQNAgent:
         self.replay_memory = deque(maxlen=max_replay_size)
 
         self.target_update_counter = 0
+        self.num_updates = 0
+
         self.minibatch_size = minibatch_size
         self.discount_factor = discount_factor
         self.update_target_every = update_target_every
@@ -92,9 +94,6 @@ class DQNAgent:
             # print(qs)
             action = np.argmax(qs)
 
-        if self.first_train:
-            self.epsilon *= self.epsilon_decay
-            self.epsilon = max(self.min_epsilon, self.epsilon)
 
         return action
 
@@ -103,6 +102,10 @@ class DQNAgent:
             return
 
         self.first_train = True
+        self.epsilon *= self.epsilon_decay ** self.minibatch_size
+        self.epsilon = max(self.min_epsilon, self.epsilon)
+        self.num_updates += self.minibatch_size
+
         minibatch = random.sample(self.replay_memory, self.minibatch_size)
 
         # for transition in minibatch:
