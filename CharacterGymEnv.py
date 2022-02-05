@@ -57,47 +57,57 @@ class CharacterEnv(gym.Env):
         self.old_gamestate = self.gamestate
         self.gamestate = gamestate
 
+    def get_player_obs(self, player: melee.PlayerState):
+        # PlayerState Info
+        direction_facing = 1 if player.facing else -1
+
+        is_on_ground = 1 if player.on_ground else 0
+
+        is_off_stage = 1 if player.off_stage else 0
+        is_grabbed = 1 if player.action in [melee.Action.GRABBED, melee.Action.GRABBED_WAIT_HIGH] else 0
+
+        hitstun_left = player.hitstun_frames_left
+
+        hitlag_left = player.hitlag_left
+
+        invulnerable = 1 if player.invulnerable else -1
+        invulnerability_left = player.invulnerability_left
+
+        jumps_left = player.jumps_left / self.framedata.max_jumps(player.character)
+
+        percent = player.percent / 200
+
+        x = player.position.x / 300
+        y = player.position.y / 200
+        sheild_strength = player.shield_strength / 60
+        speed_air_x_self = player.speed_air_x_self
+        speed_ground_x_self = player.speed_ground_x_self
+        speed_x_attack = player.speed_x_attack
+        speed_y_attack = player.speed_y_attack
+        speed_y_self = player.speed_y_self
+
+        # FrameData Info
+        active_hitbox = 1 if self.framedata.attack_state(player.character, player.action,
+                                                         player.action_frame) != melee.AttackState.NOT_ATTACKING else 0
+        is_attacking = 1 if self.framedata.is_attack(player.character, player.action) else 0
+        is_b_move = 1 if self.framedata.is_bmove(player.character, player.action) else 0
+        is_grab = 1 if self.framedata.is_grab(player.character, player.action) else 0
+        is_roll = 1 if self.framedata.is_roll(player.character, player.action) else 0
+        is_shield = 1 if self.framedata.is_shield(player.action) else 0
+
+        return [direction_facing, is_on_ground, is_off_stage, is_grabbed, hitstun_left, hitlag_left, invulnerable,
+                invulnerability_left, jumps_left, percent, x, y, sheild_strength, speed_air_x_self, speed_ground_x_self,
+                speed_x_attack, speed_y_attack, speed_y_self, active_hitbox, is_attacking, is_b_move, is_grab, is_roll,
+                is_shield]
+
     def get_observation(self, gamestate):
         player: melee.PlayerState = gamestate.players.get(self.player_port)
         opponent: melee.PlayerState = gamestate.players.get(self.opponent_port)
 
-        opponent_attacking = 1 if self.framedata.attack_state(opponent.character, opponent.action,
-                                                              opponent.action_frame) != melee.AttackState.NOT_ATTACKING else -1
-
-        player_facing = 1 if player.facing else -1
-        opponent_facing = 1 if player.facing else -1
-
-        opponent_vel_x = utils.clamp(
-            (opponent.speed_air_x_self + opponent.speed_ground_x_self + opponent.speed_x_attack) / 1000, -1, 1)
-        opponent_vel_y = utils.clamp((opponent.speed_y_self + opponent.speed_y_attack) / 1000, -1, 1)
-
-        blastzones = melee.BLASTZONES.get(self.stage)
-        edge = melee.EDGE_POSITION.get(self.stage)
-
-        player_on_ground = 1 if player.on_ground else -1
-        opponent_on_ground = 1 if opponent.on_ground else -1
-
-        player_off_stage = 1 if player.off_stage else -1
-        opponent_off_stage = 1 if opponent.off_stage else -1
-
-        player_jumps_left = player.jumps_left / self.framedata.max_jumps(player.character)
-        opponent_jumps_left = opponent.jumps_left / self.framedata.max_jumps(opponent.character)
-
-        player_grabbed = 1 if player.action in [melee.Action.GRABBED, melee.Action.GRABBED_WAIT_HIGH] else -1
-        opponent_grabbed = 1 if player.action in [melee.Action.GRABBED, melee.Action.GRABBED_WAIT_HIGH] else -1
-
-        obs = np.array(
-            [(edge - player.position.x) / 300, (-edge - player.position.x) / 300, (edge - opponent.position.x) / 300,
-             (-edge - opponent.position.x) / 300, player.position.x / blastzones[0],
-             opponent.position.x / blastzones[0], player.position.y / 100, opponent.position.y / 100,
-             opponent_attacking, player_facing, opponent_attacking, opponent.speed_air_x_self / 10,
-             opponent.speed_ground_x_self / 10, opponent.speed_x_attack / 10, opponent.speed_y_attack / 10,
-             opponent.speed_y_self, player.speed_air_x_self / 10, player.speed_ground_x_self / 10,
-             player.speed_x_attack / 10, player.speed_y_attack / 10, player.speed_y_self, player.percent / 300,
-             opponent.percent / 300, player_on_ground, opponent_on_ground, player_off_stage, opponent_off_stage,
-             player_jumps_left, opponent_jumps_left, player_grabbed, opponent_grabbed, gamestate.distance / 500,
-             player.shield_strength / 60, opponent.shield_strength / 60, 1])
-
+        obs = []
+        obs.append(self.get_player_obs(player))
+        obs.append(self.get_player_obs(opponent))
+        obs = np.array(obs).flatten()
         return obs
 
     def calculate_reward(self, old_gamestate: melee.GameState, new_gamestate: melee.GameState):
