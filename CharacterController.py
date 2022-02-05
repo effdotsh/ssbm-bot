@@ -52,57 +52,52 @@ class CharacterController:
 
         self.env.set_gamestate(gamestate)
 
-        character_ready = self.env.act()
+        self.env.act()
         self.env.controller.flush()
         # print(gamestate.players.get(env.player_port).action)
-        if character_ready:
-            # print(gamestate.players.get(env.player_port).action)
-            #
-            # self.done = self.env.deaths >= 1
-            if self.step % 5 == 0 and log:
-                print('##################################')
-                print(f'Epsilon Greedy: {self.model.epsilon}')
-                print(f'Total Steps: {self.tot_steps}')
-                print(f'Replay Size: {len(self.model.replay_memory)}')
-                print(f'Average Reward: {self.episode_reward / self.step}')
-                print(f'Num Updates: {self.model.num_updates}')
-                print('##################################')
-            # update model from previous move
-            reward = self.env.calculate_reward(self.prev_gamestate, gamestate)
-            # reward = env.calculate_state_reward(gamestate) - env.calculate_state_reward(prev_gamestate)
-            self.episode_reward += reward
-            old_obs = self.env.get_observation(self.prev_gamestate)
-            obs = self.env.get_observation(gamestate)
+        # print(gamestate.players.get(env.player_port).action)
+        #
+        # self.done = self.env.deaths >= 1
+        if self.step % 5 == 0 and log:
+            print('##################################')
+            print(f'Epsilon Greedy: {self.model.epsilon}')
+            print(f'Total Steps: {self.tot_steps}')
+            print(f'Replay Size: {len(self.model.replay_memory)}')
+            print(f'Average Reward: {self.episode_reward / self.step}')
+            print(f'Num Updates: {self.model.num_updates}')
+            print('##################################')
+        # update model from previous move
+        reward = self.env.calculate_reward(self.prev_gamestate, gamestate)
+        # reward = env.calculate_state_reward(gamestate) - env.calculate_state_reward(prev_gamestate)
+        self.episode_reward += reward
+        old_obs = self.env.get_observation(self.prev_gamestate)
+        obs = self.env.get_observation(gamestate)
 
-            done = self.env.deaths >= 1 or self.env.kills >= 1
+        done = self.env.deaths >= 1 or self.env.kills >= 1
 
-            # print(obs)
-            # print(old_obs)
-            # if (self.update_model) and not done:
-            self.model.update_replay_memory((old_obs, self.action, reward, obs, False))
-            if log:
-                print(f'{round(time.time() - self.start_time, 1)}: {reward}')
-                print('---')
 
-            self.step += 1
+        self.model.update_replay_memory((old_obs, self.action, reward, obs, False))
+        if log:
+            print(f'{round(time.time() - self.start_time, 1)}: {reward}')
+            print('---')
 
-            action = self.model.predict(obs, out_eps=log)
-            print(action)
-            self.action = action
-            self.env.step(action)
+        self.step += 1
 
-            self.tot_steps += 1
+        action = self.model.predict(obs, out_eps=log)
+        print(action)
+        self.action = action
+        self.env.step(action)
 
-            self.prev_gamestate = gamestate
-            self.env.kills = 0
-            self.env.deaths = 0
-            if log:
-                print(self.env.last_action_name)
+        self.tot_steps += 1
 
-            if self.update_model and self.tot_steps % 1024 == 0:
-                self.model.train(True)
-                # self.model.log(200)
+        self.prev_gamestate = gamestate
+        self.env.kills = 0
+        self.env.deaths = 0
 
-                self.episode_reward = 0
-                self.step = 1
-                self.done = False
+        if self.update_model and self.tot_steps % 1024 == 0:
+            self.model.train(True)
+            # self.model.log(200)
+
+            self.episode_reward = 0
+            self.step = 1
+            self.done = False
