@@ -1,18 +1,18 @@
 import torch
 
-def save(args, save_name, model, wandb=None, ep=None):
+def save(save_name, model, wandb=None, ep=None):
     import os
     save_dir = './trained_models/' 
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     if not ep == None:
-        torch.save(model.state_dict(), save_dir + args.run_name + save_name + str(ep) + ".pth")
+        torch.save(model.state_dict(), save_dir + save_name + str(ep) + ".pth")
         if wandb is not None:
-            wandb.save(save_dir + args.run_name + save_name + str(ep) + ".pth")
+            wandb.save(save_dir + save_name + str(ep) + ".pth")
     else:
-        torch.save(model.state_dict(), save_dir + args.run_name + save_name + ".pth")
+        torch.save(model.state_dict(), save_dir + save_name + ".pth")
         if wandb is not None:
-            wandb.save(save_dir + args.run_name + save_name + ".pth")
+            wandb.save(save_dir + save_name + ".pth")
 
 def collect_random_old(env, dataset, num_samples=200):
     state = env.reset()
