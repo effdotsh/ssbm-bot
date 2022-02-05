@@ -60,16 +60,19 @@ class CharacterController:
         # print(gamestate.players.get(env.player_port).action)
         #
         # self.done = self.env.deaths >= 1
+        reward = self.env.calculate_reward(self.prev_gamestate, gamestate)
+
         if self.step % 60*5 == 0 and log:
             print('##################################')
             print(f'Epsilon Greedy: {self.model.epsilon}')
             print(f'Total Steps: {self.tot_steps}')
             print(f'Replay Size: {len(self.model.replay_memory)}')
             print(f'Average Reward: {self.episode_reward / self.step}')
+            print(f'Current Reward: {reward}')
+
             print(f'Num Updates: {self.model.num_updates}')
             print('##################################')
         # update model from previous move
-        reward = self.env.calculate_reward(self.prev_gamestate, gamestate)
         # reward = env.calculate_state_reward(gamestate) - env.calculate_state_reward(prev_gamestate)
         self.episode_reward += reward
         old_obs = self.env.get_observation(self.prev_gamestate)
