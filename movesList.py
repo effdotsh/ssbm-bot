@@ -1,39 +1,42 @@
 from enum import Enum
+import melee
 
 
-class Moves(Enum):
-    DASH_LEFT = 0
-    DASH_RIGHT = 1
-    JUMP = 2
-    DROP = 3
-
-    SMASH_LEFT = 4
-    SMASH_RIGHT = 5
-    SMASH_UP = 6
-    SMASH_DOWN = 7
-
-    SPECIAL_LEFT = 8
-    SPECIAL_RIGHT = 9
-    SPECIAL_DOWN = 10
-    SPECIAL_UP = 2332
-
-    JAB = 11
-    GRAB=1212
-
-    WAIT = 12
-    FOX_SPECIAL_DOWN = 13
-    FOX_RECOVERY = 14
-    SHORT_JUMP = 15
+class Move:
+    def __init__(self, button, axes):
+        self.axes: list[AxisInput] = axes
+        self.button: melee.Button = button
 
 
-class CharacterMovesets(Enum):
-    FOX = [Moves.JUMP, Moves.DASH_LEFT, Moves.DASH_RIGHT, Moves.DROP, Moves.SMASH_DOWN, Moves.SMASH_LEFT,
-           Moves.SMASH_RIGHT, Moves.SMASH_UP, Moves.FOX_SPECIAL_DOWN, Moves.SPECIAL_LEFT, Moves.SPECIAL_RIGHT,
-           Moves.SMASH_UP, Moves.WAIT, Moves.FOX_RECOVERY]
-    JIGGLYPUFF = [Moves.DASH_LEFT, Moves.DASH_RIGHT, Moves.DROP, Moves.SMASH_DOWN, Moves.SMASH_LEFT,
-                  Moves.SMASH_RIGHT, Moves.SMASH_UP, Moves.SPECIAL_DOWN, Moves.SPECIAL_LEFT, Moves.SPECIAL_RIGHT,
-                  Moves.SPECIAL_UP, Moves.WAIT]
+class AxisInput:
+    def __init__(self, axis: melee.Button, x: float, y: float):
+        self.axis = axis
+        self.x = x
+        self.y = y
 
 
-    POS_TEST = [Moves.DASH_LEFT, Moves.DASH_RIGHT, Moves.WAIT, Moves.SMASH_RIGHT, Moves.SMASH_LEFT]
-    # POS_TEST = [Moves.DASH_LEFT, Moves.DASH_RIGHT]
+# 8 main directions, origin, and a slow walk left/right
+move_stick_vectors = [(float(int(i / 3) - 1), float(i % 3 - 1)) for i in range(9)]
+move_stick_vectors.append((-0.5, 0))
+move_stick_vectors.append((0.5, 0))
+
+c_stick_vectors = [(0., 0.), (-1., 0.), (0., 1.), (1., 0.), (0., -1.)]
+
+buttons: list[melee.Button] = [None, melee.Button.BUTTON_B, melee.Button.BUTTON_A, melee.Button.BUTTON_Z,
+                               melee.Button.BUTTON_L, melee.Button.BUTTON_X]
+
+m = len(move_stick_vectors)
+c = len(c_stick_vectors)
+b = len(buttons)
+
+# move, c, button
+move_indexes = [[int(i / (b * c)) % m, int(i / b) % c, i % b] for i in range(m * c * b)]
+
+moveset = []
+for set in move_indexes:
+    moveAxis = AxisInput(axis=melee.Button.BUTTON_MAIN, x=move_stick_vectors[set[0]][0], y=move_stick_vectors[set[0]][1])
+    cAxis = AxisInput(axis=melee.Button.BUTTON_C, x=c_stick_vectors[set[1]][0], y=c_stick_vectors[set[1]][1])
+    button = buttons[set[2]]
+
+    move = Move(button = buttons, axes=[moveAxis, cAxis])
+    moveset.append(move)

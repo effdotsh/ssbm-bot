@@ -14,16 +14,7 @@ import movesList
 import utils
 import copy
 
-from movesList import Moves
-
-
-class Move:
-    def __init__(self, button=None, axis=None, x=0., y=0., num_frames=0):
-        self.frames_remaining = num_frames
-        self.y = y
-        self.x = x
-        self.axis = axis
-        self.button = button
+from movesList import Moves, Move
 
 
 class CharacterEnv(gym.Env):
