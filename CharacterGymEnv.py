@@ -45,6 +45,7 @@ class CharacterEnv(gym.Env):
 
         self.obs = self.reset()
 
+        self.move = moveset[0]
 
 
         num_inputs = self.get_observation(self.gamestate).shape[0]
@@ -152,9 +153,11 @@ class CharacterEnv(gym.Env):
         player: melee.PlayerState = self.gamestate.players.get(self.player_port)
         opponent: melee.PlayerState = self.gamestate.players.get(self.opponent_port)
 
-        self.controller.press_button(self.move.button)
+        if self.move.button is not None:
+            self.controller.press_button(self.move.button)
         for axis_movement in self.move.axes:
-            self.controller.tilt_analog_unit(axis_movement.axis, axis_movement.x, axis_movement.y)
+            if axis_movement.axis is not None:
+                self.controller.tilt_analog_unit(axis_movement.axis, axis_movement.x, axis_movement.y)
 
 
         self.controller.flush()

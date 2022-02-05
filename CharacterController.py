@@ -1,6 +1,8 @@
 import time
 
 import melee
+
+import gameManager
 import movesList
 from CharacterGymEnv import CharacterEnv
 
@@ -9,13 +11,13 @@ from EasyML.DQNKeras import DQNAgent
 
 
 class CharacterController:
-    def __init__(self, port: int, opponent_port: int, game, moveset: movesList.Moves, min_replay_size=1500,
+    def __init__(self, port: int, opponent_port: int, game: gameManager.Game, min_replay_size=1500,
                  minibatch_size=128, max_replay_size=300_000,
                  learning_rate=0.00004, update_target_every=5, discount_factor=0.999, epsilon_decay=0.9997, epsilon=1,
                  update_model=True):
         self.update_model = update_model
         self.game = game
-        self.env = CharacterEnv(player_port=port, opponent_port=opponent_port, game=game, moveset=moveset)
+        self.env = CharacterEnv(player_port=port, opponent_port=opponent_port, game=game)
 
         num_inputs = self.env.obs.shape[0]
         num_actions = self.env.num_actions
@@ -58,7 +60,7 @@ class CharacterController:
         # print(gamestate.players.get(env.player_port).action)
         #
         # self.done = self.env.deaths >= 1
-        if self.step % 5 == 0 and log:
+        if self.step % 60*5 == 0 and log:
             print('##################################')
             print(f'Epsilon Greedy: {self.model.epsilon}')
             print(f'Total Steps: {self.tot_steps}')
@@ -77,14 +79,11 @@ class CharacterController:
 
 
         self.model.update_replay_memory((old_obs, self.action, reward, obs, False))
-        if log:
-            print(f'{round(time.time() - self.start_time, 1)}: {reward}')
-            print('---')
+
 
         self.step += 1
 
-        action = self.model.predict(obs, out_eps=log)
-        print(action)
+        action = self.model.predict(obs, out_eps=False)
         self.action = action
         self.env.step(action)
 
