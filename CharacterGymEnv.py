@@ -37,8 +37,6 @@ class CharacterEnv(gym.Env):
 
         self.rewards = []
 
-        self.move_x = 0
-
         self.kills = 0
         self.deaths = 0
         self.overjump = False  # Reward penalty if agent chooses to jump when it is already out of jumps
@@ -46,7 +44,6 @@ class CharacterEnv(gym.Env):
         self.obs = self.reset()
 
         self.move = moveset[0]
-
 
         num_inputs = self.get_observation(self.gamestate).shape[0]
 
@@ -98,7 +95,8 @@ class CharacterEnv(gym.Env):
              opponent.speed_y_self, player.speed_air_x_self / 10, player.speed_ground_x_self / 10,
              player.speed_x_attack / 10, player.speed_y_attack / 10, player.speed_y_self, player.percent / 300,
              opponent.percent / 300, player_on_ground, opponent_on_ground, player_off_stage, opponent_off_stage,
-             self.move_x, player_jumps_left, opponent_jumps_left, player_grabbed, opponent_grabbed, gamestate.distance/500, player.shield_strength/60, opponent.shield_strength/60 ,1])
+             player_jumps_left, opponent_jumps_left, player_grabbed, opponent_grabbed, gamestate.distance / 500,
+             player.shield_strength / 60, opponent.shield_strength / 60, 1])
 
         return obs
 
@@ -124,23 +122,15 @@ class CharacterEnv(gym.Env):
 
         reward = math.tanh((new_opponent.percent - new_player.percent) / 200) + out_of_bounds
 
-
-        # print(f'REEEE: {reward}')
-        if self.kills >= 1:
-            reward = 0.99
-            self.move_queue = []
-            self.move_x = 0
-        if self.deaths >= 1:
+        if new_player.action in utils.dead_list:
             reward = -1
-            self.move_queue = []
-            self.move_x = 0
+        elif new_opponent.action in utils.dead_list:
+            reward = 1
 
         return reward
 
     def reset(self):
         return self.get_observation(self.gamestate)
-
-
 
     def act(self):
         # Check for deaths
@@ -153,6 +143,5 @@ class CharacterEnv(gym.Env):
         for axis_movement in self.move.axes:
             if axis_movement.axis is not None:
                 self.controller.tilt_analog_unit(axis_movement.axis, axis_movement.x, axis_movement.y)
-
 
         self.controller.flush()

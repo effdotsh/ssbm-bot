@@ -92,8 +92,7 @@ class CharacterController:
         self.tot_steps += 1
 
         self.prev_gamestate = gamestate
-        self.env.kills = 0
-        self.env.deaths = 0
+
 
         if self.update_model and self.tot_steps % 1024 == 0:
             self.model.train()
