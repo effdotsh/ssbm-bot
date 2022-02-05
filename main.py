@@ -11,8 +11,6 @@ import platform
 
 import os
 
-from movesList import CharacterMovesets
-
 from CharacterController import CharacterController
 from colorama import Fore, Back, Style
 
@@ -64,18 +62,18 @@ start_time = time.time()
 if __name__ == '__main__':
     character = melee.Character.FOX
     # moveset = CharacterMovesets[character.name].value
-    moveset = CharacterMovesets.FOX.value
 
     if not os.path.isdir(f'{args.model_path}/{character.name}'):
         os.makedirs(f'{args.model_path}/{character.name}')
 
     game = gameManager.Game(args)
-    game.enterMatch(cpu_level=args.cpu_level if not args.compete else 0, opponant_character=melee.Character.CPTFALCON, player_character=character,
+    game.enterMatch(cpu_level=args.cpu_level if not args.compete else 0, opponant_character=melee.Character.CPTFALCON,
+                    player_character=character,
                     stage=melee.Stage.FINAL_DESTINATION)
     step = args.load_from
 
     agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game,
-                                 moveset=moveset, min_replay_size=2_000, minibatch_size=800,
+                                 min_replay_size=2_000, minibatch_size=800,
                                  max_replay_size=15_000,
                                  learning_rate=1e-4, update_target_every=2, discount_factor=0.9,
                                  epsilon_decay=0.99995, epsilon=1)
@@ -86,10 +84,8 @@ if __name__ == '__main__':
         print(f"{Fore.GREEN}Self-Play!!!{Style.RESET_ALL}")
 
         agent2 = CharacterController(port=args.opponent, opponent_port=args.port, game=game,
-                                     moveset=moveset, update_model=False, epsilon=0)
-        agent2.model=agent1.model
-
-
+                                     update_model=False, epsilon=0)
+        agent2.model = agent1.model
 
     # if args.load_from >= 0:
     #     print('Loading!!!')

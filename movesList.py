@@ -36,7 +36,7 @@ moveset = []
 for set in move_indexes:
     moveAxis = AxisInput(axis=melee.Button.BUTTON_MAIN, x=move_stick_vectors[set[0]][0], y=move_stick_vectors[set[0]][1])
     cAxis = AxisInput(axis=melee.Button.BUTTON_C, x=c_stick_vectors[set[1]][0], y=c_stick_vectors[set[1]][1])
-    button = buttons[set[2]]
 
-    move = Move(button = buttons, axes=[moveAxis, cAxis])
+    button = buttons[set[2]]
+    move = Move(button = button, axes=[moveAxis, cAxis])
     moveset.append(move)
