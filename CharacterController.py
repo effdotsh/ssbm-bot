@@ -7,7 +7,7 @@ import movesList
 from CharacterGymEnv import CharacterEnv
 
 # from EasyML.Spartnn import Overseer
-from EasyML.DQNKeras import DQNAgent
+from EasyML.DQNTorch import DQNAgent
 
 
 class CharacterController:

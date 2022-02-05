@@ -79,7 +79,6 @@ class DQNAgent:
         else:
             # q-table action
             qs = self.get_qs(state)
-            print(qs)
             action = np.argmax(qs)
 
 
