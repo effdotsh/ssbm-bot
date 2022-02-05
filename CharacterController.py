@@ -12,11 +12,13 @@ from EasyML.SAC.SAC import SAC as MLAgent
 from collections import deque
 import numpy as np
 
+import wandb
+
 class CharacterController:
     def __init__(self, port: int, opponent_port: int, game: gameManager.Game, min_replay_size=1500,
                  minibatch_size=128, max_replay_size=300_000,
                  learning_rate=0.00004, update_target_every=5, discount_factor=0.999, epsilon_decay=0.9997, epsilon=1,
-                 update_model=True):
+                 update_model=True, log=True):
         self.update_model = update_model
         self.game = game
         self.env = CharacterEnv(player_port=port, opponent_port=opponent_port, game=game)
@@ -33,7 +35,7 @@ class CharacterController:
         # self.model = Overseer(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=1000, batch_size=64, search_depth=1, update_every=500)
 
         self.current_state = self.env.reset()
-        self.reward_history = deque(maxlen=100)
+        self.reward_history = deque(maxlen=180000)
         self.step = 1
         self.tot_steps = 0
         self.done = False
@@ -45,6 +47,9 @@ class CharacterController:
 
         self.action = 0
         self.start_time = time.time()
+
+        if self.update_model and log:
+            wandb.init(project="SAC_Smash")
 
     def run_frame(self, gamestate: melee.GameState, log: bool):
         if gamestate is None:
@@ -65,15 +70,25 @@ class CharacterController:
         reward = self.env.calculate_reward(self.prev_gamestate, gamestate)
 
         if self.step % 60 * 5 == 0 and log :
+            policy_loss, alpha_loss, bellmann_error1, bellmann_error2, current_alpha = [None, None, None, None, None]
+            replay_size = len(self.model.buffer.memory)
+
             if len(self.model.stats) > 0:
                 policy_loss, alpha_loss, bellmann_error1, bellmann_error2, current_alpha = self.model.stats
                 print('##################################')
                 print(f'Policy Loss: {policy_loss}')
                 print(f'Alpha Loss: {alpha_loss}')
-            print(f'Replay Size: {len(self.model.buffer.memory)}')
+            print(f'Replay Size: {replay_size}')
             print(f'Average Reward: {np.mean(self.reward_history)}')
             print(f'Current Reward: {reward}')
             print('##################################')
+            wandb.log({
+                "Policy Loss": policy_loss,
+                "Alpha Loss": alpha_loss,
+                "Replay Size": replay_size,
+                "Average Reward": np.mean(self.reward_history)
+            })
+
         # update model from previous move
         self.reward_history.append(reward)
         old_obs = self.env.get_observation(self.prev_gamestate)

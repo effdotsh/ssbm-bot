@@ -1,0 +1,27 @@
+{
+    "os": "Linux-5.15.15-76051515-generic-x86_64-with-glibc2.34",
+    "python": "3.9.7",
+    "heartbeatAt": "2022-02-05T23:12:00.681460",
+    "startedAt": "2022-02-05T23:11:57.144085",
+    "docker": null,
+    "gpu": "NVIDIA GeForce RTX 3060 Ti",
+    "gpu_count": 1,
+    "cpu_count": 12,
+    "cuda": null,
+    "args": [
+        "--cpu_level",
+        "3"
+    ],
+    "state": "running",
+    "program": "/home/human/Documents/ssbm-bot/main.py",
+    "codePath": "main.py",
+    "git": {
+        "remote": "git@github.com-AI-Spawn:AI-Spawn/ssbm-bot.git",
+        "commit": "1fa7ecdc29df686a4fa652de414ea63c32cde93c"
+    },
+    "email": "50590465+AI-Spawn@users.noreply.github.com",
+    "root": "/home/human/Documents/ssbm-bot",
+    "host": "pop-os",
+    "username": "human",
+    "executable": "/home/human/anaconda3/bin/python"
+}
