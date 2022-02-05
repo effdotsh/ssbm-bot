@@ -33,12 +33,12 @@ class DQNetwork(nn.Module):
         return self.layers(inputs)
 
 
-class DQNAgent:
-    def __init__(self, num_inputs, num_outputs, learning_rate=0.001, min_replay_size=10_000, max_replay_size=50_000,
-                 minibatch_size=16, discount_factor=0.9, update_target_every=5, epsilon=1, min_epsilon=0.01,
+class DQN:
+    def __init__(self, num_inputs, num_actions, learning_rate=0.001, min_replay_size=10_000, max_replay_size=50_000,
+                 batch_size=16, discount_factor=0.9, update_target_every=5, epsilon=1, min_epsilon=0.01,
                  epsilon_decay=0.99):
         # Gets Trained
-        self.model = self.create_model(num_inputs=num_inputs, num_outputs=num_outputs)
+        self.model = self.create_model(num_inputs=num_inputs, num_actions=num_actions)
         # Gets predicted from
         # TODO: use the pytorch equivilent of keras' get_weights and set_weights. This implementation is kinda sloppy
         self.target_model = copy.deepcopy(self.model)
@@ -55,11 +55,11 @@ class DQNAgent:
         self.target_update_counter = 0
         self.num_updates = 0
 
-        self.minibatch_size = minibatch_size
+        self.minibatch_size = batch_size
         self.discount_factor = discount_factor
         self.update_target_every = update_target_every
         self.num_inputs = num_inputs
-        self.num_outputs = num_outputs
+        self.num_outputs = num_actions
 
         self.epsilon_decay = epsilon_decay
         self.min_epsilon = min_epsilon
@@ -67,27 +67,24 @@ class DQNAgent:
 
         self.first_train = False
 
-    def create_model(self, num_inputs: int, num_outputs: int):
-        model = DQNetwork(num_inputs, num_outputs)
+    def create_model(self, num_inputs: int, num_actions: int):
+        model = DQNetwork(num_inputs, num_actions)
 
         return model.to(device)
 
-    def update_replay_memory(self, transition):
-        self.replay_memory.append(transition)
+    def update_replay_memory(self, state, action, reward, next_state, done):
+        self.replay_memory.append((state, action, reward, next_state, done))
 
     def get_qs(self, state):
         state_tensor = torch.Tensor(state).to(device)
         return self.model.forward(state_tensor)
 
-    def predict(self, state, out_eps=False):
+    def predict(self, state):
         randVal = random.random()
         if randVal < self.epsilon:
             # Random action
             action = np.random.randint(0, self.num_outputs)
 
-            if out_eps:
-                real_prediction = np.argmax(self.get_qs(state).detach().cpu().numpy())
-                print(f'{real_prediction} -> {action}')
         else:
             # q-table action
             qs = self.get_qs(state).detach().cpu().numpy()
