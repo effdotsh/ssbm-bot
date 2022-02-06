@@ -4,6 +4,7 @@ import melee
 
 import gameManager
 import movesList
+import utils
 from CharacterGymEnv import CharacterEnv
 
 # from EasyML.Spartnn import Overseer
@@ -41,7 +42,7 @@ class CharacterController:
         self.kdr_history = deque(maxlen=100)
         self.kdr_history.append(0)
         self.reward_history.append(0)
-        
+
         self.step = 1
         self.tot_steps = 0
         self.done = False
@@ -54,47 +55,36 @@ class CharacterController:
         self.action = 0
         self.start_time = time.time()
 
+        self.port = port
+        self.opponent_port = opponent_port
+
         if self.update_model and log:
-            wandb.init(project="SAC_Smash", name="SmashBot")
+            wandb.init(project="SAC_Smash", name="Better KDR")
 
     def run_frame(self, gamestate: melee.GameState, log: bool):
         if gamestate is None:
             return
-        # if gamestate is None:
-        #     continue
-        # if game.console.processingtime * 1000 > 30:
-        #     print("WARNING: Last frame took " + str(game.console.processingtime * 1000) + "ms to process.")
 
         self.env.set_gamestate(gamestate)
 
         self.env.act()
         self.env.controller.flush()
-        # print(gamestate.players.get(env.player_port).action)
-        # print(gamestate.players.get(env.player_port).action)
-        #
-        # self.done = self.env.deaths >= 1
 
         reward = self.env.calculate_reward(gamestate)
-        if reward == 1 and self.env.calculate_reward(self.prev_gamestate) != 1:
-            self.kdr_history.append(1)
-        if reward == -1 and self.env.calculate_reward(self.prev_gamestate) != -1:
+        if gamestate.players.get(self.port).action in utils.dead_list and self.prev_gamestate.players.get(
+                self.port).action not in utils.dead_list:
             self.kdr_history.append(-1)
+        if gamestate.players.get(self.opponent_port).action in utils.dead_list and self.prev_gamestate.players.get(
+                self.opponent_port).action not in utils.dead_list:
+            self.kdr_history.append(1)
         # if self.step % 60 * 5 == 0 and log:
-        if log:
+        if log and self.update_model:
 
             policy_loss, alpha_loss, bellmann_error1, bellmann_error2, current_alpha = [None, None, None, None, None]
             replay_size = len(self.model.buffer.memory)
 
             if len(self.model.stats) > 0:
                 policy_loss, alpha_loss, bellmann_error1, bellmann_error2, current_alpha = self.model.stats
-            #     print('##################################')
-            #     print(f'Policy Loss: {policy_loss}')
-            #     print(f'Alpha Loss: {alpha_loss}')
-            # print(f'Replay Size: {replay_size}')
-            # print(f'KDR: {np.sum(self.kdr_history)}')
-            # print(f'Average Reward: {np.mean(self.reward_history)}')
-            # print(f'Current Reward: {reward}')
-            # print('##################################')
             wandb.log({
                 "Policy Loss": policy_loss,
                 "Alpha Loss": alpha_loss,
@@ -103,13 +93,20 @@ class CharacterController:
                 "Reward": reward,
                 "Average Reward": np.mean(self.reward_history)
             })
+            if self.tot_steps % 60 == 0:
+                print('##################################')
+                print(f'Policy Loss: {policy_loss}')
+                print(f'Alpha Loss: {alpha_loss}')
+                print(f'Replay Size: {replay_size}')
+                print(f'KDR: {np.sum(self.kdr_history)}')
+                print(f'Average Reward: {np.mean(self.reward_history)}')
+                print(f'Current Reward: {reward}')
+                print('##################################')
 
         # update model from previous move
         self.reward_history.append(reward)
         old_obs = self.env.get_observation(self.prev_gamestate)
         obs = self.env.get_observation(gamestate)
-
-        done = self.env.deaths >= 1 or self.env.kills >= 1
 
         self.model.update_replay_memory(old_obs, self.action, reward, obs, False)
 
@@ -130,5 +127,5 @@ class CharacterController:
             self.episode_reward = 0
             self.step = 1
             self.done = False
-        if self.update_model and self.tot_steps % (30*60*60) == 0: # Save every thirty minutes
+        if self.update_model and self.tot_steps % (30 * 60 * 60) == 0:  # Save every thirty minutes
             self.model.save(wandb=wandb, ep=self.tot_steps)

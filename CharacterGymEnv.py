@@ -61,10 +61,10 @@ class CharacterEnv(gym.Env):
         # PlayerState Info
         direction_facing = 1 if player.facing else -1
 
-        is_on_ground = 1 if player.on_ground else 0
+        is_on_ground = 1 if player.on_ground else -1
 
-        is_off_stage = 1 if player.off_stage else 0
-        is_grabbed = 1 if player.action in [melee.Action.GRABBED, melee.Action.GRABBED_WAIT_HIGH] else 0
+        is_off_stage = 1 if player.off_stage else -1
+        is_grabbed = 1 if player.action in [melee.Action.GRABBED, melee.Action.GRABBED_WAIT_HIGH] else -1
 
         hitstun_left = player.hitstun_frames_left
 
@@ -88,12 +88,12 @@ class CharacterEnv(gym.Env):
 
         # FrameData Info
         active_hitbox = 1 if self.framedata.attack_state(player.character, player.action,
-                                                         player.action_frame) != melee.AttackState.NOT_ATTACKING else 0
-        is_attacking = 1 if self.framedata.is_attack(player.character, player.action) else 0
-        is_b_move = 1 if self.framedata.is_bmove(player.character, player.action) else 0
-        is_grab = 1 if self.framedata.is_grab(player.character, player.action) else 0
-        is_roll = 1 if self.framedata.is_roll(player.character, player.action) else 0
-        is_shield = 1 if self.framedata.is_shield(player.action) else 0
+                                                         player.action_frame) != melee.AttackState.NOT_ATTACKING else -1
+        is_attacking = 1 if self.framedata.is_attack(player.character, player.action) else -1
+        is_b_move = 1 if self.framedata.is_bmove(player.character, player.action) else -1
+        is_grab = 1 if self.framedata.is_grab(player.character, player.action) else -1
+        is_roll = 1 if self.framedata.is_roll(player.character, player.action) else -1
+        is_shield = 1 if self.framedata.is_shield(player.action) else -1
 
         return [direction_facing, is_on_ground, is_off_stage, is_grabbed, hitstun_left, hitlag_left, invulnerable,
                 invulnerability_left, jumps_left, percent, x, y, sheild_strength, speed_air_x_self, speed_ground_x_self,
@@ -128,12 +128,14 @@ class CharacterEnv(gym.Env):
         if new_opponent.y < blastzones[3] * 0.75 or new_opponent.y > blastzones[2] * 0.75:
             out_of_bounds += 0.2
 
-        reward = math.tanh((new_opponent.percent - new_player.percent) / 200) + out_of_bounds
+        reward = math.tanh((new_opponent.percent - new_player.percent) / 60)
 
         if new_player.action in utils.dead_list:
             reward = -1
+            print(new_player.action)
         elif new_opponent.action in utils.dead_list:
             reward = 1
+            print(new_opponent.action)
 
         return reward
 

@@ -34,7 +34,7 @@ class SACAgent(nn.Module):
         self.gamma = discount_factor
         self.tau = tau
 
-        hidden_size = 256
+        hidden_size = 128
 
         self.clip_grad_param = 1
 
