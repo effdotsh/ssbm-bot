@@ -110,9 +110,7 @@ class CharacterEnv(gym.Env):
         obs = np.array(obs).flatten()
         return obs
 
-    def calculate_reward(self, old_gamestate: melee.GameState, new_gamestate: melee.GameState):
-        old_player: melee.PlayerState = old_gamestate.players.get(self.player_port)
-        old_opponent: melee.PlayerState = old_gamestate.players.get(self.opponent_port)
+    def calculate_reward(self, new_gamestate: melee.GameState):
 
         new_player: melee.PlayerState = new_gamestate.players.get(self.player_port)
         new_opponent: melee.PlayerState = new_gamestate.players.get(self.opponent_port)

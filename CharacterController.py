@@ -36,7 +36,12 @@ class CharacterController:
         # self.model = Overseer(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=1000, batch_size=64, search_depth=1, update_every=500)
 
         self.current_state = self.env.reset()
+
         self.reward_history = deque(maxlen=180000)
+        self.kdr_history = deque(maxlen=100)
+        self.kdr_history.append(0)
+        self.reward_history.append(0)
+        
         self.step = 1
         self.tot_steps = 0
         self.done = False
@@ -68,25 +73,34 @@ class CharacterController:
         # print(gamestate.players.get(env.player_port).action)
         #
         # self.done = self.env.deaths >= 1
-        reward = self.env.calculate_reward(self.prev_gamestate, gamestate)
 
-        if self.step % 60 * 5 == 0 and log:
+        reward = self.env.calculate_reward(gamestate)
+        if reward == 1 and self.env.calculate_reward(self.prev_gamestate) != 1:
+            self.kdr_history.append(1)
+        if reward == -1 and self.env.calculate_reward(self.prev_gamestate) != -1:
+            self.kdr_history.append(-1)
+        # if self.step % 60 * 5 == 0 and log:
+        if log:
+
             policy_loss, alpha_loss, bellmann_error1, bellmann_error2, current_alpha = [None, None, None, None, None]
             replay_size = len(self.model.buffer.memory)
 
             if len(self.model.stats) > 0:
                 policy_loss, alpha_loss, bellmann_error1, bellmann_error2, current_alpha = self.model.stats
-                print('##################################')
-                print(f'Policy Loss: {policy_loss}')
-                print(f'Alpha Loss: {alpha_loss}')
-            print(f'Replay Size: {replay_size}')
-            print(f'Average Reward: {np.mean(self.reward_history)}')
-            print(f'Current Reward: {reward}')
-            print('##################################')
+            #     print('##################################')
+            #     print(f'Policy Loss: {policy_loss}')
+            #     print(f'Alpha Loss: {alpha_loss}')
+            # print(f'Replay Size: {replay_size}')
+            # print(f'KDR: {np.sum(self.kdr_history)}')
+            # print(f'Average Reward: {np.mean(self.reward_history)}')
+            # print(f'Current Reward: {reward}')
+            # print('##################################')
             wandb.log({
                 "Policy Loss": policy_loss,
                 "Alpha Loss": alpha_loss,
+                "KDR": np.sum(self.kdr_history),
                 "Replay Size": replay_size,
+                "Reward": reward,
                 "Average Reward": np.mean(self.reward_history)
             })
 
