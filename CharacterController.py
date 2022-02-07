@@ -59,7 +59,7 @@ class CharacterController:
         self.opponent_port = opponent_port
 
         if self.update_model and log:
-            wandb.init(project="SAC_Smash", name="Better KDR")
+            wandb.init(project="SAC_Smash", name="SparseRewards")
 
     def run_frame(self, gamestate: melee.GameState, log: bool):
         if gamestate is None:
