@@ -20,6 +20,7 @@ class Args:
     iso: str
     model_path: str
     cpu_level: int
+    wandb: bool
 
 
 class Game:

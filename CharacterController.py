@@ -20,7 +20,8 @@ class CharacterController:
     def __init__(self, port: int, opponent_port: int, game: gameManager.Game, min_replay_size=1500,
                  minibatch_size=128, max_replay_size=300_000,
                  learning_rate=0.00004, update_target_every=5, discount_factor=0.999, epsilon_decay=0.9997, epsilon=1,
-                 update_model=True, log=True):
+                 update_model=True, log=True, use_wandb=True):
+        print(f'Use Wandb: {use_wandb}')
         self.update_model = update_model
         self.game = game
         self.env = CharacterEnv(player_port=port, opponent_port=opponent_port, game=game)
@@ -58,12 +59,15 @@ class CharacterController:
         self.port = port
         self.opponent_port = opponent_port
 
-        if self.update_model and log:
+        self.use_wandb = use_wandb
+        if self.use_wandb:
             wandb.init(project="SAC_Smash", name="SparseRewards")
 
     def run_frame(self, gamestate: melee.GameState, log: bool):
+
         if gamestate is None:
             return
+        self.tot_steps += 1
 
         self.env.set_gamestate(gamestate)
 
@@ -85,14 +89,16 @@ class CharacterController:
 
             if len(self.model.stats) > 0:
                 policy_loss, alpha_loss, bellmann_error1, bellmann_error2, current_alpha = self.model.stats
-            wandb.log({
-                "Policy Loss": policy_loss,
-                "Alpha Loss": alpha_loss,
-                "KDR": np.sum(self.kdr_history),
-                "Replay Size": replay_size,
-                "Reward": reward,
-                "Average Reward": np.mean(self.reward_history)
-            })
+
+            if self.use_wandb:
+                wandb.log({
+                    "Policy Loss": policy_loss,
+                    "Alpha Loss": alpha_loss,
+                    "KDR": np.sum(self.kdr_history),
+                    "Replay Size": replay_size,
+                    "Reward": reward,
+                    "Average Reward": np.mean(self.reward_history)
+                })
             if self.tot_steps % 60 == 0:
                 print('##################################')
                 print(f'Policy Loss: {policy_loss}')
@@ -116,7 +122,6 @@ class CharacterController:
         self.action = action
         self.env.step(action)
 
-        self.tot_steps += 1
 
         self.prev_gamestate = gamestate
 
@@ -128,4 +133,4 @@ class CharacterController:
             self.step = 1
             self.done = False
         if self.update_model and self.tot_steps % (30 * 60 * 60) == 0:  # Save every thirty minutes
-            self.model.save(wandb=wandb, ep=self.tot_steps)
+            self.model.save(wandb=wandb if self.use_wandb else None, ep=self.tot_steps)

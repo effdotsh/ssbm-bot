@@ -128,8 +128,8 @@ class CharacterEnv(gym.Env):
         if new_opponent.y < blastzones[3] * 0.75 or new_opponent.y > blastzones[2] * 0.75:
             out_of_bounds += 0.2
 
-        # reward = math.tanh((new_opponent.percent - new_player.percent) / 60)
-        reward = -0.1
+        reward =utils.clamp(math.tanh((new_opponent.percent - new_player.percent) / 60), -0.8, 0.8)
+        # reward = -0.1
         if new_player.action in utils.dead_list:
             reward = -1
             print(new_player.action)

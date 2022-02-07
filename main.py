@@ -55,19 +55,21 @@ parser.add_argument('--model_path', default='model/dqn', type=str)
 parser.add_argument('--load_from', default=-1, type=int)
 parser.add_argument('--compete', default=False, action='store_true')
 parser.add_argument('--cpu_level', default=0, type=int)
+parser.add_argument('--wandb', default=False, action='store_true')
 
 args: gameManager.Args = parser.parse_args()
 
 start_time = time.time()
 if __name__ == '__main__':
     character = melee.Character.FOX
+    opponent = melee.Character.CPTFALCON if not args.compete else character
     # moveset = CharacterMovesets[character.name].value
 
     if not os.path.isdir(f'{args.model_path}/{character.name}'):
         os.makedirs(f'{args.model_path}/{character.name}')
 
     game = gameManager.Game(args)
-    game.enterMatch(cpu_level=args.cpu_level if not args.compete else 0, opponant_character=melee.Character.CPTFALCON,
+    game.enterMatch(cpu_level=args.cpu_level if not args.compete else 0, opponant_character=opponent,
                     player_character=character,
                     stage=melee.Stage.FINAL_DESTINATION)
     step = args.load_from
@@ -76,7 +78,7 @@ if __name__ == '__main__':
                                  min_replay_size=2_000, minibatch_size=800,
                                  max_replay_size=15_000,
                                  learning_rate=5e-5, update_target_every=2, discount_factor=0.994,
-                                 epsilon_decay=0.99995, epsilon=1)
+                                 epsilon_decay=0.99995, epsilon=1, use_wandb=args.wandb)
 
     # agent2 = agent1
 
@@ -84,7 +86,7 @@ if __name__ == '__main__':
         print(f"{Fore.GREEN}Self-Play!!!{Style.RESET_ALL}")
 
         agent2 = CharacterController(port=args.opponent, opponent_port=args.port, game=game,
-                                     update_model=False, epsilon=0)
+                                     update_model=False, epsilon=0, use_wandb=False)
         agent2.model = agent1.model
 
     # if args.load_from >= 0:
@@ -98,13 +100,17 @@ if __name__ == '__main__':
         agent1.run_frame(gamestate, log=True)
         if args.compete:
             agent2.run_frame(gamestate, log=False)
-            # if agent1.tot_steps % 500 == 0:
-            #     # agent2.model.model.set_weights(agent1.model.model.get_weights())
-            #     agent2.model.model = copy.deepcopy(agent1.model.model)
-            #     agent1.tot_steps += 1
-            #     print(f"{Fore.RED}Cloning Model{Style.RESET_ALL}")
+            if agent1.tot_steps % (3 * 60 * 60) == 0:
+            # if agent1.tot_steps % 60 == 0:
+                # agent2.model.model.set_weights(agent1.model.model.get_weights())
+                agent2.model.agent.actor_local = copy.deepcopy(agent1.model.agent.actor_local)
+                agent2.model.agent.actor_optimizer = copy.deepcopy(agent1.model.agent.actor_optimizer)
+                agent2.model.agent.critic1.layers = copy.deepcopy(agent1.model.agent.critic1.layers)
+                agent2.model.agent.critic2.layers = copy.deepcopy(agent1.model.agent.critic2.layers)
+                agent2.model.agent.critic1_target.layers = copy.deepcopy(agent1.model.agent.critic1_target.layers)
+                agent2.model.agent.critic2_target.layers = copy.deepcopy(agent1.model.agent.critic2_target.layers)
 
-        # if (step % 1000 == 0):
-        #     torch.save(agent1.model.model.state_dict(), f'{args.model_path}/{character.name}/{character.name}_{step}')
+                agent1.tot_steps += 1
+                print(f"{Fore.RED}Cloning Model{Style.RESET_ALL}")
 
         step += 1
