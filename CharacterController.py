@@ -72,15 +72,18 @@ class CharacterController:
         self.env.set_gamestate(gamestate)
 
         self.env.act()
-        self.env.controller.flush()
 
         reward = self.env.calculate_reward(gamestate)
+        self.reward_history.append(reward)
+
         if gamestate.players.get(self.port).action in utils.dead_list and self.prev_gamestate.players.get(
                 self.port).action not in utils.dead_list:
             self.kdr_history.append(-1)
         if gamestate.players.get(self.opponent_port).action in utils.dead_list and self.prev_gamestate.players.get(
                 self.opponent_port).action not in utils.dead_list:
             self.kdr_history.append(1)
+
+
         # if self.step % 60 * 5 == 0 and log:
         if log and self.update_model:
 
@@ -110,7 +113,7 @@ class CharacterController:
                 print('##################################')
 
         # update model from previous move
-        self.reward_history.append(reward)
+
         old_obs = self.env.get_observation(self.prev_gamestate)
         obs = self.env.get_observation(gamestate)
 
@@ -118,9 +121,8 @@ class CharacterController:
 
         self.step += 1
 
-        action = self.model.predict(obs)
-        self.action = action
-        self.env.step(action)
+        self.action = self.model.predict(obs)
+        self.env.step(self.action)
 
 
         self.prev_gamestate = gamestate
