@@ -36,6 +36,7 @@ class SAC:
         action = self.agent.get_action(state)
         if len(self.buffer.memory) < self.min_replay_size:
             action = random.randint(0, self.num_actions - 1)
+            print('reeee')
         return action
 
     def update_replay_memory(self, state, action, reward, next_state, done):
