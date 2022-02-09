@@ -32,8 +32,6 @@ class CharacterEnv(gym.Env):
 
         super(CharacterEnv, self).__init__()
 
-        self.gamestate: melee.GameState = self.game.console.step()
-        self.old_gamestate = self.game.console.step()
 
         self.rewards = []
 
@@ -45,7 +43,8 @@ class CharacterEnv(gym.Env):
 
         self.move = moveset[0]
 
-        num_inputs = self.get_observation(self.gamestate).shape[0]
+        gamestate = self.game.console.step()
+        num_inputs = self.get_observation(gamestate).shape[0]
 
         self.observation_space = spaces.Box(shape=np.array([num_inputs]), dtype=np.float, low=-1, high=1)
         self.action_space = spaces.Discrete(self.num_actions)
@@ -53,9 +52,6 @@ class CharacterEnv(gym.Env):
     def step(self, action: int):
         self.move = moveset[action]
 
-    def set_gamestate(self, gamestate: melee.GameState):
-        self.old_gamestate = self.gamestate
-        self.gamestate = gamestate
 
     def get_player_obs(self, player: melee.PlayerState):
         # PlayerState Info
@@ -139,14 +135,10 @@ class CharacterEnv(gym.Env):
 
         return reward
 
-    def reset(self):
-        return self.get_observation(self.gamestate)
 
     def act(self):
         # Check for deaths
         self.controller.release_all()
-        player: melee.PlayerState = self.gamestate.players.get(self.player_port)
-        opponent: melee.PlayerState = self.gamestate.players.get(self.opponent_port)
 
         if self.move.button is not None:
             self.controller.press_button(self.move.button)

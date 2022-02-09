@@ -69,8 +69,6 @@ class CharacterController:
             return
         self.tot_steps += 1
 
-        self.env.set_gamestate(gamestate)
-
         self.env.act()
 
         reward = self.env.calculate_reward(gamestate)
@@ -82,7 +80,6 @@ class CharacterController:
         if gamestate.players.get(self.opponent_port).action in utils.dead_list and self.prev_gamestate.players.get(
                 self.opponent_port).action not in utils.dead_list:
             self.kdr_history.append(1)
-
 
         # if self.step % 60 * 5 == 0 and log:
         if log and self.update_model:
@@ -123,7 +120,6 @@ class CharacterController:
 
         self.action = self.model.predict(obs)
         self.env.step(self.action)
-
 
         self.prev_gamestate = gamestate
 
