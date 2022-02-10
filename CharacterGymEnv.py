@@ -147,3 +147,6 @@ class CharacterEnv(gym.Env):
                 self.controller.tilt_analog_unit(axis_movement.axis, axis_movement.x, axis_movement.y)
 
         self.controller.flush()
+
+    def reset(self):
+        return self.get_observation(self.game.console.step())

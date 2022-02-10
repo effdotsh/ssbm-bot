@@ -61,7 +61,7 @@ class CharacterController:
 
         self.use_wandb = use_wandb
         if self.use_wandb:
-            wandb.init(project="SAC_Smash", name="SparseRewards")
+            wandb.init(project="SAC_Smash", name="SAC Smaller Action Space")
 
     def run_frame(self, gamestate: melee.GameState, log: bool):
 
