@@ -5,7 +5,7 @@ import melee
 import gameManager
 import movesList
 import utils
-from CharacterGymEnv import CharacterEnv
+from StateRewardManager import CharacterEnv
 
 # from EasyML.Spartnn import Overseer
 # from EasyML.DQN.DQN import DQN as MLAgent
