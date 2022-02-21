@@ -45,9 +45,27 @@ class SAC:
     def train(self):
         if len(self.buffer.memory) < self.min_replay_size:
             return False
-        # policy_loss, alpha_loss, bellmann_error1, bellmann_error2, current_alpha\
+        # policy_loss, alpha_loss, bellmann_error1, bellmann_error2, current_alpha
         self.stats = self.agent.learn(self.steps, self.buffer.sample())
         return True
+
+    def get_log(self):
+        obj = {
+            "buffer_size": len(self.buffer.memory),
+            "policy_loss": None,
+            "alpha_loss": None,
+            "bellmann_error1": None,
+            "bellmann_error2": None,
+            "current_alpha": None
+        }
+        if len(self.stats) != 0:
+            obj['policy_loss'] = self.stats[0]
+            obj['alpha_loss'] = self.stats[1]
+            obj['bellmann_error1'] = self.stats[2]
+            obj['bellmann_error2'] = self.stats[3]
+            obj['current_alpha'] = self.stats[4]
+
+        return obj
 
     def save(self, name="model", wandb=None, ep=0):
         save(name, model=self.agent.actor_local, wandb=wandb, ep=ep)
