@@ -11,7 +11,6 @@ import platform
 
 import os
 
-from CharacterController import CharacterController
 from colorama import Fore, Back, Style
 
 dolphin_path = ''
@@ -80,37 +79,11 @@ if __name__ == '__main__':
                                  learning_rate=5e-5, update_target_every=2, discount_factor=0.994,
                                  epsilon_decay=0.99995, epsilon=1, use_wandb=args.wandb)
 
-    # agent2 = agent1
 
-    if args.compete:  # self-train
-        print(f"{Fore.GREEN}Self-Play!!!{Style.RESET_ALL}")
-
-        agent2 = CharacterController(port=args.opponent, opponent_port=args.port, game=game,
-                                     update_model=False, epsilon=0, use_wandb=False)
-        agent2.model = agent1.model
-
-    # if args.load_from >= 0:
-    #     print('Loading!!!')
-    #     agent1.model.model.load_state_dict(torch.load(f'{args.model_path}/{character.name}_{step}'))
 
     while True:  # Training loop
-        gamestate = game.console.step()
-        if gamestate is None:
-            continue
+        gamestate = game.getState()
         agent1.run_frame(gamestate, log=True)
-        if args.compete:
-            agent2.run_frame(gamestate, log=False)
-            if agent1.tot_steps % (3 * 60 * 60) == 0:
-            # if agent1.tot_steps % 60 == 0:
-                # agent2.model.model.set_weights(agent1.model.model.get_weights())
-                agent2.model.agent.actor_local = copy.deepcopy(agent1.model.agent.actor_local)
-                agent2.model.agent.actor_optimizer = copy.deepcopy(agent1.model.agent.actor_optimizer)
-                agent2.model.agent.critic1.layers = copy.deepcopy(agent1.model.agent.critic1.layers)
-                agent2.model.agent.critic2.layers = copy.deepcopy(agent1.model.agent.critic2.layers)
-                agent2.model.agent.critic1_target.layers = copy.deepcopy(agent1.model.agent.critic1_target.layers)
-                agent2.model.agent.critic2_target.layers = copy.deepcopy(agent1.model.agent.critic2_target.layers)
 
-                agent1.tot_steps += 1
-                print(f"{Fore.RED}Cloning Model{Style.RESET_ALL}")
 
         step += 1
