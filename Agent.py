@@ -37,7 +37,8 @@ class Agent:
         self.kdr = deque(maxlen=100)
         self.rewards = deque(maxlen=4*60*60)
         if use_wandb:
-            wandb.init(project="SmashBot", name=f'{Algorithm.value}-{time.time()}')
+            wandb.init(project="SmashBot", name=f'{self.algorithm.name}-{int(time.time())}')
+        print("wandb logged in")
 
     def run_frame(self, gamestate: melee.GameState) -> None:
         self.step += 1
@@ -58,11 +59,12 @@ class Agent:
                 'Average Reward': np.mean(self.rewards),
                 'KDR': np.sum(self.kdr)
             }
-            model_log = self.model.log_wandb()
+            model_log = self.model.get_log()
             wandb.log(obj | model_log)
 
         self.action = self.model.predict(obs)
         self.controller.act(self.action)
+        self.prev_gamestate = gamestate
 
     def update_kdr(self, gamestate, prev_gamestate):
         new_player: melee.PlayerState = gamestate.players.get(self.player_port)
