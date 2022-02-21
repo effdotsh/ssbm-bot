@@ -16,6 +16,7 @@ class CharacterController:
         controller = self.game.getController(self.player_port)
         action: MovesList.Move = self.moveslist[action_index]
 
+        controller.release_all()
         if action.button is not None:
             controller.press_button(action.button)
         for axis_movement in action.axes:

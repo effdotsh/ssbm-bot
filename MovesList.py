@@ -16,11 +16,8 @@ class AxisInput:
 
 
 # 8 main directions, origin, and a slow walk left/right
-move_stick_vectors = [(float(int(i / 3) - 1), float(i % 3 - 1)) for i in range(9)]
-move_stick_vectors.append((-0.5, 0))
-move_stick_vectors.append((0.5, 0))
+move_stick_vectors = [(0., 0.), (-1., 0.), (1., 0.), (0., 1.), (0., -1.), (-1., 1.), (1., 1.), (-0.5, 0.), (0.5, 0.)]
 
-# c_stick_vectors = [(0., 0.), (-1., 0.), (0., 1.), (1., 0.), (0., -1.)]
 
 buttons: list[melee.Button] = [None, melee.Button.BUTTON_B, melee.Button.BUTTON_A, melee.Button.BUTTON_Z,
                                melee.Button.BUTTON_L, melee.Button.BUTTON_X]

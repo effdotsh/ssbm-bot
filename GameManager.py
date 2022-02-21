@@ -3,8 +3,8 @@ import sys
 import time
 
 import melee
-from utils import clamp
 
+import numpy as np
 
 class Args:
     compete: bool
@@ -102,7 +102,7 @@ class Game:
 
         # The console object keeps track of how long your bot is taking to process frames
         #   And can warn you if it's taking too long
-        if self.console.processingtime * 1000 > 12:
+        if self.console.processingtime * 1000 > 20:
             print("WARNING: Last frame took " + str(self.console.processingtime * 1000) + "ms to process.")
 
         if gamestate.menu_state not in [melee.Menu.IN_GAME, melee.Menu.SUDDEN_DEATH] and self.first_match_started:
@@ -117,8 +117,8 @@ class Game:
         def move_cursor(x, y):
             while True:
                 gamestate = self.get_gamestate()
-                moveX = clamp(x - self.cursor_x, -1, 1)
-                moveY = clamp(y - self.cursor_y, -1, 1)
+                moveX = np.clip(x - self.cursor_x, -1, 1)
+                moveY = np.clip(y - self.cursor_y, -1, 1)
 
                 print(moveX)
                 self.cursor_x += moveX
