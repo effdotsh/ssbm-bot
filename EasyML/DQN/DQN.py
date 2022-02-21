@@ -94,7 +94,8 @@ class DQN:
 
         return action
 
-    def train(self, terminal_state: bool):
+    def train(self):
+        terminal_state = True
         if len(self.replay_memory) < self.min_replay_size:
             return
 
@@ -148,3 +149,6 @@ class DQN:
             # TODO: Same as above
             self.target_model = copy.deepcopy(self.model)
             self.target_update_counter = 0
+
+    def get_log(self):
+        return {}
