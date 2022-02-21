@@ -94,7 +94,7 @@ class Game:
         print("Shutting down cleanly...")
         sys.exit(0)
 
-    def getState(self) -> melee.GameState:
+    def get_gamestate(self) -> melee.GameState:
         gamestate = self.console.step()
         while gamestate is None:
             gamestate = self.console.step()
@@ -116,7 +116,7 @@ class Game:
         # Sets rules to be time with no time limit
         def move_cursor(x, y):
             while True:
-                gamestate = self.getState()
+                gamestate = self.get_gamestate()
                 moveX = clamp(x - self.cursor_x, -1, 1)
                 moveY = clamp(y - self.cursor_y, -1, 1)
 
@@ -128,23 +128,23 @@ class Game:
                     return
 
         def flick_button(button):
-            gamestate = self.getState()
+            gamestate = self.get_gamestate()
             self.controller.press_button(button)
-            gamestate = self.getState()
+            gamestate = self.get_gamestate()
             self.controller.release_all()
-            gamestate = self.getState()
+            gamestate = self.get_gamestate()
 
         def flick_axis(button, x, y):
-            gamestate = self.getState()
+            gamestate = self.get_gamestate()
             self.controller.tilt_analog_unit(button, x, y)
-            gamestate = self.getState()
+            gamestate = self.get_gamestate()
             self.controller.tilt_analog_unit(button, 0, 0)
-            gamestate = self.getState()
+            gamestate = self.get_gamestate()
 
         # Select pichu, a character needs to be selected before rules can be selected
         t = time.time()
         while time.time() - t < 1:
-            gamestate = self.getState()
+            gamestate = self.get_gamestate()
             melee.MenuHelper.choose_character(melee.Character.PICHU, gamestate, self.controller)
             # melee.MenuHelper.
             if self.log:
@@ -159,7 +159,7 @@ class Game:
 
         t = time.time()
         while time.time() - t < 1:
-            gmaestate = self.getState()
+            gmaestate = self.get_gamestate()
 
         flick_axis(melee.Button.BUTTON_MAIN, -1, 0)
         flick_axis(melee.Button.BUTTON_MAIN, 0, -1)
@@ -176,7 +176,7 @@ class Game:
                    stage: melee.Stage = melee.Stage.BATTLEFIELD, cpu_level: int = 0):
         self.stage = stage
         # "step" to the next frame
-        gamestate = self.getState()
+        gamestate = self.get_gamestate()
 
         # Set unlimited time
         self.set_rules()
@@ -185,7 +185,7 @@ class Game:
         t = time.time()
         # self.controller_opponent.st
         while gamestate.menu_state not in [melee.Menu.IN_GAME, melee.Menu.SUDDEN_DEATH]:
-            gamestate = self.getState()
+            gamestate = self.get_gamestate()
 
             melee.MenuHelper.menu_helper_simple(gamestate,
                                                 self.controller,

@@ -38,7 +38,7 @@ class SAC:
             action = random.randint(0, self.num_actions - 1)
         return action
 
-    def update_replay_memory(self, state, action, reward, next_state, done):
+    def learn_expirience(self, state, action, reward, next_state, done):
         self.steps += 1
         self.buffer.add(state, action, reward, next_state, done)
 
