@@ -72,7 +72,7 @@ class DQN:
 
         return model.to(device)
 
-    def update_replay_memory(self, state, action, reward, next_state, done):
+    def learn_expirience(self, state, action, reward, next_state, done):
         self.replay_memory.append((state, action, reward, next_state, done))
 
     def get_qs(self, state):

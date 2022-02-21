@@ -5,13 +5,13 @@ import time
 
 import torch
 
-import gameManager
+import GameManager
 import melee
 import platform
 
 import os
 
-from colorama import Fore, Back, Style
+from Agent import Agent, Algorithm
 
 dolphin_path = ''
 if platform.system() == "Darwin":
@@ -56,34 +56,26 @@ parser.add_argument('--compete', default=False, action='store_true')
 parser.add_argument('--cpu_level', default=0, type=int)
 parser.add_argument('--wandb', default=False, action='store_true')
 
-args: gameManager.Args = parser.parse_args()
+args: GameManager.Args = parser.parse_args()
 
 start_time = time.time()
 if __name__ == '__main__':
     character = melee.Character.FOX
     opponent = melee.Character.CPTFALCON if not args.compete else character
-    # moveset = CharacterMovesets[character.name].value
 
     if not os.path.isdir(f'{args.model_path}/{character.name}'):
         os.makedirs(f'{args.model_path}/{character.name}')
 
-    game = gameManager.Game(args)
+    game = GameManager.Game(args)
     game.enterMatch(cpu_level=args.cpu_level if not args.compete else 0, opponant_character=opponent,
                     player_character=character,
                     stage=melee.Stage.FINAL_DESTINATION)
     step = args.load_from
 
-    agent1 = CharacterController(port=args.port, opponent_port=args.opponent, game=game,
-                                 min_replay_size=2_000, minibatch_size=800,
-                                 max_replay_size=15_000,
-                                 learning_rate=5e-5, update_target_every=2, discount_factor=0.994,
-                                 epsilon_decay=0.99995, epsilon=1, use_wandb=args.wandb)
-
-
+    agent1 = Agent(player_port=args.port, opponent_port=args.opponent, game=game, algorithm=Algorithm.SAC)
 
     while True:  # Training loop
-        gamestate = game.getState()
-        agent1.run_frame(gamestate, log=True)
-
+        gamestate = game.get_gamestate()
+        agent1.run_frame(gamestate)
 
         step += 1

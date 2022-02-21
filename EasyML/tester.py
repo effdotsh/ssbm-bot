@@ -70,7 +70,7 @@ def train(config):
             steps += 1
             next_state, reward, done, _ = env.step(action)
             env.render()
-            model.update_replay_memory(state, action, reward, next_state, done)
+            model.learn_expirience(state, action, reward, next_state, done)
             model.train()
             state = next_state
             rewards += reward

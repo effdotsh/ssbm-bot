@@ -33,7 +33,7 @@ b = len(buttons)
 # move_indexes = [[int(i / (b * c)) % m, int(i / b) % c, i % b] for i in range(m * c * b)]
 move_indexes = [[int(i / b), i % b] for i in range(m * b)]
 
-moveset = []
+moves_list = []
 for set in move_indexes:
     moveAxis = AxisInput(axis=melee.Button.BUTTON_MAIN, x=move_stick_vectors[set[0]][0],
                          y=move_stick_vectors[set[0]][1])
@@ -43,6 +43,11 @@ for set in move_indexes:
     # move = Move(button=button, axes=[moveAxis, cAxis])
     move = Move(button=button, axes=[moveAxis])
 
-    moveset.append(move)
+    moves_list.append(move)
 
+dead_list = [melee.Action.DEAD_FLY, melee.Action.DEAD_FLY_SPLATTER,
+             melee.Action.DEAD_FLY_SPLATTER_FLAT, melee.Action.DEAD_FLY_SPLATTER_FLAT_ICE,
+             melee.Action.DEAD_FLY_SPLATTER_ICE, melee.Action.DEAD_FLY_STAR, melee.Action.DEAD_FLY_STAR_ICE,
+             melee.Action.DEAD_LEFT, melee.Action.DEAD_RIGHT, melee.Action.DEAD_UP, melee.Action.DEAD_DOWN]
 
+special_fall_list = [melee.Action.SPECIAL_FALL_BACK, melee.Action.SPECIAL_FALL_FORWARD, melee.Action.LANDING_SPECIAL]
