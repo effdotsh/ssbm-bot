@@ -1,3 +1,4 @@
+import math
 import time
 from collections import deque
 
@@ -21,6 +22,7 @@ class Agent:
         self.game = game
         self.opponent_port = opponent_port
         self.player_port = player_port
+        self.framedata = melee.FrameData()
 
         self.step = 0
 
@@ -52,6 +54,14 @@ class Agent:
         if self.step % train_every(self.algorithm) == 0:
             self.model.train()
 
+        if self.step % 60 == 0:
+            print('-------------')
+            playerstate: melee.PlayerState = gamestate.players.get(self.player_port)
+            print(f'ActionIndex: {self.action}')
+            print(f'Action: {playerstate.action}')
+            print(f'Current Reward: {reward}')
+            print(f'Observation: {obs}')
+
         self.update_kdr(gamestate=gamestate, prev_gamestate=self.prev_gamestate)
 
         if self.use_wandb:
@@ -77,10 +87,18 @@ class Agent:
         if new_opponent.action in MovesList.dead_list and old_opponent.action not in MovesList.dead_list:
             self.kdr.append(1)
     def get_player_obs(self, player: melee.PlayerState) -> list:
-        x = player.x / 100
-        y = player.y / 100
+        x = player.position.x / 100
+        y = player.position.y / 100
         percent = min(player.percent/150, 1)
-        return [x, y, percent]
+        sheild = player.shield_strength/60
+
+        is_attacking = self.framedata.is_attack(player.character, player.action)
+        on_ground = player.on_ground
+
+        vel_y = (player.speed_y_self + player.speed_y_attack)/10
+        vel_x = (player.speed_x_attack + player.speed_air_x_self + player.speed_ground_x_self)/10
+
+        return [vel_x, vel_y, x, y, percent, sheild, on_ground, is_attacking]
 
     def get_observation(self, gamestate: melee.GameState) -> np.ndarray:
         player: melee.PlayerState = gamestate.players.get(self.player_port)
@@ -95,7 +113,17 @@ class Agent:
         player: melee.PlayerState = gamestate.players.get(self.player_port)
         opponent: melee.PlayerState = gamestate.players.get(self.opponent_port)
 
-        reward = np.clip((opponent.percent - player.percent)/100, -0.8, 0.8)
+
+        percent_diff = math.tanh((opponent.percent-player.percent)/200) * 0.55
+
+        bounds = 0
+        if opponent.off_stage:
+            bounds += 0.2
+        if player.off_stage:
+            bounds -= -0.2
+
+
+        reward = percent_diff + bounds
 
         if player.action in MovesList.dead_list:
             reward = -1

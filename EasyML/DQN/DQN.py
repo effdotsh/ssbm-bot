@@ -35,8 +35,8 @@ class DQNetwork(nn.Module):
 
 class DQN:
     def __init__(self, num_inputs, num_actions, learning_rate=0.001, min_replay_size=10_000, max_replay_size=50_000,
-                 batch_size=16, discount_factor=0.9, update_target_every=5, epsilon=1, min_epsilon=0.01,
-                 epsilon_decay=0.99):
+                 batch_size=512, discount_factor=0.995, update_target_every=10, epsilon=1, min_epsilon=0.01,
+                 epsilon_decay=0.99999):
         # Gets Trained
         self.model = self.create_model(num_inputs=num_inputs, num_actions=num_actions)
         # Gets predicted from
@@ -151,4 +151,7 @@ class DQN:
             self.target_update_counter = 0
 
     def get_log(self):
-        return {}
+        return {
+            "Buffer Size": len(self.replay_memory),
+            "Epsilon": self.epsilon
+        }
