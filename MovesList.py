@@ -19,7 +19,7 @@ class AxisInput:
 move_stick_vectors = [(0., 0.), (-1., 0.), (1., 0.), (0., 1.), (0., -1.), (-1., 1.), (1., 1.), (-0.5, 0.), (0.5, 0.)]
 
 
-buttons: list[melee.Button] = [None, melee.Button.BUTTON_B, melee.Button.BUTTON_A, melee.Button.BUTTON_Z,
+buttons: list[melee.Button] = [None, melee.Button.BUTTON_B, melee.Button.BUTTON_A,
                                melee.Button.BUTTON_L, melee.Button.BUTTON_X]
 
 m = len(move_stick_vectors)

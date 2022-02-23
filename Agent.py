@@ -116,14 +116,15 @@ class Agent:
 
         percent_diff = math.tanh((opponent.percent-player.percent)/200) * 0.55
 
+        sheild_penalty = (player.shield_strength-60)/60 * 0.1
         bounds = 0
-        if opponent.off_stage:
-            bounds += 0.2
-        if player.off_stage:
-            bounds -= -0.2
+        # if opponent.off_stage:
+        #     bounds += 0.2
+        # if player.off_stage:
+        #     bounds -= -0.2
 
 
-        reward = percent_diff + bounds
+        reward = percent_diff + sheild_penalty
 
         if player.action in MovesList.dead_list:
             reward = -1
