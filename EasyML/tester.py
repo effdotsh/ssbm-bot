@@ -58,8 +58,8 @@ def train(config):
     name = randString()
     # wandb.init(project=f"Discrete Tester {config.env}", name=name)
 
-    model = SAC(num_inputs=env.observation_space.shape[0],
-                num_actions=env.action_space.n, device=device, learning_rate=3e-4, tau=1e-2, discount_factor=0.9)
+    model = SAC(obs_dim=env.observation_space.shape[0],
+                action_dim=env.action_space.n, device=device, learning_rate=3e-4, tau=1e-2, discount_factor=0.9)
 
     for i in range(1, config.episodes + 1):
         state = env.reset()
