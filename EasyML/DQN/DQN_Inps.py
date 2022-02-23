@@ -1,3 +1,5 @@
+import random
+
 from .DQN_Outs import DQN as DQNAgent
 import numpy as np
 
@@ -22,14 +24,18 @@ class DQN:
         self.agent.learn_expirience(obs=obs_tensor, action=0, reward=reward,new_obs=new_obs_tensor, done=done)
 
     def predict(self, obs):
-        max_q = None
         action = 0
-        for a in range(0, self.action_dim):
-            input_tensor = self.create_input_tensor(obs, a)
-            q_val = self.agent.predict(input_tensor)
-            if a == 0 or q_val > max_q:
-                max_q = q_val
-                action = a
+
+        if random.random() < self.agent.epsilon:
+            action = random.randint(0, self.action_dim-1)
+        else:
+            max_q = None
+            for a in range(0, self.action_dim):
+                input_tensor = self.create_input_tensor(obs, a)
+                q_val = self.agent.predict(input_tensor)
+                if a == 0 or q_val > max_q:
+                    max_q = q_val
+                    action = a
         return action
 
     def train(self):
