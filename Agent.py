@@ -37,13 +37,12 @@ class Agent:
         self.action = 0
 
         self.kdr = deque(maxlen=100)
-        self.rewards = deque(maxlen=4*60*60)
+        self.rewards = deque(maxlen=4 * 60 * 60)
         if use_wandb:
             wandb.init(project="SmashBot", name=f'{self.algorithm.name}-{int(time.time())}')
         print("wandb logged in")
 
-
-        self.action_tracker=deque(maxlen=5000)
+        self.action_tracker = deque(maxlen=5000)
 
     def run_frame(self, gamestate: melee.GameState) -> None:
         self.step += 1
@@ -71,7 +70,7 @@ class Agent:
             obj = {
                 'Average Reward': np.mean(self.rewards),
                 'KDR': np.sum(self.kdr),
-                  "% of Action 0's": np.sum(self.action_tracker)/5000
+                "% of Action 0's": np.sum(self.action_tracker) / 5000
             }
             model_log = self.model.get_log()
             wandb.log(obj | model_log)
@@ -92,19 +91,30 @@ class Agent:
             self.kdr.append(-1)
         if new_opponent.action in MovesList.dead_list and old_opponent.action not in MovesList.dead_list:
             self.kdr.append(1)
+
     def get_player_obs(self, player: melee.PlayerState) -> list:
         x = player.position.x / 100
         y = player.position.y / 100
-        percent = min(player.percent/150, 1)
-        sheild = player.shield_strength/60
+        percent = player.percent / 150
+        sheild = player.shield_strength / 60
 
         is_attacking = self.framedata.is_attack(player.character, player.action)
         on_ground = player.on_ground
 
-        vel_y = (player.speed_y_self + player.speed_y_attack)/10
-        vel_x = (player.speed_x_attack + player.speed_air_x_self + player.speed_ground_x_self)/10
+        vel_y = (player.speed_y_self + player.speed_y_attack) / 10
+        vel_x = (player.speed_x_attack + player.speed_air_x_self + player.speed_ground_x_self) / 10
 
-        return [vel_x, vel_y, x, y, percent, sheild, on_ground, is_attacking]
+        facing = 1 if player.facing else -1
+
+        in_hitstun = 1 if player.hitlag_left else -1
+        is_invounrable = 1 if player.invulnerable else -1
+
+        special_fall = 1 if player.action in MovesList.special_fall_list else -1
+        is_dead = 1 if player.action in MovesList.dead_list else -1
+
+        jumps_left = player.jumps_left / self.framedata.max_jumps(player.character)
+        return [special_fall, is_dead, vel_x, vel_y, x, y, percent, sheild, on_ground, is_attacking, facing,
+                in_hitstun, is_invounrable, jumps_left]
 
     def get_observation(self, gamestate: melee.GameState) -> np.ndarray:
         player: melee.PlayerState = gamestate.players.get(self.player_port)
@@ -119,16 +129,14 @@ class Agent:
         player: melee.PlayerState = gamestate.players.get(self.player_port)
         opponent: melee.PlayerState = gamestate.players.get(self.opponent_port)
 
+        percent_diff = math.tanh((opponent.percent - player.percent) / 200) * 0.55
 
-        percent_diff = math.tanh((opponent.percent-player.percent)/200) * 0.55
-
-        sheild_penalty = (player.shield_strength-60)/60 * 0.1
+        sheild_penalty = (player.shield_strength - 60) / 60 * 0.1
         bounds = 0
         # if opponent.off_stage:
         #     bounds += 0.2
         # if player.off_stage:
         #     bounds -= -0.2
-
 
         reward = percent_diff + sheild_penalty
 
