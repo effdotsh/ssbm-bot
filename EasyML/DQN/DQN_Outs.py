@@ -34,8 +34,8 @@ class DQNetwork(nn.Module):
 
 
 class DQN:
-    def __init__(self, obs_dim, action_dim, learning_rate=5e-5, min_replay_size=10_000, max_replay_size=50_000,
-                 batch_size=512, discount_factor=0.995, update_target_every=10, epsilon=1, min_epsilon=0.001,
+    def __init__(self, obs_dim, action_dim, learning_rate=1e-4, min_replay_size=3_000, max_replay_size=5_000,
+                 batch_size=16, discount_factor=0.995, update_target_every=10, epsilon=1, min_epsilon=0.00001,
                  epsilon_decay=0.99999):
         # Gets Trained
         self.model = self.create_model(obs_dim=obs_dim, action_dim=action_dim)
@@ -140,9 +140,10 @@ class DQN:
         # self.model.fit(np.array(X), np.array(y), batch_size=self.minibatch_size, verbose=0, shuffle=False,
         #                callbacks=None, use_multiprocessing=True)
         # print(torch.Tensor(y))
+
         self.trainer.fit(torch.Tensor(X).to(device), torch.Tensor(y).to(device), batch_size=self.minibatch_size,
                          verbose=0)
-        # print(self.trainer.history.batch_metrics)
+
         if terminal:
             self.target_update_counter += 1
 
@@ -151,8 +152,10 @@ class DQN:
             self.target_model = copy.deepcopy(self.model)
             self.target_update_counter = 0
 
+
     def get_log(self):
         return {
             "Buffer Size": len(self.replay_memory),
-            "Epsilon": self.epsilon
+            "Epsilon": self.epsilon,
+            "Loss": self.trainer.history.batch_metrics if self.first_train else None
         }
