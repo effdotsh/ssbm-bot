@@ -113,8 +113,15 @@ class Agent:
         is_dead = 1 if player.action in MovesList.dead_list else -1
 
         jumps_left = player.jumps_left / self.framedata.max_jumps(player.character)
+
+
+        attack_state = self.framedata.attack_state(player.character, player.action, player.action_frame)
+        attack_active = 1 if attack_state == melee.AttackState.ATTACKING else -1
+        attack_cooldown = 1 if attack_state == melee.AttackState.COOLDOWN else -1
+        attack_windup = 1 if attack_state == melee.AttackState.WINDUP else -1
+
         return [special_fall, is_dead, vel_x, vel_y, x, y, percent, sheild, on_ground, is_attacking, facing,
-                in_hitstun, is_invounrable, jumps_left]
+                in_hitstun, is_invounrable, jumps_left, attack_windup, attack_active, attack_cooldown]
 
     def get_observation(self, gamestate: melee.GameState) -> np.ndarray:
         player: melee.PlayerState = gamestate.players.get(self.player_port)

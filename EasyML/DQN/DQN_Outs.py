@@ -22,11 +22,11 @@ class DQNetwork(nn.Module):
     def __init__(self, obs_dim: int, action_dim: int):
         super().__init__()
         self.layers = nn.Sequential(
-            nn.Linear(obs_dim, 128),
+            nn.Linear(obs_dim, 256),
             nn.LeakyReLU(),
-            nn.Linear(128, 128),
+            nn.Linear(256, 256),
             nn.LeakyReLU(),
-            nn.Linear(128, action_dim)
+            nn.Linear(256, action_dim)
         )
 
     def forward(self, inputs):
@@ -34,7 +34,7 @@ class DQNetwork(nn.Module):
 
 
 class DQN:
-    def __init__(self, obs_dim, action_dim, learning_rate=1e-4, min_replay_size=10_000, max_replay_size=50_000,
+    def __init__(self, obs_dim, action_dim, learning_rate=5e-5, min_replay_size=10_000, max_replay_size=50_000,
                  batch_size=512, discount_factor=0.995, update_target_every=10, epsilon=1, min_epsilon=0.001,
                  epsilon_decay=0.99999):
         # Gets Trained
