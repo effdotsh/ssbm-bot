@@ -42,6 +42,9 @@ class Agent:
             wandb.init(project="SmashBot", name=f'{self.algorithm.name}-{int(time.time())}')
         print("wandb logged in")
 
+
+        self.action_tracker=deque(maxlen=5000)
+
     def run_frame(self, gamestate: melee.GameState) -> None:
         self.step += 1
         reward = self.get_reward(gamestate)
@@ -67,12 +70,15 @@ class Agent:
         if self.use_wandb:
             obj = {
                 'Average Reward': np.mean(self.rewards),
-                'KDR': np.sum(self.kdr)
+                'KDR': np.sum(self.kdr),
+                  "% of Action 0's": np.sum(self.action_tracker)/5000
             }
             model_log = self.model.get_log()
             wandb.log(obj | model_log)
 
         self.action = self.model.predict(obs)
+        self.action_tracker.append(1 if self.action == 0 else 0)
+
         self.controller.act(self.action)
         self.prev_gamestate = gamestate
 
