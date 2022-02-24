@@ -8,6 +8,8 @@ import argparse
 import random
 from SAC.SAC import SAC
 from DQN.DQN_Inps import DQN
+
+
 # from DQN.DQN_Outs import DQN
 
 def randString():
@@ -52,14 +54,13 @@ def train(config):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     steps = 0
-    average10 = deque(maxlen=10)
     total_steps = 0
 
     name = randString()
-    # wandb.init(project=f"Discrete Tester {config.env}", name=name)
+    wandb.init(project=f"Discrete Tester {config.env}", name=f'{name}-{randString()}')
 
     model = DQN(obs_dim=env.observation_space.shape[0],
-                action_dim=env.action_space.n, learning_rate=3e-4, discount_factor=0.9)
+                action_dim=env.action_space.n, learning_rate=3e-4, discount_factor=0.9, batch_size=32)
     #
     # model = SAC(obs_dim=env.observation_space.shape[0],
     #             action_dim=env.action_space.n, learning_rate=3e-4, discount_factor=0.9)
@@ -72,7 +73,7 @@ def train(config):
             action = model.predict(state)
             steps += 1
             next_state, reward, done, _ = env.step(action)
-            env.render()
+            # env.render()
             model.learn_expirience(state, action, reward, next_state, done)
             model.train()
             state = next_state
@@ -81,13 +82,16 @@ def train(config):
             if done:
                 break
 
-        average10.append(rewards)
         total_steps += episode_steps
 
+        obj = {
+                  "Reward": rewards
+              }
+        print(obj | model.get_log())
+        print('---------------')
+        wandb.log(obj | model.get_log())
 
-        print("Episode: {} | Reward: {} | Steps: {}".format(i, rewards, steps, ))
-        print(model.get_log())
-        print('-----------------')
+
 if __name__ == "__main__":
     config = get_config()
     train(config)
