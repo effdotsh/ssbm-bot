@@ -59,6 +59,7 @@ class Agent:
         if self.use_wandb:
             obj = {
                 'Average Reward': np.mean(self.rewards),
+                'Reward': reward,
                 'KDR': np.sum(self.kdr),
             }
             model_log = self.model.get_log()
