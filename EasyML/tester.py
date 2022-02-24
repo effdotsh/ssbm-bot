@@ -60,6 +60,9 @@ def train(config):
 
     model = DQN(obs_dim=env.observation_space.shape[0],
                 action_dim=env.action_space.n, learning_rate=3e-4, discount_factor=0.9)
+    #
+    # model = SAC(obs_dim=env.observation_space.shape[0],
+    #             action_dim=env.action_space.n, learning_rate=3e-4, discount_factor=0.9)
 
     for i in range(1, config.episodes + 1):
         state = env.reset()
@@ -69,7 +72,7 @@ def train(config):
             action = model.predict(state)
             steps += 1
             next_state, reward, done, _ = env.step(action)
-            # env.render()
+            env.render()
             model.learn_expirience(state, action, reward, next_state, done)
             model.train()
             state = next_state

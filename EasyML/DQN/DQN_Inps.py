@@ -25,14 +25,13 @@ class DQN:
 
     def predict(self, obs):
         action = 0
-
         if random.random() < self.agent.epsilon:
             action = random.randint(0, self.action_dim-1)
         else:
             max_q = None
             for a in range(0, self.action_dim):
                 input_tensor = self.create_input_tensor(obs, a)
-                q_val = self.agent.predict(input_tensor)
+                q_val = float(self.agent.get_qs(input_tensor))
                 if a == 0 or q_val > max_q:
                     max_q = q_val
                     action = a

@@ -21,7 +21,7 @@ def create_model(algorithm: Algorithm, num_inputs: int, num_actions: int):
 
 def train_every(algorithm: Algorithm) -> int:
     if algorithm == algorithm.SAC:
-        return 1
+        return 2
     elif algorithm == Algorithm.DQN:
         return 512
 

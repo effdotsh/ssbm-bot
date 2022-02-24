@@ -72,7 +72,8 @@ if __name__ == '__main__':
                     stage=melee.Stage.FINAL_DESTINATION)
     step = args.load_from
 
-    agent1 = Agent(player_port=args.port, opponent_port=args.opponent, game=game, algorithm=Algorithm.DQN, use_wandb=args.wandb)
+    agent1 = Agent(player_port=args.port, opponent_port=args.opponent, game=game, algorithm=Algorithm.DQN,
+                   use_wandb=args.wandb)
 
     while True:  # Training loop
         gamestate = game.get_gamestate()
