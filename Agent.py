@@ -39,14 +39,12 @@ class Agent:
         self.kdr = deque(maxlen=100)
         self.rewards = deque(maxlen=4 * 60 * 60)
         if use_wandb:
-            wandb.init(project="SmashBot", name=f'{self.algorithm.name}-{int(time.time())}')
+            wandb.init(project="SmashBotSC", name=f'{self.algorithm.name}-{int(time.time())}')
         print("wandb logged in")
-
-        self.action_tracker = deque(maxlen=5000)
 
     def run_frame(self, gamestate: melee.GameState) -> None:
         self.step += 1
-        reward = self.get_reward(gamestate)
+        reward = self.get_reward(gamestate, self.prev_gamestate)
         self.rewards.append(reward)
 
         prev_obs = self.get_observation(self.prev_gamestate)
@@ -56,27 +54,17 @@ class Agent:
         if self.step % train_every(self.algorithm) == 0:
             self.model.train()
 
-        if self.step % 60 == 0:
-            print('-------------')
-            playerstate: melee.PlayerState = gamestate.players.get(self.player_port)
-            print(f'ActionIndex: {self.action}')
-            print(f'Action: {playerstate.action}')
-            print(f'Current Reward: {reward}')
-            print(f'Observation: {obs}')
-
         self.update_kdr(gamestate=gamestate, prev_gamestate=self.prev_gamestate)
 
         if self.use_wandb:
             obj = {
                 'Average Reward': np.mean(self.rewards),
                 'KDR': np.sum(self.kdr),
-                "% of Action 0's": np.sum(self.action_tracker) / 5000
             }
             model_log = self.model.get_log()
             wandb.log(obj | model_log)
 
         self.action = self.model.predict(obs)
-        self.action_tracker.append(1 if self.action == 0 else 0)
 
         self.controller.act(self.action)
         self.prev_gamestate = gamestate
@@ -114,7 +102,6 @@ class Agent:
 
         jumps_left = player.jumps_left / self.framedata.max_jumps(player.character)
 
-
         attack_state = self.framedata.attack_state(player.character, player.action, player.action_frame)
         attack_active = 1 if attack_state == melee.AttackState.ATTACKING else -1
         attack_cooldown = 1 if attack_state == melee.AttackState.COOLDOWN else -1
@@ -132,24 +119,21 @@ class Agent:
         obs.append(self.get_player_obs(opponent))
         return np.array(obs).flatten()
 
-    def get_reward(self, gamestate: melee.GameState) -> float:
-        player: melee.PlayerState = gamestate.players.get(self.player_port)
-        opponent: melee.PlayerState = gamestate.players.get(self.opponent_port)
+    def get_reward(self, new_gamestate: melee.GameState, old_gamestate: melee.GameState) -> float:
+        new_player: melee.PlayerState = new_gamestate.players.get(self.player_port)
+        new_opponent: melee.PlayerState = new_gamestate.players.get(self.opponent_port)
 
-        percent_diff = math.tanh((opponent.percent - player.percent) / 200) * 0.55
+        old_player: melee.PlayerState = old_gamestate.players.get(self.player_port)
+        old_opponent: melee.PlayerState = old_gamestate.players.get(self.opponent_port)
 
-        sheild_penalty = (player.shield_strength - 60) / 60 * 0.1
-        bounds = 0
-        # if opponent.off_stage:
-        #     bounds += 0.2
-        # if player.off_stage:
-        #     bounds -= -0.2
+        damage_dealt = max(new_opponent.percent - old_opponent.percent,0)
+        damage_received = max(new_player.percent - old_player.percent,0)
 
-        reward = percent_diff + sheild_penalty
+        reward = math.tanh((damage_dealt-damage_received)/25)*0.5
 
-        if player.action in MovesList.dead_list:
+        if new_player.action in MovesList.dead_list:
             reward = -1
-        elif opponent.action in MovesList.dead_list:
+        elif new_opponent.action in MovesList.dead_list:
             reward = 1
 
         return reward
