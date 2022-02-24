@@ -34,8 +34,8 @@ class DQNetwork(nn.Module):
 
 
 class DQN:
-    def __init__(self, obs_dim, action_dim, learning_rate=0.001, min_replay_size=10_000, max_replay_size=50_000,
-                 batch_size=512, discount_factor=0.995, update_target_every=10, epsilon=1, min_epsilon=0.01,
+    def __init__(self, obs_dim, action_dim, learning_rate=1e-4, min_replay_size=10_000, max_replay_size=50_000,
+                 batch_size=512, discount_factor=0.995, update_target_every=10, epsilon=1, min_epsilon=0.001,
                  epsilon_decay=0.99999):
         # Gets Trained
         self.model = self.create_model(obs_dim=obs_dim, action_dim=action_dim)
