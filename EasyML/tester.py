@@ -60,7 +60,7 @@ def train(config):
     wandb.init(project=f"Discrete Tester {config.env}", name=f'{name}-{randString()}')
 
     model = DQN(obs_dim=env.observation_space.shape[0],
-                action_dim=env.action_space.n, learning_rate=3e-4, discount_factor=0.9, batch_size=32)
+                action_dim=env.action_space.n, learning_rate=1e-4, discount_factor=0.9, batch_size=32, )
     #
     # model = SAC(obs_dim=env.observation_space.shape[0],
     #             action_dim=env.action_space.n, learning_rate=3e-4, discount_factor=0.9)
