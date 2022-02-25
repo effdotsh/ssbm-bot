@@ -4,9 +4,9 @@ import torch
 import wandb
 import argparse
 
-from EasyML.Discrete.DQN.DQN_Inps import DQN
+# from EasyML.Discrete.DQN.DQN_Inps import DQN
 
-
+from Discrete.PPO.PPO import PPO
 # from DQN.DQN_Outs import DQN
 
 def randString():
@@ -56,8 +56,10 @@ def train(config):
     name = randString()
     wandb.init(project=f"Discrete Tester {config.env}", name=f'{name}-{randString()}')
 
-    model = DQN(obs_dim=env.observation_space.shape[0],
-                action_dim=env.action_space.n, learning_rate=1e-4, discount_factor=0.9, batch_size=32, )
+    # model = DQN(obs_dim=env.observation_space.shape[0],
+    #             action_dim=env.action_space.n, learning_rate=1e-4, discount_factor=0.9, batch_size=32, )
+    model = PPO(obs_dim=env.observation_space.shape[0], action_dim=env.action_space.n)
+    #
     #
     # model = SAC(obs_dim=env.observation_space.shape[0],
     #             action_dim=env.action_space.n, learning_rate=3e-4, discount_factor=0.9)
@@ -71,7 +73,7 @@ def train(config):
             steps += 1
             next_state, reward, done, _ = env.step(action)
             # env.render()
-            model.learn_expirience(state, action, reward, next_state, done)
+            model.learn_experience(state, action, reward, next_state, done)
             model.train()
             state = next_state
             rewards += reward
@@ -84,9 +86,9 @@ def train(config):
         obj = {
                   "Reward": rewards
               }
-        print(obj | model.get_log())
-        print('---------------')
-        wandb.log(obj | model.get_log())
+        # print(obj | model.get_log())
+        # print('---------------')
+        # wandb.log(obj | model.get_log())
 
 
 if __name__ == "__main__":
