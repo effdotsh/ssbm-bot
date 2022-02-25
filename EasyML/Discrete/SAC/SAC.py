@@ -40,7 +40,7 @@ class SAC:
             action = random.randint(0, self.action_dim - 1)
         return action
 
-    def learn_expirience(self, obs, action, reward, new_obs, done):
+    def learn_experience(self, obs, action, reward, new_obs, done):
         self.steps += 1
         self.buffer.add(obs, action, reward, new_obs, done)
 

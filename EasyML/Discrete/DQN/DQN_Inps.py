@@ -24,7 +24,7 @@ class DQN:
 
         new_action = self.predict(new_obs)
         new_obs_tensor = self.create_input_tensor(new_obs, new_action)
-        self.agent.learn_expirience(obs=obs_tensor, action=0, reward=reward, new_obs=new_obs_tensor, done=done)
+        self.agent.learn_experience(obs=obs_tensor, action=0, reward=reward, new_obs=new_obs_tensor, done=done)
 
     def predict(self, obs):
         action = 0
