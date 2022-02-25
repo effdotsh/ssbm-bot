@@ -99,6 +99,16 @@ class PPO:
         self.batch_size = num_steps
         self.minibatch_size = self.num_steps // self.num_minibatches
 
+        self.log_obj = {"charts/learning_rate": self.optimizer.param_groups[0]["lr"],
+                        "losses/value_loss": None,
+                        "losses/policy_loss": None,
+                        "losses/entropy": None,
+                        "losses/old_approx_kl": None,
+                        "losses/approx_kl": None,
+                        "losses/clipfrac": None,
+                        "losses/explained_variance": None
+                        }
+
     def predict(self, obs):
         obs = torch.Tensor(obs)
         action, logprob, _, value = self.agent.get_action_and_value(obs)
@@ -126,7 +136,9 @@ class PPO:
         if self.step < self.num_steps:
             return
         self.step = 0
-
+        v_loss = None
+        pg_loss = None
+        entropy_loss = None
         # bootstrap value if not done
         with torch.no_grad():
             next_value = self.agent.get_value(self.obs[-1]).reshape(1, -1)
@@ -223,3 +235,16 @@ class PPO:
         y_pred, y_true = b_values.cpu().numpy(), b_returns.cpu().numpy()
         var_y = np.var(y_true)
         explained_var = np.nan if var_y == 0 else 1 - np.var(y_true - y_pred) / var_y
+
+        self.log_obj = {"charts/learning_rate": self.optimizer.param_groups[0]["lr"],
+                        "losses/value_loss": v_loss.item(),
+                        "losses/policy_loss": pg_loss.item(),
+                        "losses/entropy": entropy_loss.item(),
+                        "losses/old_approx_kl": old_approx_kl.item(),
+                        "losses/approx_kl": approx_kl.item(),
+                        "losses/clipfrac": np.mean(clipfracs),
+                        "losses/explained_variance": explained_var
+                        }
+
+    def get_log(self):
+        return self.log_obj

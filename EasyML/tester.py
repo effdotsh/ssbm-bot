@@ -86,9 +86,9 @@ def train(config):
         obj = {
                   "Reward": rewards
               }
-        # print(obj | model.get_log())
-        # print('---------------')
-        # wandb.log(obj | model.get_log())
+        print(obj | model.get_log())
+        print('---------------')
+        wandb.log(obj | model.get_log())
 
 
 if __name__ == "__main__":
