@@ -1,13 +1,10 @@
 import gym
 import numpy as np
-from collections import deque
 import torch
 import wandb
 import argparse
 
-import random
-from SAC.SAC import SAC
-from DQN.DQN_Inps import DQN
+from EasyML.Discrete.DQN.DQN_Inps import DQN
 
 
 # from DQN.DQN_Outs import DQN
