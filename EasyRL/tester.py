@@ -4,7 +4,7 @@ import torch
 import wandb
 import argparse
 
-# from EasyML.Discrete.DQN.DQN_Inps import DQN
+# from EasyRL.Discrete.DQN.DQN_Inps import DQN
 
 # from Discrete.PPO.PPO import PPO
 from Discrete.DQN.DQN_Outs import DQN
