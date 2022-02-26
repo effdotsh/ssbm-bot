@@ -45,6 +45,7 @@ class Agent:
         if use_wandb:
             wandb.init(project="SmashBot", name=f'{self.algorithm.name}-{int(time.time())}')
         print("wandb logged in")
+        self.pi_a = 0.0001
 
     def run_frame(self, gamestate: melee.GameState) -> None:
         self.step += 1
@@ -53,7 +54,11 @@ class Agent:
 
         prev_obs = self.get_observation(self.prev_gamestate)
         obs = self.get_observation(gamestate)
-        self.model.learn_experience(prev_obs, self.action, reward, obs, reward == -1)
+        if self.algorithm == Algorithm.PPO:
+            self.model.learn_experience(obs=prev_obs, action=self.action, reward=reward, new_obs=obs, done=reward == -1,
+                                        pi_a=self.pi_a)
+        else:
+            self.model.learn_experience(prev_obs, self.action, reward, obs, False)
 
         te = train_every(self.algorithm)
         if self.step % te == 0 and te != -1:
@@ -66,12 +71,16 @@ class Agent:
                 'Average Reward': np.mean(self.rewards),
                 'Reward': reward,
                 'KDR': np.sum(self.kdr),
-                '% Action 0': np.sum(self.action_tracker)/3600
+                '% Action 0': np.sum(self.action_tracker) / 3600
             }
             model_log = self.model.get_log()
             wandb.log(obj | model_log)
 
-        self.action = self.model.predict(obs)
+        if self.algorithm == Algorithm.PPO:
+            self.action, self.pi_a = self.model.predict(obs, False)
+        else:
+            self.action = self.model.predict(obs)
+
         self.action_tracker.append(1 if self.action == 0 else 0)
 
         self.controller.act(self.action)
@@ -84,10 +93,12 @@ class Agent:
         old_opponent: melee.PlayerState = prev_gamestate.players.get(self.opponent_port)
 
         if new_player.action in MovesList.dead_list and old_player.action not in MovesList.dead_list:
-            print(f'{colorama.Fore.YELLOW}{old_player.action} -> {new_player.action} @ {old_player.percent}%{colorama.Fore.RESET}')
+            print(
+                f'{colorama.Fore.YELLOW}{old_player.action} -> {new_player.action} @ {old_player.percent}%{colorama.Fore.RESET}')
             self.kdr.append(-1)
         if new_opponent.action in MovesList.dead_list and old_opponent.action not in MovesList.dead_list:
-            print(f'{colorama.Fore.GREEN}{old_opponent.action} -> {new_opponent.action} @ {old_opponent.percent}%{colorama.Fore.RESET}')
+            print(
+                f'{colorama.Fore.GREEN}{old_opponent.action} -> {new_opponent.action} @ {old_opponent.percent}%{colorama.Fore.RESET}')
             self.kdr.append(1)
 
     def get_player_obs(self, player: melee.PlayerState) -> list:
