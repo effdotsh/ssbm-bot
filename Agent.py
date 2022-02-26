@@ -2,6 +2,7 @@ import math
 import time
 from collections import deque
 
+import colorama
 import melee
 import numpy as np
 
@@ -83,8 +84,10 @@ class Agent:
         old_opponent: melee.PlayerState = prev_gamestate.players.get(self.opponent_port)
 
         if new_player.action in MovesList.dead_list and old_player.action not in MovesList.dead_list:
+            print(f'{colorama.Fore.YELLOW}{old_player.action} -> {new_player.action} @ {old_player.percent}%{colorama.Fore.RESET}')
             self.kdr.append(-1)
         if new_opponent.action in MovesList.dead_list and old_opponent.action not in MovesList.dead_list:
+            print(f'{colorama.Fore.GREEN}{old_opponent.action} -> {new_opponent.action} @ {old_opponent.percent}%{colorama.Fore.RESET}')
             self.kdr.append(1)
 
     def get_player_obs(self, player: melee.PlayerState) -> list:
