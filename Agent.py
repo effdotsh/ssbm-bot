@@ -55,7 +55,7 @@ class Agent:
         prev_obs = self.get_observation(self.prev_gamestate)
         obs = self.get_observation(gamestate)
         if self.algorithm == Algorithm.PPO:
-            self.model.learn_experience(obs=prev_obs, action=self.action, reward=reward, new_obs=obs, done=reward == -1,
+            self.model.learn_experience(obs=prev_obs, action=self.action, reward=reward, new_obs=obs, done=False, dead=reward==-1,
                                         pi_a=self.pi_a)
         else:
             self.model.learn_experience(prev_obs, self.action, reward, obs, False)
@@ -150,7 +150,7 @@ class Agent:
         damage_dealt = max(new_opponent.percent - old_opponent.percent, 0)
         damage_received = max(new_player.percent - old_player.percent, 0)
 
-        reward = math.tanh((damage_dealt - damage_received) / 25) * 0.5
+        reward = math.tanh((damage_dealt - damage_received) / 8) * 0.5
 
         if new_player.action in MovesList.dead_list:
             reward = -1
