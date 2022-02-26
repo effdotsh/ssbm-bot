@@ -1,16 +1,14 @@
 import gym
 import numpy as np
-from collections import deque
 import torch
 import wandb
 import argparse
 
-import random
-from SAC.SAC import SAC
-from DQN.DQN_Inps import DQN
+# from EasyML.Discrete.DQN.DQN_Inps import DQN
 
-
-# from DQN.DQN_Outs import DQN
+# from Discrete.PPO.PPO import PPO
+from Discrete.DQN.DQN_Outs import DQN
+from Discrete.SAC.SAC import SAC
 
 def randString():
     import random
@@ -30,7 +28,7 @@ def get_config():
     parser = argparse.ArgumentParser(description='RL')
     parser.add_argument("--run_name", type=str, default="SAC", help="Run name, default: SAC")
     parser.add_argument("--env", type=str, default="CartPole-v1", help="Gym environment name, default: CartPole-v1")
-    parser.add_argument("--episodes", type=int, default=10000, help="Number of episodes, default: 100")
+    parser.add_argument("--episodes", type=int, default=100_000, help="Number of episodes, default: 100")
     parser.add_argument("--buffer_size", type=int, default=100_000,
                         help="Maximal training dataset size, default: 100_000")
     parser.add_argument("--seed", type=int, default=1, help="Seed, default: 1")
@@ -59,11 +57,13 @@ def train(config):
     name = randString()
     wandb.init(project=f"Discrete Tester {config.env}", name=f'{name}-{randString()}')
 
-    model = DQN(obs_dim=env.observation_space.shape[0],
-                action_dim=env.action_space.n, learning_rate=1e-4, discount_factor=0.9, batch_size=32, )
+    # model = DQN(obs_dim=env.observation_space.shape[0],
+    #             action_dim=env.action_space.n, learning_rate=1e-4, discount_factor=0.9, batch_size=32, )
+    # model = PPO(obs_dim=env.observation_space.shape[0], action_dim=env.action_space.n)
     #
-    # model = SAC(obs_dim=env.observation_space.shape[0],
-    #             action_dim=env.action_space.n, learning_rate=3e-4, discount_factor=0.9)
+    #
+    model = SAC(obs_dim=env.observation_space.shape[0],
+                action_dim=env.action_space.n, learning_rate=3e-4, discount_factor=0.9)
 
     for i in range(1, config.episodes + 1):
         state = env.reset()
@@ -74,22 +74,23 @@ def train(config):
             steps += 1
             next_state, reward, done, _ = env.step(action)
             # env.render()
-            model.learn_expirience(state, action, reward, next_state, done)
-            model.train()
+            model.learn_experience(state, action, reward, next_state, done)
+            # model.train()
             state = next_state
             rewards += reward
             episode_steps += 1
             if done:
                 break
-
+            if steps > 64:
+                model.train()
         total_steps += episode_steps
 
         obj = {
                   "Reward": rewards
               }
-        print(obj | model.get_log())
-        print('---------------')
-        wandb.log(obj | model.get_log())
+        obj = obj | model.get_log()
+        print(obj)
+        wandb.log(obj)
 
 
 if __name__ == "__main__":
