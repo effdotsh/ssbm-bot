@@ -8,9 +8,6 @@ import copy
 import math
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
 class Actor(nn.Module):
     def __init__(self, state_dim, action_dim, net_width):
         super(Actor, self).__init__()
@@ -24,7 +21,7 @@ class Actor(nn.Module):
         n = torch.tanh(self.l2(n))
         return n
 
-    def pi(self, state, softmax_dim = 0):
+    def pi(self, state, softmax_dim=0):
         n = self.forward(state)
         prob = F.softmax(self.l3(n), dim=softmax_dim)
         return prob
@@ -34,8 +31,9 @@ class Actor(nn.Module):
     #     dist = Beta(alpha, beta)
     #     return dist
 
+
 class Critic(nn.Module):
-    def __init__(self, state_dim,net_width):
+    def __init__(self, state_dim, net_width):
         super(Critic, self).__init__()
 
         self.C1 = nn.Linear(state_dim, net_width)
@@ -48,12 +46,11 @@ class Critic(nn.Module):
         v = self.C3(v)
         return v
 
-
+default_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class PPO_Agent(object):
     def __init__(
             self,
-            env_with_Dead,
             state_dim,
             action_dim,
             gamma=0.99,
@@ -64,19 +61,20 @@ class PPO_Agent(object):
             K_epochs=10,
             batch_size=64,
             l2_reg=1e-3,
-            entropy_coef = 1e-3,
-            adv_normalization = False,
-            entropy_coef_decay = 0.99,
+            entropy_coef=1e-3,
+            adv_normalization=False,
+            entropy_coef_decay=0.99,
+            device=default_device
     ):
 
-        self.actor = Actor(state_dim, action_dim, net_width).to(device)
+        self.device = device
+        self.actor = Actor(state_dim, action_dim, net_width).to(self.device)
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=lr)
 
-        self.critic = Critic(state_dim, net_width).to(device)
+        self.critic = Critic(state_dim, net_width).to(self.device)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=lr)
 
         self.data = []
-        self.env_with_Dead = env_with_Dead
         self.gamma = gamma
         self.lambd = lambd
         self.clip_rate = clip_rate
@@ -103,10 +101,9 @@ class PPO_Agent(object):
             a = torch.argmax(pi).item()
         return a, 1.0
 
-
     def train(self):
-        s, a, r, s_prime, old_prob_a,done_mask,dw_mask = self.make_batch()
-        self.entropy_coef *= self.entropy_coef_decay #exploring decay
+        s, a, r, s_prime, old_prob_a, done_mask, dw_mask = self.make_batch()
+        self.entropy_coef *= self.entropy_coef_decay  # exploring decay
 
         ''' Use TD+GAE+LongTrajectory to compute Advantage and TD target'''
         with torch.no_grad():
@@ -124,20 +121,20 @@ class PPO_Agent(object):
                 adv.append(advantage)
             adv.reverse()
             adv = copy.deepcopy(adv[0:-1])
-            adv = torch.tensor(adv).unsqueeze(1).float().to(device)
+            adv = torch.tensor(adv).unsqueeze(1).float().to(self.device)
             td_target = adv + vs
             if self.adv_normalization:
-                adv = (adv - adv.mean()) / ((adv.std() + 1e-4))  #useful in some envs
+                adv = (adv - adv.mean()) / ((adv.std() + 1e-4))  # useful in some envs
 
         """PPO update"""
-        #Slice long trajectopy into short trajectory and perform mini-batch PPO update
+        # Slice long trajectopy into short trajectory and perform mini-batch PPO update
         optim_iter_num = int(math.ceil(s.shape[0] / self.optim_batch_size))
 
         for _ in range(self.K_epochs):
-            #Shuffle the trajectory, Good for training
+            # Shuffle the trajectory, Good for training
             perm = np.arange(s.shape[0])
             np.random.shuffle(perm)
-            perm = torch.LongTensor(perm).to(device)
+            perm = torch.LongTensor(perm).to(self.device)
             s, a, td_target, adv, old_prob_a = \
                 s[perm].clone(), a[perm].clone(), td_target[perm].clone(), adv[perm].clone(), old_prob_a[perm].clone()
 
@@ -171,41 +168,41 @@ class PPO_Agent(object):
                 self.critic_optimizer.step()
         return a_loss.mean(), c_loss, entropy
 
-
-
     def make_batch(self):
         s_lst, a_lst, r_lst, s_prime_lst, prob_a_lst, done_lst, dw_lst = [], [], [], [], [], [], []
         for transition in self.data:
             s, a, r, s_prime, prob_a, done, dw = transition
 
             s_lst.append(s)
-            a_lst.append([a])  #aware: [a] not a
+            a_lst.append([a])  # aware: [a] not a
             r_lst.append([r])
             s_prime_lst.append(s_prime)
             prob_a_lst.append([prob_a])
             done_lst.append([done])
             dw_lst.append([dw])
 
-            if not self.env_with_Dead:
-                '''Important!!!'''
-                # env_without_DeadAndWin: deltas = r + self.gamma * vs_ - vs
-                # env_with_DeadAndWin: deltas = r + self.gamma * vs_ * (1 - dw) - vs
-                dw_lst = (np.array(dw_lst) * False).tolist()
-
-            self.data = [] #Clean history trajectory
+            self.data = []  # Clean history trajectory
 
         '''list to tensor'''
-        with torch.no_grad():
-            s,a,r,s_prime,prob_a,done_mask, dw_mask = \
-                torch.tensor(s_lst, dtype=torch.float).to(device), \
-                torch.tensor(a_lst, dtype=torch.int64).to(device), \
-                torch.tensor(r_lst, dtype=torch.float).to(device), \
-                torch.tensor(s_prime_lst, dtype=torch.float).to(device), \
-                torch.tensor(prob_a_lst, dtype=torch.float).to(device), \
-                torch.tensor(done_lst, dtype=torch.float).to(device), \
-                torch.tensor(dw_lst, dtype=torch.float).to(device),
+        s_lst = np.array(s_lst)
+        a_lst = np.array(a_lst)
+        r_lst = np.array(r_lst)
+        s_prime_lst = np.array(s_prime_lst)
+        prob_a_lst = np.array(prob_a_lst)
+        done_lst = np.array(done_lst)
+        dw_lst = np.array(dw_lst)
 
-        return s, a, r, s_prime, prob_a,done_mask,dw_mask
+        with torch.no_grad():
+            s, a, r, s_prime, prob_a, done_mask, dw_mask = \
+                torch.tensor(s_lst, dtype=torch.float).to(self.device), \
+                torch.tensor(a_lst, dtype=torch.int64).to(self.device), \
+                torch.tensor(r_lst, dtype=torch.float).to(self.device), \
+                torch.tensor(s_prime_lst, dtype=torch.float).to(self.device), \
+                torch.tensor(prob_a_lst, dtype=torch.float).to(self.device), \
+                torch.tensor(done_lst, dtype=torch.float).to(self.device), \
+                torch.tensor(dw_lst, dtype=torch.float).to(self.device),
+
+        return s, a, r, s_prime, prob_a, done_mask, dw_mask
 
     def put_data(self, transition):
         self.data.append(transition)
@@ -217,4 +214,3 @@ class PPO_Agent(object):
     def load(self, episode):
         self.critic.load_state_dict(torch.load("./model/ppo_critic{}.pth".format(episode)))
         self.actor.load_state_dict(torch.load("./model/ppo_actor{}.pth".format(episode)))
-

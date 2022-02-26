@@ -1,7 +1,7 @@
 import gym
 import torch
 import numpy as np
-from Agent import device, PPO_Agent
+from Agent import PPO_Agent
 from torch.utils.tensorboard import SummaryWriter
 import os, shutil
 from datetime import datetime
@@ -47,25 +47,7 @@ parser.add_argument('--entropy_coef_decay', type=float, default=0.99, help='Deca
 parser.add_argument('--adv_normalization', type=str2bool, default=False, help='Advantage normalization')
 opt = parser.parse_args()
 print(opt)
-
-
-def evaluate_policy(env, model, render):
-    scores = 0
-    turns = 3
-    for j in range(turns):
-        s, done, ep_r, steps = env.reset(), False, 0, 0
-        while not done:
-            # Take deterministic actions at test time
-            a, pi_a = model.evaluate(torch.from_numpy(s).float().to(device))
-            s_prime, r, done, info = env.step(a)
-
-            ep_r += r
-            steps += 1
-            s = s_prime
-            if render:
-                env.render()
-        scores += ep_r
-    return scores/turns
+device='cpu'
 
 def main():
     EnvName = ['CartPole-v1','LunarLander-v2']
@@ -104,7 +86,6 @@ def main():
     print('\n')
 
     kwargs = {
-        "env_with_Dead": env_with_Dead[EnvIdex],
         "state_dim": state_dim,
         "action_dim": action_dim,
         "gamma": opt.gamma,

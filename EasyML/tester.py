@@ -6,8 +6,9 @@ import argparse
 
 # from EasyML.Discrete.DQN.DQN_Inps import DQN
 
-from Discrete.PPO.Agent import PPO
-# from DQN.DQN_Outs import DQN
+# from Discrete.PPO.PPO import PPO
+from Discrete.DQN.DQN_Outs import DQN
+from Discrete.SAC.SAC import SAC
 
 def randString():
     import random
@@ -58,11 +59,11 @@ def train(config):
 
     # model = DQN(obs_dim=env.observation_space.shape[0],
     #             action_dim=env.action_space.n, learning_rate=1e-4, discount_factor=0.9, batch_size=32, )
-    model = PPO(obs_dim=env.observation_space.shape[0], action_dim=env.action_space.n)
+    # model = PPO(obs_dim=env.observation_space.shape[0], action_dim=env.action_space.n)
     #
     #
-    # model = SAC(obs_dim=env.observation_space.shape[0],
-    #             action_dim=env.action_space.n, learning_rate=3e-4, discount_factor=0.9)
+    model = SAC(obs_dim=env.observation_space.shape[0],
+                action_dim=env.action_space.n, learning_rate=3e-4, discount_factor=0.9)
 
     for i in range(1, config.episodes + 1):
         state = env.reset()
@@ -80,14 +81,15 @@ def train(config):
             episode_steps += 1
             if done:
                 break
-
+            if steps > 64:
+                model.train()
         total_steps += episode_steps
 
         obj = {
                   "Reward": rewards
               }
         obj = obj | model.get_log()
-
+        print(obj)
         wandb.log(obj)
 
 
