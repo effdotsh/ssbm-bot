@@ -21,7 +21,7 @@ class Actor(nn.Module):
         n = torch.tanh(self.l2(n))
         return n
 
-    def pi(self, state, softmax_dim=0):
+    def pi(self, state, softmax_dim = 0):
         n = self.forward(state)
         prob = F.softmax(self.l3(n), dim=softmax_dim)
         return prob
@@ -31,9 +31,8 @@ class Actor(nn.Module):
     #     dist = Beta(alpha, beta)
     #     return dist
 
-
 class Critic(nn.Module):
-    def __init__(self, state_dim, net_width):
+    def __init__(self, state_dim,net_width):
         super(Critic, self).__init__()
 
         self.C1 = nn.Linear(state_dim, net_width)
@@ -46,7 +45,9 @@ class Critic(nn.Module):
         v = self.C3(v)
         return v
 
+
 default_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 class PPO_Agent(object):
     def __init__(
@@ -70,7 +71,6 @@ class PPO_Agent(object):
         self.device = device
         self.actor = Actor(state_dim, action_dim, net_width).to(self.device)
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=lr)
-
         self.critic = Critic(state_dim, net_width).to(self.device)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=lr)
 
@@ -102,6 +102,7 @@ class PPO_Agent(object):
         return a, 1.0
 
     def train(self):
+        entropy, c_loss, a_loss = 0, 0, 0
         s, a, r, s_prime, old_prob_a, done_mask, dw_mask = self.make_batch()
         self.entropy_coef *= self.entropy_coef_decay  # exploring decay
 
@@ -144,6 +145,7 @@ class PPO_Agent(object):
 
                 '''actor update'''
                 prob = self.actor.pi(s[index], softmax_dim=1)
+
                 entropy = Categorical(prob).entropy().sum(0, keepdim=True)
                 prob_a = prob.gather(1, a[index])
                 ratio = torch.exp(torch.log(prob_a) - torch.log(old_prob_a[index]))  # a/b == exp(log(a)-log(b))
