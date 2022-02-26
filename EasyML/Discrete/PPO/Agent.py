@@ -50,7 +50,7 @@ class Critic(nn.Module):
 
 
 
-class PPO_discrete(object):
+class PPO_Agent(object):
     def __init__(
             self,
             env_with_Dead,
@@ -101,7 +101,7 @@ class PPO_discrete(object):
         with torch.no_grad():
             pi = self.actor.pi(state, softmax_dim=0)
             a = torch.argmax(pi).item()
-        return a,1.0
+        return a, 1.0
 
 
     def train(self):
