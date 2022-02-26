@@ -1,7 +1,7 @@
 import gym
 import torch
 import numpy as np
-from PPO import device, PPO_discrete
+from Agent import device, PPO_Agent
 from torch.utils.tensorboard import SummaryWriter
 import os, shutil
 from datetime import datetime
@@ -121,54 +121,51 @@ def main():
     }
 
     if not os.path.exists('model'): os.mkdir('model')
-    model = PPO_discrete(**kwargs)
+    model = PPO_Agent(**kwargs)
     if Loadmodel: model.load(ModelIdex)
 
 
     traj_lenth = 0
     total_steps = 0
     while total_steps < Max_train_steps:
-        s, done, steps, ep_r = env.reset(), False, 0, 0
+        state = env.reset()
+        done, steps, episode_reward = False, 0, 0
 
         '''Interact & trian'''
         while not done:
             traj_lenth += 1
             steps += 1
+            action, pi_a = model.select_action(torch.from_numpy(state).float().to(device))
+
             if render:
-                # a, pi_a = model.select_action(torch.from_numpy(s).float().to(device))  #stochastic policy
-                a, pi_a = model.evaluate(torch.from_numpy(s).float().to(device))  #deterministic policy
                 env.render()
-            else:
-                a, pi_a = model.select_action(torch.from_numpy(s).float().to(device))
 
-            s_prime, r, done, info = env.step(a)
-
+            next_state, reward, done, info = env.step(action)
             if (done and steps != max_e_steps):
                 if EnvIdex == 1:
-                    if r <=-100: r = -30  #good for LunarLander
+                    if reward <=-100: reward = -30  #good for LunarLander
                 dw = True  #dw: dead and win
             else:
                 dw = False
 
-            model.put_data((s, a, r, s_prime, pi_a, done, dw))
-            s = s_prime
-            ep_r += r
+            model.put_data((state, action, reward, next_state, 1.0, done, dw))
+            state = next_state
+            episode_reward += reward
 
             '''update if its time'''
-            if not render:
-                if traj_lenth % T_horizon == 0:
-                    a_loss, c_loss, entropy = model.train()
-                    traj_lenth = 0
-                    if write:
-                        writer.add_scalar('a_loss', a_loss, global_step=total_steps)
-                        writer.add_scalar('c_loss', c_loss, global_step=total_steps)
-                        writer.add_scalar('entropy', entropy, global_step=total_steps)
+            if traj_lenth % T_horizon == 0:
+                a_loss, c_loss, entropy = model.train()
+                traj_lenth = 0
+                if write:
+                    writer.add_scalar('a_loss', a_loss, global_step=total_steps)
+                    writer.add_scalar('c_loss', c_loss, global_step=total_steps)
+                    writer.add_scalar('entropy', entropy, global_step=total_steps)
 
             '''record & log'''
             if total_steps % eval_interval == 0:
                 score = evaluate_policy(eval_env, model, False)
                 if write:
-                    writer.add_scalar('ep_r', score, global_step=total_steps)
+                    writer.add_scalar('episode_reward', score, global_step=total_steps)
                 print('EnvName:',BrifEnvName[EnvIdex],'seed:',seed,'steps: {}k'.format(int(total_steps/1000)),'score:', score)
             total_steps += 1
 

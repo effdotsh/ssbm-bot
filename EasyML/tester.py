@@ -6,7 +6,7 @@ import argparse
 
 # from EasyML.Discrete.DQN.DQN_Inps import DQN
 
-from Discrete.PPO.PPO import PPO
+from Discrete.PPO.Agent import PPO
 # from DQN.DQN_Outs import DQN
 
 def randString():
