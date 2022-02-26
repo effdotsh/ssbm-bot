@@ -39,7 +39,7 @@ class Agent:
         self.kdr = deque(maxlen=100)
         self.rewards = deque(maxlen=4 * 60 * 60)
         if use_wandb:
-            wandb.init(project="SmashBotSC", name=f'{self.algorithm.name}-{int(time.time())}')
+            wandb.init(project="SmashBot", name=f'{self.algorithm.name}-{int(time.time())}')
         print("wandb logged in")
 
     def run_frame(self, gamestate: melee.GameState) -> None:
@@ -51,7 +51,8 @@ class Agent:
         obs = self.get_observation(gamestate)
         self.model.learn_experience(prev_obs, self.action, reward, obs, False)
 
-        if self.step % train_every(self.algorithm) == 0:
+        te = train_every(self.algorithm)
+        if self.step % te ==0 and te != -1:
             self.model.train()
 
         self.update_kdr(gamestate=gamestate, prev_gamestate=self.prev_gamestate)
