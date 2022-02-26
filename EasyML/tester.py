@@ -27,7 +27,7 @@ def get_config():
     parser = argparse.ArgumentParser(description='RL')
     parser.add_argument("--run_name", type=str, default="SAC", help="Run name, default: SAC")
     parser.add_argument("--env", type=str, default="CartPole-v1", help="Gym environment name, default: CartPole-v1")
-    parser.add_argument("--episodes", type=int, default=10000, help="Number of episodes, default: 100")
+    parser.add_argument("--episodes", type=int, default=100_000, help="Number of episodes, default: 100")
     parser.add_argument("--buffer_size", type=int, default=100_000,
                         help="Maximal training dataset size, default: 100_000")
     parser.add_argument("--seed", type=int, default=1, help="Seed, default: 1")
@@ -74,7 +74,7 @@ def train(config):
             next_state, reward, done, _ = env.step(action)
             # env.render()
             model.learn_experience(state, action, reward, next_state, done)
-            model.train()
+            # model.train()
             state = next_state
             rewards += reward
             episode_steps += 1
@@ -86,9 +86,9 @@ def train(config):
         obj = {
                   "Reward": rewards
               }
-        print(obj | model.get_log())
-        print('---------------')
-        wandb.log(obj | model.get_log())
+        obj = obj | model.get_log()
+
+        wandb.log(obj)
 
 
 if __name__ == "__main__":

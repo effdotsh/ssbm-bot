@@ -49,7 +49,7 @@ class Agent:
 
         prev_obs = self.get_observation(self.prev_gamestate)
         obs = self.get_observation(gamestate)
-        self.model.learn_expirience(prev_obs, self.action, reward, obs, False)
+        self.model.learn_experience(prev_obs, self.action, reward, obs, False)
 
         if self.step % train_every(self.algorithm) == 0:
             self.model.train()
