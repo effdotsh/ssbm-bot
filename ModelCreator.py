@@ -1,7 +1,7 @@
 from enum import Enum
 
-from EasyML.DQN.DQN_Inps import DQN
-from EasyML.SAC.SAC import SAC
+from EasyML.Discrete.DQN.DQN_Inps import DQN
+from EasyML.Discrete.SAC.SAC import SAC
 
 
 class Algorithm(Enum):
