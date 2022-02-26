@@ -8,5 +8,5 @@ env = SmashEnv(wandb)
 wandb.init(project="SmashBot", name="SB3-PPO")
 
 model = PPO("MlpPolicy", env, verbose=1, learning_rate=1e-4)
-model.learn(total_timesteps=60 * 60 * 60 * 10)  # 10 hours
+model.learn(total_timesteps=60 * 60 * 60 * 100)  # 100 hours
 model.save("dqn_smash")

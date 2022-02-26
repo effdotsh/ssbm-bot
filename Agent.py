@@ -38,6 +38,9 @@ class Agent:
 
         self.kdr = deque(maxlen=100)
         self.rewards = deque(maxlen=4 * 60 * 60)
+
+        self.action_tracker = deque(maxlen=3600)
+
         if use_wandb:
             wandb.init(project="SmashBot", name=f'{self.algorithm.name}-{int(time.time())}')
         print("wandb logged in")
@@ -49,10 +52,10 @@ class Agent:
 
         prev_obs = self.get_observation(self.prev_gamestate)
         obs = self.get_observation(gamestate)
-        self.model.learn_experience(prev_obs, self.action, reward, obs, False)
+        self.model.learn_experience(prev_obs, self.action, reward, obs, reward == -1)
 
         te = train_every(self.algorithm)
-        if self.step % te ==0 and te != -1:
+        if self.step % te == 0 and te != -1:
             self.model.train()
 
         self.update_kdr(gamestate=gamestate, prev_gamestate=self.prev_gamestate)
@@ -62,11 +65,13 @@ class Agent:
                 'Average Reward': np.mean(self.rewards),
                 'Reward': reward,
                 'KDR': np.sum(self.kdr),
+                '% Action 0': np.sum(self.action_tracker)/3600
             }
             model_log = self.model.get_log()
             wandb.log(obj | model_log)
 
         self.action = self.model.predict(obs)
+        self.action_tracker.append(1 if self.action == 0 else 0)
 
         self.controller.act(self.action)
         self.prev_gamestate = gamestate
@@ -128,10 +133,10 @@ class Agent:
         old_player: melee.PlayerState = old_gamestate.players.get(self.player_port)
         old_opponent: melee.PlayerState = old_gamestate.players.get(self.opponent_port)
 
-        damage_dealt = max(new_opponent.percent - old_opponent.percent,0)
-        damage_received = max(new_player.percent - old_player.percent,0)
+        damage_dealt = max(new_opponent.percent - old_opponent.percent, 0)
+        damage_received = max(new_player.percent - old_player.percent, 0)
 
-        reward = math.tanh((damage_dealt-damage_received)/25)*0.5
+        reward = math.tanh((damage_dealt - damage_received) / 25) * 0.5
 
         if new_player.action in MovesList.dead_list:
             reward = -1
