@@ -4,11 +4,7 @@ import torch
 import wandb
 import argparse
 
-# from EasyRL.Discrete.DQN.DQN_Inps import DQN
-
-from Discrete.PPO.PPO import PPO
-
-
+from stable_baselines3 import PPO
 def randString():
     import random
     random_string = ''

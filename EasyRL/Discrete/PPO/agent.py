@@ -21,7 +21,7 @@ class Actor(nn.Module):
         n = torch.tanh(self.l2(n))
         return n
 
-    def pi(self, state, softmax_dim = 0):
+    def pi(self, state, softmax_dim=0):
         n = self.forward(state)
         prob = F.softmax(self.l3(n), dim=softmax_dim)
         return prob
@@ -31,8 +31,9 @@ class Actor(nn.Module):
     #     dist = Beta(alpha, beta)
     #     return dist
 
+
 class Critic(nn.Module):
-    def __init__(self, state_dim,net_width):
+    def __init__(self, state_dim, net_width):
         super(Critic, self).__init__()
 
         self.C1 = nn.Linear(state_dim, net_width)
@@ -168,6 +169,7 @@ class PPO_Agent(object):
                 self.critic_optimizer.zero_grad()
                 c_loss.backward()
                 self.critic_optimizer.step()
+
         return a_loss.mean(), c_loss, entropy
 
     def make_batch(self):
