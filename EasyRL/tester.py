@@ -7,6 +7,7 @@ import argparse
 # from EasyRL.Discrete.DQN.DQN_Inps import DQN
 
 from Discrete.PPO.PPO import PPO
+from Discrete.SAC.SAC2.SAC import SAC
 
 
 def randString():
@@ -61,35 +62,35 @@ def train(config):
 
     # model = DQN(obs_dim=env.observation_space.shape[0],
     #             action_dim=env.action_space.n, learning_rate=1e-4, discount_factor=0.9, batch_size=32, )
-    model = PPO(obs_dim=env.observation_space.shape[0], action_dim=env.action_space.n, learning_rate=3e-4, batch_size=32, T_horizon=64)
+    # model = PPO(obs_dim=env.observation_space.shape[0], action_dim=env.action_space.n, learning_rate=3e-4, batch_size=32, T_horizon=64)
     #
     #
-    # model = SAC(obs_dim=env.observation_space.shape[0],
-    #             action_dim=env.action_space.n, learning_rate=3e-4, discount_factor=0.9)
+    model = SAC(obs_dim=env.observation_space.shape[0], action_dim=env.action_space.n)
 
     for i in range(1, config.episodes + 1):
         state = env.reset()
         episode_steps = 0
         rewards = 0
         while True:
-            action, pi_a = model.predict(state, False)
+            action = model.predict(state)
             steps += 1
             next_state, reward, done, _ = env.step(action)
             env.render()
-            model.learn_experience(state, action, reward, next_state, done, pi_a=pi_a)
+            model.learn_experience(state, action, reward, next_state, done)
             # model.train()
             state = next_state
             rewards += reward
             episode_steps += 1
             if done:
                 break
-            if steps > 64:
+            if steps >= 64:
                 model.train()
+                steps = 0
         total_steps += episode_steps
 
         obj = {
-                  "Reward": rewards
-              }
+            "Reward": rewards
+        }
         obj = obj | model.get_log()
         print(obj)
         if config.wandb:
