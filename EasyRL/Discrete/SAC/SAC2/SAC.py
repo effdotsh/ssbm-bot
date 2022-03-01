@@ -6,7 +6,7 @@ import torch
 import numpy as np
 import multiprocessing as mp
 
-from ReplayBuffer import ReplayBuffer, ReplayBufferList
+from .ReplayBuffer import ReplayBuffer, ReplayBufferList
 
 from .SACAgent import AgentSAC_H
 
@@ -15,12 +15,16 @@ default_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class SAC:
     def __init__(self, obs_dim: int, action_dim: int, net_width: int = 256, discount_factor=0.995, learning_rate=1e-4,
-                 max_buffer_len=100_000):
+                 max_buffer_size=1_000_000, min_buffer_size=1000, batch_size=256, soft_update_tau=0.005, repeat_times=1):
+        self.min_buffer_size = min_buffer_size
+        self.repeat_times = repeat_times
+        self.soft_update_tau = soft_update_tau
+        self.batch_size = batch_size
         self.agent = AgentSAC_H()
         self.agent.init(state_dim=obs_dim, action_dim=action_dim, net_dim=net_width, gamma=discount_factor,
                         learning_rate=learning_rate)
         self.buffer = ReplayBuffer(gpu_id=0,
-                                   max_len=max_buffer_len,
+                                   max_len=max_buffer_size,
                                    state_dim=obs_dim,
                                    action_dim=1)
 
@@ -29,36 +33,29 @@ class SAC:
         torch.set_grad_enabled(False)
 
         self.traj = []
-        self.final_obs
+        self.final_obs = None
+        self.replay_len = 0
 
     def predict(self, obs):
         ten_state = torch.as_tensor(obs, dtype=torch.float32)
         ten_action = self.agent.select_actions(ten_state.unsqueeze(0))[0]
-        action = ten_action.numpy()
+        # print(ten_action.numpy())
+        action = np.argmax(ten_action.numpy())
+
         return action
 
     def learn_experience(self, obs, action, reward, new_obs, done):
-        ten_other = torch.empty(2 + self.action_dim)
-        ten_other[0] = reward
-        ten_other[1] = done
-        ten_other[2:] = torch.Tensor([action])
-
-        ten_state = torch.as_tensor(obs, dtype=torch.float32)
-        self.traj.append((ten_state, ten_other))
-        self.final_obs = new_obs
+        self.buffer.extend_buffer(obs, (reward, action, done))
+        self.replay_len += 1
+        if self.replay_len > self.min_buffer_size and (self.replay_len - self.min_buffer_size) % self.batch_size == 0:
+            self.train(True)
 
     def train(self, verified=False):
-        self.agent.states[0] = self.final_obs
-        traj_state = torch.stack([item[0] for item in self.traj])
-        traj_other = torch.stack([item[1] for item in self.traj])
-        traj_list = [
-            (traj_state, traj_other),
-        ]
-
-        trajectory = self.agent.convert_trajectory(traj_list)  # [traj_env_0, ]
-
-
-        pass
+        if not verified:
+            return
+        torch.set_grad_enabled(True)
+        logging_tuple = self.agent.update_net(self.buffer, batch_size=self.batch_size, repeat_times=self.repeat_times,soft_update_tau=self.soft_update_tau)
+        torch.set_grad_enabled(False)
 
     def get_log(self):
-        pass
+        return {}

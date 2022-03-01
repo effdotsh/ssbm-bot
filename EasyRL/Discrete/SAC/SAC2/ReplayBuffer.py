@@ -33,8 +33,8 @@ class ReplayBuffer:  # for off-policy
             self.buf_state[0:next_idx] = state[-next_idx:]
             self.buf_other[0:next_idx] = other[-next_idx:]
         else:
-            self.buf_state[self.next_idx:next_idx] = state
-            self.buf_other[self.next_idx:next_idx] = other
+            self.buf_state[self.next_idx:next_idx] = torch.Tensor(state)
+            self.buf_other[self.next_idx:next_idx] = torch.Tensor(other)
         self.next_idx = next_idx
 
     def update_buffer(self, traj_lists):
