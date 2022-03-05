@@ -8,7 +8,7 @@ import multiprocessing as mp
 
 from .ReplayBuffer import ReplayBuffer, ReplayBufferList
 
-from .SACAgent import AgentSAC_H
+from .SACAgent import AgentSAC
 
 default_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -20,7 +20,7 @@ class SAC:
         self.repeat_times = repeat_times
         self.soft_update_tau = soft_update_tau
         self.batch_size = batch_size
-        self.agent = AgentSAC_H()
+        self.agent = AgentSAC()
         self.agent.init(state_dim=obs_dim, action_dim=action_dim, net_dim=net_width, gamma=discount_factor,
                         learning_rate=learning_rate)
         self.buffer = ReplayBuffer(gpu_id=0,
@@ -35,6 +35,7 @@ class SAC:
         self.traj = []
         self.final_obs = None
         self.replay_len = 0
+
 
     def predict(self, obs):
         ten_state = torch.as_tensor(obs, dtype=torch.float32)

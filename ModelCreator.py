@@ -2,7 +2,7 @@ from enum import Enum
 
 from EasyRL.Discrete.DQN.DQN_Inps import DQN
 from EasyRL.Discrete.PPO.PPO import PPO
-from EasyRL.Discrete.SAC.SAC import SAC
+from EasyRL.Discrete.SAC.SAC1.SAC import SAC
 
 
 class Algorithm(Enum):

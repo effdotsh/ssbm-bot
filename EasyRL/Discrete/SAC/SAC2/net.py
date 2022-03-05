@@ -655,6 +655,8 @@ class CriticTwin(nn.Module):  # shared parameter
         :param action: [tensor] the input action.
         :return: the output tensor.
         """
+
+
         tmp = self.net_sa(torch.cat((state, action), dim=1))
         return self.net_q1(tmp)  # one Q value
 
@@ -666,6 +668,8 @@ class CriticTwin(nn.Module):  # shared parameter
         :param action: [tensor] the input action.
         :return: the output tensor.
         """
+        print(state.shape)
+        print(action.shape)
         tmp = self.net_sa(torch.cat((state, action), dim=1))
         return self.net_q1(tmp), self.net_q2(tmp)  # two Q values
 
