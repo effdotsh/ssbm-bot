@@ -158,7 +158,7 @@ class Agent:
         damage_dealt = max(new_opponent.percent - old_opponent.percent, 0)
         damage_received = max(new_player.percent - old_player.percent, 0)
 
-        reward = math.tanh((damage_dealt - damage_received) / 8) * 0.5
+        reward = math.tanh((damage_dealt - damage_received) / 4) * 0.7
 
         if damage_dealt > 0:
             print(f'{colorama.Fore.LIGHTGREEN_EX}Dealt {damage_dealt}%')
