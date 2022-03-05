@@ -27,7 +27,7 @@ def randString():
 def get_config():
     parser = argparse.ArgumentParser(description='RL')
     parser.add_argument("--run_name", type=str, default="SAC", help="Run name, default: SAC")
-    parser.add_argument("--env", type=str, default="CartPole-v1", help="Gym environment name, default: CartPole-v1")
+    parser.add_argument("--env", type=str, default="LunarLander-v2", help="Gym environment name, default: CartPole-v1")
     parser.add_argument("--episodes", type=int, default=100_000, help="Number of episodes, default: 100")
     parser.add_argument("--buffer_size", type=int, default=100_000,
                         help="Maximal training dataset size, default: 100_000")
@@ -36,7 +36,7 @@ def get_config():
                         help="Log agent behaviour to wanbd when set to 1, default: 0")
     parser.add_argument("--save_every", type=int, default=100, help="Saves the network every x epochs, default: 25")
     parser.add_argument("--batch_size", type=int, default=256, help="Batch size, default: 256")
-    parser.add_argument("--wandb", type=bool, default=False)
+    parser.add_argument("--wandb", type=bool, default=True)
 
     args = parser.parse_args()
     return args
@@ -62,21 +62,21 @@ def train(config):
 
     # model = DQN(obs_dim=env.observation_space.shape[0],
     #             action_dim=env.action_space.n, learning_rate=1e-4, discount_factor=0.9, batch_size=32, )
-    # model = PPO(obs_dim=env.observation_space.shape[0], action_dim=env.action_space.n, learning_rate=3e-4, batch_size=32, T_horizon=64)
+    model = PPO(obs_dim=env.observation_space.shape[0], action_dim=env.action_space.n, learning_rate=8e-5, batch_size=128, T_horizon=512, adv_normalization=True)
     #
     #
-    model = SAC(obs_dim=env.observation_space.shape[0], action_dim=env.action_space.n)
+    # model = SAC(obs_dim=env.observation_space.shape[0], action_dim=env.action_space.n)
 
     for i in range(1, config.episodes + 1):
         state = env.reset()
         episode_steps = 0
         rewards = 0
         while True:
-            action = model.predict(state)
+            action, pi_a = model.predict(state)
             steps += 1
             next_state, reward, done, _ = env.step(action)
             env.render()
-            model.learn_experience(state, action, reward, next_state, done)
+            model.learn_experience(state, action, reward, next_state, done, pi_a=pi_a)
             # model.train()
             state = next_state
             rewards += reward
