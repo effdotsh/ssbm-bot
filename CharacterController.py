@@ -19,6 +19,7 @@ class CharacterController:
         controller.release_all()
         if action.button is not None:
             controller.press_button(action.button)
+
         for axis_movement in action.axes:
             if axis_movement.axis is not None:
                 controller.tilt_analog_unit(axis_movement.axis, axis_movement.x, axis_movement.y)

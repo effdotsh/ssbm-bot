@@ -48,7 +48,12 @@ class Agent:
         self.pi_a = 0.001
 
     def run_frame(self, gamestate: melee.GameState) -> None:
-        died = self.update_kdr(gamestate=gamestate, prev_gamestate=self.prev_gamestate)
+        died, already_dead = self.update_kdr(gamestate=gamestate, prev_gamestate=self.prev_gamestate)
+
+        # Pass if a player is dead
+        if already_dead:
+            self.game.controller.release_all()
+            return
 
         self.step += 1
         reward = self.get_reward(gamestate, self.prev_gamestate)
@@ -57,7 +62,8 @@ class Agent:
         prev_obs = self.get_observation(self.prev_gamestate)
         obs = self.get_observation(gamestate)
         if self.algorithm == Algorithm.PPO:
-            self.model.learn_experience(obs=prev_obs, action=self.action, reward=reward, new_obs=obs, done=False, dead=died,
+            self.model.learn_experience(obs=prev_obs, action=self.action, reward=reward, new_obs=obs, done=died,
+                                        dead=died,
                                         pi_a=self.pi_a)
         else:
             self.model.learn_experience(prev_obs, self.action, reward, obs, False)
@@ -65,7 +71,6 @@ class Agent:
         te = train_every(self.algorithm)
         if self.step % te == 0 and te != -1:
             self.model.train()
-
 
         if self.use_wandb:
             obj = {
@@ -93,19 +98,26 @@ class Agent:
         old_player: melee.PlayerState = prev_gamestate.players.get(self.player_port)
         old_opponent: melee.PlayerState = prev_gamestate.players.get(self.opponent_port)
 
+        someone_already_dead = False
+        died = False
+        if new_opponent.action in MovesList.dead_list:
+            if old_opponent.action not in MovesList.dead_list:
+                print(
+                    f'{colorama.Fore.GREEN}{old_opponent.action} -> {new_opponent.action} @ {old_opponent.percent}%{colorama.Fore.RESET}')
+                self.kdr.append(1)
+            else:
+                someone_already_dead = True
 
-        if new_opponent.action in MovesList.dead_list and old_opponent.action not in MovesList.dead_list:
-            print(
-                f'{colorama.Fore.GREEN}{old_opponent.action} -> {new_opponent.action} @ {old_opponent.percent}%{colorama.Fore.RESET}')
-            self.kdr.append(1)
+        if new_player.action in MovesList.dead_list:
+            if old_player.action not in MovesList.dead_list:
+                print(
+                    f'{colorama.Fore.YELLOW}{old_player.action} -> {new_player.action} @ {old_player.percent}%{colorama.Fore.RESET}')
+                self.kdr.append(-1)
+                died = True
+            else:
+                someone_already_dead = True
 
-        if new_player.action in MovesList.dead_list and old_player.action not in MovesList.dead_list:
-            print(
-                f'{colorama.Fore.YELLOW}{old_player.action} -> {new_player.action} @ {old_player.percent}%{colorama.Fore.RESET}')
-            self.kdr.append(-1)
-            return True
-
-        return False
+        return died, someone_already_dead
 
     def get_player_obs(self, player: melee.PlayerState) -> list:
         x = player.position.x / 100
