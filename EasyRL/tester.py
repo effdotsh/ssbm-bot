@@ -62,7 +62,7 @@ def train(config):
 
     # model = DQN(obs_dim=env.observation_space.shape[0],
     #             action_dim=env.action_space.n, learning_rate=1e-4, discount_factor=0.9, batch_size=32, )
-    model = PPO(obs_dim=env.observation_space.shape[0], action_dim=env.action_space.n, learning_rate=8e-5, batch_size=128, T_horizon=512, adv_normalization=True)
+    model = PPO(obs_dim=env.observation_space.shape[0], action_dim=env.action_space.n, learning_rate=8e-5, batch_size=128, T_horizon=512, adv_normalization=False)
     #
     #
     # model = SAC(obs_dim=env.observation_space.shape[0], action_dim=env.action_space.n)

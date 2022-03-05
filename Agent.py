@@ -37,7 +37,7 @@ class Agent:
         self.controller = CharacterController(player_port=self.player_port, game=self.game, moves_list=moves_list)
         self.action = 0
 
-        self.kdr = deque(maxlen=100)
+        self.kdr = deque(maxlen=20)
         self.rewards = deque(maxlen=4 * 60 * 60)
 
         self.action_tracker = deque(maxlen=3600)
@@ -45,7 +45,7 @@ class Agent:
         if use_wandb:
             wandb.init(project="SmashBot", name=f'{self.algorithm.name}-{int(time.time())}')
         print("wandb logged in")
-        self.pi_a = 0.0001
+        self.pi_a = 0.001
 
     def run_frame(self, gamestate: melee.GameState) -> None:
         died = self.update_kdr(gamestate=gamestate, prev_gamestate=self.prev_gamestate)
@@ -57,7 +57,7 @@ class Agent:
         prev_obs = self.get_observation(self.prev_gamestate)
         obs = self.get_observation(gamestate)
         if self.algorithm == Algorithm.PPO:
-            self.model.learn_experience(obs=prev_obs, action=self.action, reward=reward, new_obs=obs, done=died, dead=died,
+            self.model.learn_experience(obs=prev_obs, action=self.action, reward=reward, new_obs=obs, done=False, dead=died,
                                         pi_a=self.pi_a)
         else:
             self.model.learn_experience(prev_obs, self.action, reward, obs, False)
@@ -78,7 +78,7 @@ class Agent:
             wandb.log(obj | model_log)
 
         if self.algorithm == Algorithm.PPO:
-            self.action, self.pi_a = self.model.predict(obs, True)
+            self.action, self.pi_a = self.model.predict(obs)
         else:
             self.action = self.model.predict(obs)
 
@@ -134,8 +134,10 @@ class Agent:
         attack_cooldown = 1 if attack_state == melee.AttackState.COOLDOWN else -1
         attack_windup = 1 if attack_state == melee.AttackState.WINDUP else -1
 
+        is_bmove = 1 if self.framedata.is_bmove(player.character, player.action) else -1
+
         return [special_fall, is_dead, vel_x, vel_y, x, y, percent, sheild, on_ground, is_attacking, facing,
-                in_hitstun, is_invounrable, jumps_left, attack_windup, attack_active, attack_cooldown]
+                in_hitstun, is_invounrable, jumps_left, attack_windup, attack_active, attack_cooldown, is_bmove]
 
     def get_observation(self, gamestate: melee.GameState) -> np.ndarray:
         player: melee.PlayerState = gamestate.players.get(self.player_port)
@@ -157,6 +159,11 @@ class Agent:
         damage_received = max(new_player.percent - old_player.percent, 0)
 
         reward = math.tanh((damage_dealt - damage_received) / 8) * 0.5
+
+        if damage_dealt > 0:
+            print(f'{colorama.Fore.LIGHTGREEN_EX}Dealt {damage_dealt}%')
+        if damage_received > 0:
+            print(f'{colorama.Fore.MAGENTA}Took {damage_received}%')
 
         if new_player.action in MovesList.dead_list:
             reward = -1
