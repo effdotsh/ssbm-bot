@@ -63,7 +63,7 @@ class PPO_Agent(object):
             K_epochs=10,
             batch_size=64,
             l2_reg=1e-3,
-            entropy_coef=1e-3,
+            entropy_coef=0,
             adv_normalization=False,
             entropy_coef_decay=0.99,
             device=default_device

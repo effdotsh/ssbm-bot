@@ -58,7 +58,7 @@ class Agent:
         died, already_dead = self.update_kdr(gamestate=gamestate, prev_gamestate=self.prev_gamestate)
 
         # Pass if a player is dead
-        if already_dead and not died:
+        if already_dead:
             self.game.controller.release_all()
             self.prev_gamestate = gamestate
             return
@@ -86,18 +86,20 @@ class Agent:
                 'Reward': reward,
                 'KDR': np.sum(self.kdr),
                 'Percent at Kill': np.mean(self.percent_at_kill),
-                'Percent at Death': np.mean(self.percent_at_death)
+                'Percent at Death': np.mean(self.percent_at_death),
                 # '% Action 0': np.sum(self.action_tracker) / 3600
             }
             model_log = self.model.get_log()
             wandb.log(obj | model_log)
+            if (reward == 1 or reward == -1) and self.log:
+                print('------')
 
         if self.algorithm == Algorithm.PPO:
             self.action, self.pi_a = self.model.predict(obs)
         else:
             self.action = self.model.predict(obs)
 
-        self.action_tracker.append(1 if self.action == 0 else 0)
+        self.action_tracker.append(self.action)
 
         self.controller.act(self.action)
         self.prev_gamestate = gamestate
@@ -135,8 +137,8 @@ class Agent:
 
     def get_player_obs(self, player: melee.PlayerState) -> list:
         x = player.position.x / 100
-        y = player.position.y / 100
-        percent = player.percent / 150
+        y = player.position.y / 20
+        percent = math.tanh(player.percent / 100)
         sheild = player.shield_strength / 60
 
         is_attacking = self.framedata.is_attack(player.character, player.action)
@@ -184,18 +186,26 @@ class Agent:
         damage_dealt = max(new_opponent.percent - old_opponent.percent, 0)
         damage_received = max(new_player.percent - old_player.percent, 0)
 
-        reward = math.tanh((damage_dealt - damage_received) / 4) * 0.7
+        edge = melee.EDGE_POSITION.get(self.game.stage)
+        bounds = 0
+        if new_opponent.x > edge or new_opponent.x < -edge or new_opponent.y < 0:
+            bounds += 0.2
+        if new_player.x > edge or new_player.x < -edge or new_player.y < 0:
+            bounds -= 0.3
+
+        reward = math.tanh((damage_dealt - damage_received) / 4) * 0.7 + bounds
 
         if self.log:
             if damage_dealt > 0:
-                print(f'{colorama.Fore.LIGHTGREEN_EX}Dealt {damage_dealt}%')
+                print(f'{colorama.Fore.LIGHTGREEN_EX}Dealt {damage_dealt}%{colorama.Fore.RESET}')
             if damage_received > 0:
-                print(f'{colorama.Fore.MAGENTA}Took {damage_received}%')
-        if damage_dealt == 0:
-            reward-=0.1
+                print(f'{colorama.Fore.LIGHTMAGENTA_EX}Took {damage_received}%{colorama.Fore.RESET}')
+
         if new_player.action in MovesList.dead_list:
             reward = -1
         elif new_opponent.action in MovesList.dead_list:
             reward = 1
+
+        print(f'{self.action}: {reward}')
 
         return reward
