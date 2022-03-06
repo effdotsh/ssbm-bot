@@ -16,34 +16,22 @@ class AxisInput:
 
 
 # 8 main directions, origin, and a slow walk left/right
-move_stick_vectors = [(0., 0.), (-1., 0.), (1., 0.), (0., 1.), (0., -1.), (-1., 1.), (1., 1.), (-0.5, 0.), (0.5, 0.)]
-
+move_stick_vectors = [(0., 0.), (-1., 0.), (1., 0.), (0., 1.), (0., -1.)]
 
 buttons: list[melee.Button] = [None, melee.Button.BUTTON_B, melee.Button.BUTTON_A, melee.Button.BUTTON_X]
 
-m = len(move_stick_vectors)
-# c = len(c_stick_vectors)
-b = len(buttons)
-
-# move, c, button
-# move_indexes = [[int(i / (b * c)) % m, int(i / b) % c, i % b] for i in range(m * c * b)]
-move_indexes = [[int(i / b), i % b] for i in range(m * b)]
-
 moves_list = []
-for set in move_indexes:
-    moveAxis = AxisInput(axis=melee.Button.BUTTON_MAIN, x=move_stick_vectors[set[0]][0],
-                         y=move_stick_vectors[set[0]][1])
-    # cAxis = AxisInput(axis=melee.Button.BUTTON_C, x=c_stick_vectors[set[1]][0], y=c_stick_vectors[set[1]][1])
-
-    button = buttons[set[1]]
-    # move = Move(button=button, axes=[moveAxis, cAxis])
-    move = Move(button=button, axes=[moveAxis])
-
-    moves_list.append(move)
+for button in buttons:
+    for v in move_stick_vectors:
+        moveAxis = AxisInput(axis=melee.Button.BUTTON_MAIN, x=v[0], y=v[1])
+        move = Move(button=button, axes=[moveAxis])
+        moves_list.append(move)
 
 dead_list = [melee.Action.DEAD_FLY, melee.Action.DEAD_FLY_SPLATTER,
              melee.Action.DEAD_FLY_SPLATTER_FLAT, melee.Action.DEAD_FLY_SPLATTER_FLAT_ICE,
              melee.Action.DEAD_FLY_SPLATTER_ICE, melee.Action.DEAD_FLY_STAR, melee.Action.DEAD_FLY_STAR_ICE,
-             melee.Action.DEAD_LEFT, melee.Action.DEAD_RIGHT, melee.Action.DEAD_UP, melee.Action.DEAD_DOWN, melee.Action.ON_HALO_DESCENT]
+             melee.Action.DEAD_LEFT, melee.Action.DEAD_RIGHT, melee.Action.DEAD_UP, melee.Action.DEAD_DOWN,
+             melee.Action.ON_HALO_DESCENT]
 
-special_fall_list = [melee.Action.SPECIAL_FALL_BACK, melee.Action.SPECIAL_FALL_FORWARD, melee.Action.LANDING_SPECIAL, melee.Action.DEAD_FALL]
+special_fall_list = [melee.Action.SPECIAL_FALL_BACK, melee.Action.SPECIAL_FALL_FORWARD, melee.Action.LANDING_SPECIAL,
+                     melee.Action.DEAD_FALL]
