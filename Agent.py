@@ -51,8 +51,9 @@ class Agent:
         died, already_dead = self.update_kdr(gamestate=gamestate, prev_gamestate=self.prev_gamestate)
 
         # Pass if a player is dead
-        if already_dead:
+        if already_dead and not died:
             self.game.controller.release_all()
+            self.prev_gamestate = gamestate
             return
 
         self.step += 1
@@ -77,7 +78,7 @@ class Agent:
                 'Average Reward': np.mean(self.rewards),
                 'Reward': reward,
                 'KDR': np.sum(self.kdr),
-                '% Action 0': np.sum(self.action_tracker) / 3600
+                # '% Action 0': np.sum(self.action_tracker) / 3600
             }
             model_log = self.model.get_log()
             wandb.log(obj | model_log)

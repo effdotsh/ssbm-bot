@@ -17,11 +17,13 @@ def create_model(algorithm: Algorithm, num_inputs: int, num_actions: int):
     elif algorithm == Algorithm.DQN:
         model = DQN(obs_dim=num_inputs, action_dim=num_actions)
     elif algorithm == Algorithm.PPO:
-        model = PPO(obs_dim=num_inputs, action_dim=num_actions, batch_size=512, T_horizon=1024, learning_rate=3e-5)
+        model = PPO(obs_dim=num_inputs, action_dim=num_actions, batch_size=512, T_horizon=1024, learning_rate=3e-5,
+                    adv_normalization=True)
     else:
         model = DQN(obs_dim=num_inputs, action_dim=num_actions)
 
     return model
+
 
 def train_every(algorithm: Algorithm) -> int:
     if algorithm == algorithm.SAC:
