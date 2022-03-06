@@ -45,7 +45,10 @@ class Agent:
 
         self.percent_at_death = deque(maxlen=20)
         self.percent_at_kill = deque(maxlen=20)
+        self.percent_at_kill.append(0)
+        self.percent_at_death.append(0)
 
+        
         if use_wandb:
             wandb.init(project="SmashBot", name=f'{self.algorithm.name}-{int(time.time())}')
             print("wandb logged in")
