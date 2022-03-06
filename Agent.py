@@ -43,12 +43,12 @@ class Agent:
 
         self.action_tracker = deque(maxlen=3600)
 
-        self.percent_at_death = deque(maxlen=20)
-        self.percent_at_kill = deque(maxlen=20)
-        self.percent_at_kill.append(0)
+        self.percent_at_death = deque(maxlen=1)
+        self.percent_at_kill = deque(maxlen=1)
+        self.percent_at_kill.append(300)
         self.percent_at_death.append(0)
 
-        
+
         if use_wandb:
             wandb.init(project="SmashBot", name=f'{self.algorithm.name}-{int(time.time())}')
             print("wandb logged in")
@@ -191,7 +191,8 @@ class Agent:
                 print(f'{colorama.Fore.LIGHTGREEN_EX}Dealt {damage_dealt}%')
             if damage_received > 0:
                 print(f'{colorama.Fore.MAGENTA}Took {damage_received}%')
-
+        if damage_dealt == 0:
+            reward-=0.1
         if new_player.action in MovesList.dead_list:
             reward = -1
         elif new_opponent.action in MovesList.dead_list:
