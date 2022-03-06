@@ -17,7 +17,8 @@ import wandb
 
 class Agent:
     def __init__(self, player_port: int, opponent_port: int, game: GameManager.Game, algorithm: Algorithm,
-                 use_wandb: bool):
+                 use_wandb: bool, log: bool = True):
+        self.log = log
         self.use_wandb = use_wandb
         self.algorithm = algorithm
         self.game = game
@@ -47,7 +48,7 @@ class Agent:
 
         if use_wandb:
             wandb.init(project="SmashBot", name=f'{self.algorithm.name}-{int(time.time())}')
-        print("wandb logged in")
+            print("wandb logged in")
         self.pi_a = 0.001
 
     def run_frame(self, gamestate: melee.GameState) -> None:
@@ -81,7 +82,7 @@ class Agent:
                 'Average Reward': np.mean(self.rewards),
                 'Reward': reward,
                 'KDR': np.sum(self.kdr),
-                'Percent at Kill':  np.mean(self.percent_at_kill),
+                'Percent at Kill': np.mean(self.percent_at_kill),
                 'Percent at Death': np.mean(self.percent_at_death)
                 # '% Action 0': np.sum(self.action_tracker) / 3600
             }
@@ -108,8 +109,9 @@ class Agent:
         died = False
         if new_opponent.action in MovesList.dead_list:
             if old_opponent.action not in MovesList.dead_list:
-                print(
-                    f'{colorama.Fore.GREEN}{old_opponent.action} -> {new_opponent.action} @ {old_opponent.percent}%{colorama.Fore.RESET}')
+                if self.log:
+                    print(
+                        f'{colorama.Fore.GREEN}{old_opponent.action} -> {new_opponent.action} @ {old_opponent.percent}%{colorama.Fore.RESET}')
                 self.kdr.append(1)
                 self.percent_at_kill.append(old_opponent.percent)
             else:
@@ -117,8 +119,9 @@ class Agent:
 
         if new_player.action in MovesList.dead_list:
             if old_player.action not in MovesList.dead_list:
-                print(
-                    f'{colorama.Fore.RED}{old_player.action} -> {new_player.action} @ {old_player.percent}%{colorama.Fore.RESET}')
+                if self.log:
+                    print(
+                        f'{colorama.Fore.RED}{old_player.action} -> {new_player.action} @ {old_player.percent}%{colorama.Fore.RESET}')
                 self.kdr.append(-1)
                 self.percent_at_death.append(old_player.percent)
                 died = True
@@ -180,10 +183,11 @@ class Agent:
 
         reward = math.tanh((damage_dealt - damage_received) / 4) * 0.7
 
-        if damage_dealt > 0:
-            print(f'{colorama.Fore.LIGHTGREEN_EX}Dealt {damage_dealt}%')
-        if damage_received > 0:
-            print(f'{colorama.Fore.MAGENTA}Took {damage_received}%')
+        if self.log:
+            if damage_dealt > 0:
+                print(f'{colorama.Fore.LIGHTGREEN_EX}Dealt {damage_dealt}%')
+            if damage_received > 0:
+                print(f'{colorama.Fore.MAGENTA}Took {damage_received}%')
 
         if new_player.action in MovesList.dead_list:
             reward = -1
