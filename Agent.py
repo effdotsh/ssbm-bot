@@ -42,6 +42,9 @@ class Agent:
 
         self.action_tracker = deque(maxlen=3600)
 
+        self.percent_at_death = deque(maxlen=20)
+        self.percent_at_kill = deque(maxlen=20)
+
         if use_wandb:
             wandb.init(project="SmashBot", name=f'{self.algorithm.name}-{int(time.time())}')
         print("wandb logged in")
@@ -78,6 +81,8 @@ class Agent:
                 'Average Reward': np.mean(self.rewards),
                 'Reward': reward,
                 'KDR': np.sum(self.kdr),
+                'Percent at Kill':  np.mean(self.percent_at_kill),
+                'Percent at Death': np.mean(self.percent_at_death)
                 # '% Action 0': np.sum(self.action_tracker) / 3600
             }
             model_log = self.model.get_log()
@@ -106,14 +111,16 @@ class Agent:
                 print(
                     f'{colorama.Fore.GREEN}{old_opponent.action} -> {new_opponent.action} @ {old_opponent.percent}%{colorama.Fore.RESET}')
                 self.kdr.append(1)
+                self.percent_at_kill.append(old_opponent.percent)
             else:
                 someone_already_dead = True
 
         if new_player.action in MovesList.dead_list:
             if old_player.action not in MovesList.dead_list:
                 print(
-                    f'{colorama.Fore.YELLOW}{old_player.action} -> {new_player.action} @ {old_player.percent}%{colorama.Fore.RESET}')
+                    f'{colorama.Fore.RED}{old_player.action} -> {new_player.action} @ {old_player.percent}%{colorama.Fore.RESET}')
                 self.kdr.append(-1)
+                self.percent_at_death.append(old_player.percent)
                 died = True
             else:
                 someone_already_dead = True
