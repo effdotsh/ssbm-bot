@@ -1,5 +1,6 @@
 import os
 import random
+from collections import deque
 
 import gym
 import melee
@@ -19,8 +20,8 @@ class SmashEnv(gym.Env):
     def __init__(self, wandb):
         self.wandb = wandb
         args = Args.get_args()
-        character = melee.Character.FOX
-        opponent = melee.Character.CPTFALCON if not args.compete else character
+        character = melee.Character.CPTFALCON
+        opponent = melee.Character.MARTH if not args.compete else character
 
         self.game = GameManager.Game(args)
         self.game.enterMatch(cpu_level=args.cpu_level if not args.compete else 0, opponant_character=opponent,
@@ -38,16 +39,31 @@ class SmashEnv(gym.Env):
 
         self.step_counter = 0
 
+        self.rewards = deque(maxlen=1000)
     def step(self, action):
         self.step_counter += 1
         self.agent.controller.act(action_index=action)
-        new_gamestate = self.game.get_gamestate()
+
+        already_dead = True
+        new_gamestate = None
+        died = False
+        while already_dead:
+            new_gamestate = self.game.get_gamestate()
+            died, already_dead = self.agent.update_kdr(new_gamestate, self.prev_gamestate)
+            if already_dead:
+                self.prev_gamestate = new_gamestate
+
+
+
+
         new_obs = self.agent.get_observation(new_gamestate)
         reward = self.agent.get_reward(new_gamestate, self.prev_gamestate)
-        self.agent.update_kdr(new_gamestate, self.prev_gamestate)
         self.prev_gamestate = new_gamestate
-        wandb.log({'KDR': np.sum(self.agent.kdr), 'Reward': reward})
-        return new_obs, reward, self.step_counter % (60*10) == 0, {}
+
+        self.rewards.append(reward)
+        if self.step_counter%(60*60)==0:
+            wandb.log({'KDR': np.sum(self.agent.kdr), 'Average Reward': np.mean(self.rewards)})
+        return new_obs, reward, died, {}
 
     def reset(self):
         self.prev_gamestate = self.game.get_gamestate()

@@ -18,7 +18,7 @@ class DQN:
         input_tensor = np.concatenate([obs, action_inputs])
         return input_tensor
 
-    def learn_expirience(self, obs, action, reward, new_obs, done):
+    def learn_experience(self, obs, action, reward, new_obs, done):
         obs_tensor = self.create_input_tensor(obs, action)
 
 

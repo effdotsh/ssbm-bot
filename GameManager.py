@@ -183,7 +183,7 @@ class Game:
         # # What menu are we in?
         t = time.time()
         # self.controller_opponent.st
-        while gamestate.menu_state not in [melee.Menu.IN_GAME, melee.Menu.SUDDEN_DEATH]:
+        while time.time()-t < 1:
             gamestate = self.get_gamestate()
 
             melee.MenuHelper.menu_helper_simple(gamestate,
@@ -191,7 +191,17 @@ class Game:
                                                 player_character,
                                                 stage,
                                                 self.args.connect_code,
-                                                costume=3,
+                                                costume=0,
+                                                autostart=False,
+                                                swag=False)
+        while gamestate.menu_state not in [melee.Menu.IN_GAME, melee.Menu.SUDDEN_DEATH]:
+            gamestate = self.get_gamestate()
+            melee.MenuHelper.menu_helper_simple(gamestate,
+                                                self.controller,
+                                                player_character,
+                                                stage,
+                                                self.args.connect_code,
+                                                costume=0,
                                                 autostart=False,
                                                 swag=False)
             melee.MenuHelper.menu_helper_simple(gamestate,
