@@ -80,7 +80,7 @@ class Agent:
         if self.step % te == 0 and te != -1:
             self.model.train()
 
-        if self.use_wandb:
+        if self.step % (60*60)==0 and self.use_wandb:
             obj = {
                 'Average Reward': np.mean(self.rewards),
                 'Reward': reward,
@@ -91,8 +91,9 @@ class Agent:
             }
             model_log = self.model.get_log()
             wandb.log(obj | model_log)
-            if (reward == 1 or reward == -1) and self.log:
-                print('------')
+            if self.log:
+                print(obj | model_log)
+
 
         if self.algorithm == Algorithm.PPO:
             self.action, self.pi_a = self.model.predict(obs)
@@ -164,8 +165,12 @@ class Agent:
 
         is_bmove = 1 if self.framedata.is_bmove(player.character, player.action) else -1
 
+        frames_left = self.framedata.frame_count(player.character,player.action)/20
+        action_frame = player.action_frame/20
+
+
         return [special_fall, is_dead, vel_x, vel_y, x, y, percent, sheild, on_ground, is_attacking, facing,
-                in_hitstun, is_invounrable, jumps_left, attack_windup, attack_active, attack_cooldown, is_bmove]
+                in_hitstun, is_invounrable, jumps_left, attack_windup, attack_active, attack_cooldown, is_bmove, frames_left, action_frame]
 
     def get_observation(self, gamestate: melee.GameState) -> np.ndarray:
         player: melee.PlayerState = gamestate.players.get(self.player_port)
