@@ -29,7 +29,7 @@ if __name__ == '__main__':
                     stage=melee.Stage.FINAL_DESTINATION)
     step = args.load_from
 
-    agent1 = Agent(player_port=args.port, opponent_port=args.opponent, game=game, algorithm=Algorithm.DQN,
+    agent1 = Agent(player_port=args.port, opponent_port=args.opponent, game=game, algorithm=Algorithm.PPO,
                    use_wandb=args.wandb)
 
     if args.compete:
