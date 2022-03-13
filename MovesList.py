@@ -26,6 +26,7 @@ for button in buttons:
         moveAxis = AxisInput(axis=melee.Button.BUTTON_MAIN, x=v[0], y=v[1])
         move = Move(button=button, axes=[moveAxis])
         moves_list.append(move)
+moves_list = moves_list[1:]
 
 dead_list = [melee.Action.DEAD_FLY, melee.Action.DEAD_FLY_SPLATTER,
              melee.Action.DEAD_FLY_SPLATTER_FLAT, melee.Action.DEAD_FLY_SPLATTER_FLAT_ICE,

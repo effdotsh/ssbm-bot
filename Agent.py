@@ -65,6 +65,13 @@ class Agent:
 
         self.step += 1
         reward = self.get_reward(gamestate, self.prev_gamestate)
+
+        move = MovesList.moves_list[self.action]
+        if move.button is not None:
+            reward -= 0.01
+            print("Button")
+
+
         self.rewards.append(reward)
 
         prev_obs = self.get_observation(self.prev_gamestate)
@@ -211,6 +218,6 @@ class Agent:
         elif new_opponent.action in MovesList.dead_list:
             reward = 1
 
-        print(f'{self.action}: {reward}')
+        # print(f'{self.action}: {reward}')
 
         return reward
