@@ -17,8 +17,8 @@ def create_model(algorithm: Algorithm, num_inputs: int, num_actions: int):
     elif algorithm == Algorithm.DQN:
         model = DQN(obs_dim=num_inputs, action_dim=num_actions)
     elif algorithm == Algorithm.PPO:
-        model = PPO(obs_dim=num_inputs, action_dim=num_actions, batch_size=100, T_horizon=300, learning_rate=3e-5,
-                    adv_normalization=True)
+        model = PPO(obs_dim=num_inputs, action_dim=num_actions, batch_size=1000, T_horizon=1200, learning_rate=3e-5,
+                    adv_normalization=False)
     else:
         model = DQN(obs_dim=num_inputs, action_dim=num_actions)
 
