@@ -8,8 +8,9 @@ from .table import Table
 
 
 class QT:
-    def __init__(self, obs_dim: int, action_dim: int, discount_factor: float = 0.995, epsilon=1, epsilon_decay=0.9995,
-                 obs_divider=5, learning_rate=3e-4, min_tests = 2):
+    def __init__(self, obs_dim: int, action_dim: int, discount_factor: float = 0.9995, epsilon=1, epsilon_decay=0.9995,
+                 obs_divider=5, learning_rate=3e-4, min_tests = 2, min_epsilon=0.0001):
+        self.min_epsilon = min_epsilon
         self.min_tests = min_tests
 
         self.epsilon = epsilon
@@ -42,6 +43,8 @@ class QT:
         self.losses.append(abs(q_val-reward))
 
         self.epsilon *= self.epsilon_decay
+        self.epsilon = self.min_epsilon if self.epsilon < self.min_epsilon else self.epsilon
+
         self.table.learn_experience(obs, action, reward, new_obs, done)
 
     def train(self):
