@@ -8,7 +8,7 @@ import argparse
 
 from Discrete.PPO.PPO import PPO
 from Discrete.SAC.SAC2.SAC import SAC
-
+from Discrete.QT.QT import QT
 
 def randString():
     import random
@@ -27,7 +27,7 @@ def randString():
 def get_config():
     parser = argparse.ArgumentParser(description='RL')
     parser.add_argument("--run_name", type=str, default="SAC", help="Run name, default: SAC")
-    parser.add_argument("--env", type=str, default="LunarLander-v2", help="Gym environment name, default: CartPole-v1")
+    parser.add_argument("--env", type=str, default="Acrobot-v1", help="Gym environment name, default: Acrobot-v1")
     parser.add_argument("--episodes", type=int, default=100_000, help="Number of episodes, default: 100")
     parser.add_argument("--buffer_size", type=int, default=100_000,
                         help="Maximal training dataset size, default: 100_000")
@@ -62,8 +62,8 @@ def train(config):
 
     # model = DQN(obs_dim=env.observation_space.shape[0],
     #             action_dim=env.action_space.n, learning_rate=1e-4, discount_factor=0.9, batch_size=32, )
-    model = PPO(obs_dim=env.observation_space.shape[0], action_dim=env.action_space.n, learning_rate=8e-5, batch_size=128, T_horizon=512, adv_normalization=False)
-    #
+    # model = PPO(obs_dim=env.observation_space.shape[0], action_dim=env.action_space.n, learning_rate=8e-5, batch_size=128, T_horizon=512, adv_normalization=False)
+    model = QT(obs_dim=env.observation_space.shape[0], action_dim=env.action_space.n)
     #
     # model = SAC(obs_dim=env.observation_space.shape[0], action_dim=env.action_space.n)
 
@@ -72,11 +72,12 @@ def train(config):
         episode_steps = 0
         rewards = 0
         while True:
-            action, pi_a = model.predict(state)
+            state /= np.array([1, 1, 1, 1, 12.57, 28.27])
+            action = model.predict(state)
             steps += 1
             next_state, reward, done, _ = env.step(action)
             env.render()
-            model.learn_experience(state, action, reward, next_state, done, pi_a=pi_a)
+            model.learn_experience(state, action, reward, next_state, done)
             # model.train()
             state = next_state
             rewards += reward

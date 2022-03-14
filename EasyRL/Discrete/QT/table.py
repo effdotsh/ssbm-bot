@@ -11,17 +11,34 @@ class Table:
         self.num_actions = num_actions
         self.states_shape = states_shape
 
-        table_shape = np.array([self.states_shape, self.num_actions]).flatten()
-        self.table = np.full(table_shape, 0., dtype=np.float)
+        table_shape = list(copy.deepcopy(self.states_shape))
+        table_shape.append(self.num_actions)
+        table_shape=tuple(table_shape)
+
+
+        print(table_shape)
+        # self.table = np.full(table_shape, 0., dtype=object)
+
+        self.table: dict = {}
+
+    def get_row(self, state):
+        s = str(state)
+        if s not in self.table:
+            self.table[s] = np.zeros(self.num_actions+1)
+            print(s)
+        return self.table[s]
 
     def get_action(self, state):
-        row = self.table[state]
 
-        action = np.argmax(row)
-        return action, row[action]
+        row = self.get_row(state)
+
+        action = np.argmax(row[:-1])
+        return row, row[action]
 
     def learn_experience(self, obs, action, reward, new_obs, done):
-        self.table[obs][action] = (1 - self.learning_rate) * self.table[obs][action] + self.learning_rate * reward
 
+        row = self.get_row(obs)
+        row[action] = (1 - self.learning_rate) * row[action] + self.learning_rate * reward
+        row[-1] += 1
         if not done:
-            self.table[obs][action] += self.learning_rate * self.discount_factor * self.get_action(new_obs)[1]
+            row[action] += self.learning_rate * self.discount_factor * self.get_action(new_obs)[1]
