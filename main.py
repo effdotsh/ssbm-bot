@@ -29,11 +29,11 @@ if __name__ == '__main__':
                     stage=melee.Stage.FINAL_DESTINATION)
     step = args.load_from
 
-    agent1 = Agent(player_port=args.port, opponent_port=args.opponent, game=game, algorithm=Algorithm.PPO,
+    agent1 = Agent(player_port=args.port, opponent_port=args.opponent, game=game, algorithm=Algorithm.QT,
                    use_wandb=args.wandb)
 
     if args.compete:
-        agent2 = Agent(player_port=args.opponent, opponent_port=args.port, game=game, algorithm=Algorithm.PPO,
+        agent2 = Agent(player_port=args.opponent, opponent_port=args.port, game=game, algorithm=Algorithm.QT,
                        use_wandb=False, log=False)
 
     while True:  # Training loop

@@ -144,7 +144,7 @@ class Agent:
         return died, someone_already_dead
 
     def get_player_obs(self, player: melee.PlayerState) -> list:
-        x = player.position.x / 100
+        x = player.position.x / 50
         y = player.position.y / 20
         percent = math.tanh(player.percent / 100)
         sheild = player.shield_strength / 60
