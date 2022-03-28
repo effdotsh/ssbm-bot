@@ -1,14 +1,14 @@
 import gym
-import pybullet_envs
 import numpy as np
-from collections import deque
 import torch
 import wandb
 import argparse
 
-import random
-from SAC.SAC import SAC
+# from EasyRL.Discrete.DQN.DQN_Inps import DQN
 
+from Discrete.PPO.PPO import PPO
+from Discrete.SAC.SAC2.SAC import SAC
+from Discrete.QT.QT import QT
 
 def randString():
     import random
@@ -27,8 +27,8 @@ def randString():
 def get_config():
     parser = argparse.ArgumentParser(description='RL')
     parser.add_argument("--run_name", type=str, default="SAC", help="Run name, default: SAC")
-    parser.add_argument("--env", type=str, default="MountainCar-v0", help="Gym environment name, default: CartPole-v0")
-    parser.add_argument("--episodes", type=int, default=10000, help="Number of episodes, default: 100")
+    parser.add_argument("--env", type=str, default="Acrobot-v1", help="Gym environment name, default: Acrobot-v1")
+    parser.add_argument("--episodes", type=int, default=100_000, help="Number of episodes, default: 100")
     parser.add_argument("--buffer_size", type=int, default=100_000,
                         help="Maximal training dataset size, default: 100_000")
     parser.add_argument("--seed", type=int, default=1, help="Seed, default: 1")
@@ -36,6 +36,7 @@ def get_config():
                         help="Log agent behaviour to wanbd when set to 1, default: 0")
     parser.add_argument("--save_every", type=int, default=100, help="Saves the network every x epochs, default: 25")
     parser.add_argument("--batch_size", type=int, default=256, help="Batch size, default: 256")
+    parser.add_argument("--wandb", type=bool, default=True)
 
     args = parser.parse_args()
     return args
@@ -52,43 +53,49 @@ def train(config):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     steps = 0
-    average10 = deque(maxlen=10)
     total_steps = 0
 
     name = randString()
-    # wandb.init(project=f"Discrete Tester {config.env}", name=name)
 
-    model = SAC(num_inputs=env.observation_space.shape[0],
-                num_actions=env.action_space.n, device=device, learning_rate=3e-4, tau=1e-2, discount_factor=0.9)
+    if config.wandb:
+        wandb.init(project=f"Discrete Tester {config.env}", name=f'{name}-{randString()}')
+
+    # model = DQN(obs_dim=env.observation_space.shape[0],
+    #             action_dim=env.action_space.n, learning_rate=1e-4, discount_factor=0.9, batch_size=32, )
+    # model = PPO(obs_dim=env.observation_space.shape[0], action_dim=env.action_space.n, learning_rate=8e-5, batch_size=128, T_horizon=512, adv_normalization=False)
+    model = QT(obs_dim=env.observation_space.shape[0], action_dim=env.action_space.n)
+    #
+    # model = SAC(obs_dim=env.observation_space.shape[0], action_dim=env.action_space.n)
 
     for i in range(1, config.episodes + 1):
         state = env.reset()
         episode_steps = 0
         rewards = 0
         while True:
+            state /= np.array([1, 1, 1, 1, 12.57, 28.27])
             action = model.predict(state)
             steps += 1
             next_state, reward, done, _ = env.step(action)
             env.render()
-            model.update_replay_memory(state, action, reward, next_state, done)
-            model.train()
+            model.learn_experience(state, action, reward, next_state, done)
+            # model.train()
             state = next_state
             rewards += reward
             episode_steps += 1
             if done:
                 break
-
-        average10.append(rewards)
+            if steps >= 64:
+                model.train()
+                steps = 0
         total_steps += episode_steps
 
-
-        if len(model.stats) > 0:
-            policy_loss, alpha_loss, bellmann_error1, bellmann_error2, current_alpha = model.stats
-            print("Episode: {} | Reward: {} | Polciy Loss: {} | Steps: {}".format(i, rewards, policy_loss, steps, ))
-            # if policy_loss is not None:
-                # wandb.log({
-                #     "Test": 5
-                # })
+        obj = {
+            "Reward": rewards
+        }
+        obj = obj | model.get_log()
+        print(obj)
+        if config.wandb:
+            wandb.log(obj)
 
 
 if __name__ == "__main__":
