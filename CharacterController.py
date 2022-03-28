@@ -1,134 +1,25 @@
-import time
-
 import melee
 
-import gameManager
-import movesList
-import utils
-from StateRewardManager import CharacterEnv
-
-# from EasyML.Spartnn import Overseer
-# from EasyML.DQN.DQN import DQN as MLAgent
-from EasyML.SAC.SAC import SAC as MLAgent
-from collections import deque
-import numpy as np
-
-import wandb
+import GameManager
+import MovesList
 
 
 class CharacterController:
-    def __init__(self, port: int, opponent_port: int, game: gameManager.Game, min_replay_size=1500,
-                 minibatch_size=128, max_replay_size=300_000,
-                 learning_rate=0.00004, update_target_every=5, discount_factor=0.999, epsilon_decay=0.9997, epsilon=1,
-                 update_model=True, log=True, use_wandb=True):
-        print(f'Use Wandb: {use_wandb}')
-        self.update_model = update_model
+    def __init__(self, player_port: int, game: GameManager.Game, moves_list: list):
+        self.moveslist = moves_list
         self.game = game
-        self.env = CharacterEnv(player_port=port, opponent_port=opponent_port, game=game)
+        self.player_port = player_port
 
-        num_inputs = self.env.obs.shape[0]
-        num_actions = self.env.num_actions
-        #
-        self.model = MLAgent(num_inputs=num_inputs, num_actions=num_actions, min_replay_size=min_replay_size,
-                             batch_size=minibatch_size, max_replay_size=max_replay_size,
-                             learning_rate=learning_rate,
-                             discount_factor=discount_factor)
+        self.gamestate = self.game.get_gamestate()
 
-        # self.model = DQNAgent(num_inputs=num_inputs, num_outputs=num_actions)
-        # self.model = Overseer(num_inputs=num_inputs, num_outputs=num_actions, min_replay_size=1000, batch_size=64, search_depth=1, update_every=500)
+    def act(self, action_index) -> None:
+        controller = self.game.getController(self.player_port)
+        action: MovesList.Move = self.moveslist[action_index]
 
-        self.current_state = self.env.reset()
+        controller.release_all()
+        if action.button is not None:
+            controller.press_button(action.button)
 
-        self.reward_history = deque(maxlen=180000)
-        self.kdr_history = deque(maxlen=100)
-        self.kdr_history.append(0)
-        self.reward_history.append(0)
-
-        self.step = 1
-        self.tot_steps = 0
-        self.done = False
-        gamestate = self.game.console.step()
-        while gamestate is None:
-            gamestate = self.game.console.step()
-
-        self.prev_gamestate = gamestate
-
-        self.action = 0
-        self.start_time = time.time()
-
-        self.port = port
-        self.opponent_port = opponent_port
-
-        self.use_wandb = use_wandb
-        if self.use_wandb:
-            wandb.init(project="SAC_Smash", name="SAC Smaller Action Space")
-
-    def run_frame(self, gamestate: melee.GameState, log: bool):
-
-        if gamestate is None:
-            return
-        self.tot_steps += 1
-
-        self.env.act()
-
-        reward = self.env.calculate_reward(gamestate)
-        self.reward_history.append(reward)
-
-        if gamestate.players.get(self.port).action in utils.dead_list and self.prev_gamestate.players.get(
-                self.port).action not in utils.dead_list:
-            self.kdr_history.append(-1)
-        if gamestate.players.get(self.opponent_port).action in utils.dead_list and self.prev_gamestate.players.get(
-                self.opponent_port).action not in utils.dead_list:
-            self.kdr_history.append(1)
-
-        # if self.step % 60 * 5 == 0 and log:
-        if log and self.update_model:
-
-            policy_loss, alpha_loss, bellmann_error1, bellmann_error2, current_alpha = [None, None, None, None, None]
-            replay_size = len(self.model.buffer.memory)
-
-            if len(self.model.stats) > 0:
-                policy_loss, alpha_loss, bellmann_error1, bellmann_error2, current_alpha = self.model.stats
-
-            if self.use_wandb:
-                wandb.log({
-                    "Policy Loss": policy_loss,
-                    "Alpha Loss": alpha_loss,
-                    "KDR": np.sum(self.kdr_history),
-                    "Replay Size": replay_size,
-                    "Reward": reward,
-                    "Average Reward": np.mean(self.reward_history)
-                })
-            if self.tot_steps % 60 == 0:
-                print('##################################')
-                print(f'Policy Loss: {policy_loss}')
-                print(f'Alpha Loss: {alpha_loss}')
-                print(f'Replay Size: {replay_size}')
-                print(f'KDR: {np.sum(self.kdr_history)}')
-                print(f'Average Reward: {np.mean(self.reward_history)}')
-                print(f'Current Reward: {reward}')
-                print('##################################')
-
-        # update model from previous move
-
-        old_obs = self.env.get_observation(self.prev_gamestate)
-        obs = self.env.get_observation(gamestate)
-
-        self.model.update_replay_memory(old_obs, self.action, reward, obs, False)
-
-        self.step += 1
-
-        self.action = self.model.predict(obs)
-        self.env.step(self.action)
-
-        self.prev_gamestate = gamestate
-
-        if self.update_model and self.tot_steps % 1024 == 0:
-            self.model.train()
-            # self.model.log(200)
-
-            self.episode_reward = 0
-            self.step = 1
-            self.done = False
-        if self.update_model and self.tot_steps % (30 * 60 * 60) == 0:  # Save every thirty minutes
-            self.model.save(wandb=wandb if self.use_wandb else None, ep=self.tot_steps)
+        for axis_movement in action.axes:
+            if axis_movement.axis is not None:
+                controller.tilt_analog_unit(axis_movement.axis, axis_movement.x, axis_movement.y)

@@ -1,202 +1,84 @@
-import time
-
-import gym
+import os
 import random
-
-import numpy
-from gym import spaces
-import math
-import numpy as np
-import gameManager
-import melee
-
-import movesList
-import utils
-import copy
-
-from movesList import moveset
 from collections import deque
 
+import gym
+import melee
+import numpy as np
 import wandb
+from gym.spaces import Box, Discrete
+
+import Args
+import GameManager
+import MovesList
+from Agent import Agent
+from ModelCreator import Algorithm
 
 
-class CharacterEnv(gym.Env):
-    def __init__(self, player_port, opponent_port, game: gameManager.Game, use_wandb):
-        self.framedata: melee.framedata.FrameData = melee.framedata.FrameData()
-        self.num_actions = len(moveset)
-        self.stage = melee.Stage.BATTLEFIELD
+class SmashEnv(gym.Env):
 
-        self.game = game
+    def __init__(self, wandb):
+        self.wandb = wandb
+        args = Args.get_args()
+        character = melee.Character.CPTFALCON
+        opponent = melee.Character.MARTH if not args.compete else character
 
-        self.controller: melee.Controller = self.game.getController(player_port)
-        self.player_port = player_port
-        self.opponent_port = opponent_port
-        # controller_opponent = game.getController(args.opponent)
+        self.game = GameManager.Game(args)
+        self.game.enterMatch(cpu_level=args.cpu_level if not args.compete else 0, opponant_character=opponent,
+                             player_character=character,
+                             stage=melee.Stage.FINAL_DESTINATION)
 
-        super(CharacterEnv, self).__init__()
+        self.agent = Agent(player_port=args.port, opponent_port=args.opponent, game=self.game, use_wandb=args.wandb,
+                           algorithm=Algorithm.DQN)
 
-        self.rewards = []
+        self.prev_gamestate = self.game.get_gamestate()
+        obs = self.agent.get_observation(self.prev_gamestate)
 
-        self.kills = 0
-        self.deaths = 0
-        self.overjump = False  # Reward penalty if agent chooses to jump when it is already out of jumps
+        self.observation_space = Box(low=-1, high=1, shape=[len(obs)])
+        self.action_space = Discrete(len(MovesList.moves_list))
 
-        self.obs = self.reset()
+        self.step_counter = 0
 
-        self.move = moveset[0]
+        self.rewards = deque(maxlen=1000)
+    def step(self, action):
+        self.step_counter += 1
+        self.agent.controller.act(action_index=action)
 
-        gamestate = self.game.console.step()
-        num_inputs = self.get_observation(gamestate).shape[0]
+        already_dead = True
+        new_gamestate = None
+        died = False
+        while already_dead:
+            new_gamestate = self.game.get_gamestate()
+            died, already_dead = self.agent.update_kdr(new_gamestate, self.prev_gamestate)
+            if already_dead:
+                self.prev_gamestate = new_gamestate
 
-        self.observation_space = spaces.Box(shape=np.array([num_inputs]), dtype=np.float, low=-1, high=1)
-        self.action_space = spaces.Discrete(self.num_actions)
 
-        self.steps = 0
 
-        self.reward_history = deque(maxlen=180000)
-        self.kdr_history = deque(maxlen=100)
-        self.kdr_history.append(0)
-        self.reward_history.append(0)
 
-        self.step = 1
-        self.tot_steps = 0
-        self.done = False
-        gamestate = self.game.console.step()
-        while gamestate is None:
-            gamestate = self.game.console.step()
+        new_obs = self.agent.get_observation(new_gamestate)
+        reward = self.agent.get_reward(new_gamestate, self.prev_gamestate)
+        self.prev_gamestate = new_gamestate
 
-        self.prev_gamestate = gamestate
-
-        self.action = 0
-        self.start_time = time.time()
-
-        self.opponent_port = opponent_port
-
-        self.use_wandb = use_wandb
-        if self.use_wandb:
-            wandb.init(project="SAC_Smash", name="SAC Smaller Action Space")
-
-    def step(self, action: int):
-        self.move = moveset[action]
-        self.act()
-        gamestate = self.game.console.step()
-
-        obs = self.get_observation(gamestate)
-        reward = self.calculate_reward(gamestate)
-
-        if gamestate.players.get(self.player_port).action in utils.dead_list and self.prev_gamestate.players.get(
-                self.player_port).action not in utils.dead_list:
-            self.kdr_history.append(-1)
-        if gamestate.players.get(self.opponent_port).action in utils.dead_list and self.prev_gamestate.players.get(
-                self.opponent_port).action not in utils.dead_list:
-            self.kdr_history.append(1)
-
-        self.steps += 1
-
-        if self.use_wandb:
-            wandb.log({
-                "KDR": np.sum(self.kdr_history),
-                "Reward": reward,
-                "Average Reward": np.mean(self.reward_history)
-            })
-        return obs, reward, self.steps % (60 * 5) == 0, {}
-
-    def render(self):
-        pass
-
-    def get_player_obs(self, player: melee.PlayerState):
-        # PlayerState Info
-        direction_facing = 1 if player.facing else -1
-
-        is_on_ground = 1 if player.on_ground else -1
-
-        is_off_stage = 1 if player.off_stage else -1
-        is_grabbed = 1 if player.action in [melee.Action.GRABBED, melee.Action.GRABBED_WAIT_HIGH] else -1
-
-        hitstun_left = player.hitstun_frames_left
-
-        hitlag_left = player.hitlag_left
-
-        invulnerable = 1 if player.invulnerable else -1
-        invulnerability_left = player.invulnerability_left
-
-        jumps_left = player.jumps_left / self.framedata.max_jumps(player.character)
-
-        percent = player.percent / 200
-
-        x = player.position.x / 300
-        y = player.position.y / 200
-        shield_strength = player.shield_strength / 60
-        speed_air_x_self = player.speed_air_x_self
-        speed_ground_x_self = player.speed_ground_x_self
-        speed_x_attack = player.speed_x_attack
-        speed_y_attack = player.speed_y_attack
-        speed_y_self = player.speed_y_self
-
-        # FrameData Info
-        active_hitbox = 1 if self.framedata.attack_state(player.character, player.action,
-                                                         player.action_frame) != melee.AttackState.NOT_ATTACKING else -1
-        is_attacking = 1 if self.framedata.is_attack(player.character, player.action) else -1
-        is_b_move = 1 if self.framedata.is_bmove(player.character, player.action) else -1
-        is_grab = 1 if self.framedata.is_grab(player.character, player.action) else -1
-        is_roll = 1 if self.framedata.is_roll(player.character, player.action) else -1
-        is_shield = 1 if self.framedata.is_shield(player.action) else -1
-
-        return [direction_facing, is_on_ground, is_off_stage, is_grabbed, hitstun_left, hitlag_left, invulnerable,
-                invulnerability_left, jumps_left, percent, x, y, shield_strength, speed_air_x_self, speed_ground_x_self,
-                speed_x_attack, speed_y_attack, speed_y_self, active_hitbox, is_attacking, is_b_move, is_grab, is_roll,
-                is_shield]
-
-    def get_observation(self, gamestate):
-        player: melee.PlayerState = gamestate.players.get(self.player_port)
-        opponent: melee.PlayerState = gamestate.players.get(self.opponent_port)
-
-        obs = []
-        obs.append(self.get_player_obs(player))
-        obs.append(self.get_player_obs(opponent))
-        obs = np.array(obs).flatten()
-        return obs
-
-    def calculate_reward(self, new_gamestate: melee.GameState):
-
-        new_player: melee.PlayerState = new_gamestate.players.get(self.player_port)
-        new_opponent: melee.PlayerState = new_gamestate.players.get(self.opponent_port)
-
-        out_of_bounds = 0
-        edge_position: float = melee.stages.EDGE_POSITION.get(self.game.stage)
-        blastzones = melee.stages.BLASTZONES.get(self.game.stage)
-
-        if abs(new_player.x) > edge_position:
-            out_of_bounds -= 0.2
-        if abs(new_opponent.x) > edge_position:
-            out_of_bounds += 0.1
-        if new_player.y < blastzones[3] * 0.75 or new_player.y > blastzones[2] * 0.75:
-            out_of_bounds -= 0.4
-        if new_opponent.y < blastzones[3] * 0.75 or new_opponent.y > blastzones[2] * 0.75:
-            out_of_bounds += 0.2
-
-        reward = utils.clamp(math.tanh((new_opponent.percent - new_player.percent) / 60), -0.8, 0.8)
-        # reward = -0.1
-        if new_player.action in utils.dead_list:
-            reward = -1
-            print(new_player.action)
-        elif new_opponent.action in utils.dead_list:
-            reward = 1
-            print(new_opponent.action)
-
-        return reward
-
-    def act(self):
-        # Check for deaths
-        self.controller.release_all()
-
-        if self.move.button is not None:
-            self.controller.press_button(self.move.button)
-        for axis_movement in self.move.axes:
-            if axis_movement.axis is not None:
-                self.controller.tilt_analog_unit(axis_movement.axis, axis_movement.x, axis_movement.y)
-
-        self.controller.flush()
+        self.rewards.append(reward)
+        if self.step_counter%(60*60)==0:
+            wandb.log({'KDR': np.sum(self.agent.kdr), 'Average Reward': np.mean(self.rewards)})
+        return new_obs, reward, died, {}
 
     def reset(self):
-        return self.get_observation(self.game.console.step())
+        self.prev_gamestate = self.game.get_gamestate()
+        new_obs = self.agent.get_observation(self.prev_gamestate)
+        return new_obs
+
+    def render(self, mode='human'):
+        pass
+
+    def close(self):
+        pass
+
+
+from stable_baselines3.common.env_checker import check_env
+
+if __name__ == '__main__':
+    env = SmashEnv()
+    check_env(env)
