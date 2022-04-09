@@ -16,23 +16,16 @@ import os
 args = Args.get_args()
 start_time = time.time()
 if __name__ == '__main__':
-    character = melee.Character.CPTFALCON
-    opponent = melee.Character.MARTH
-
-    # if not os.path.isdir(f'{args.model_path}/{character.name}'):
-    #     os.makedirs(f'{args.model_path}/{character.name}')
-
-    game = GameManager.Game(args)
-    game.enterMatch(cpu_level=args.cpu_level if not args.compete else 0, opponant_character=opponent,
-                    player_character=character,
-                    stage=melee.Stage.FINAL_DESTINATION)
-    step = args.load_from
+    replay_path = '/home/human/Slippi/Game_20220409T153244.slp'
+    console = melee.Console(is_dolphin=False,
+                            allow_old_version=True,
+                            path=replay_path)
+    console.connect()
 
 
 
     while True:  # Training loop
-        gamestate = game.get_gamestate()
-        # agent1.run_frame(gamestate)
-        # if args.compete:
-        #     agent2.run_frame(gamestate)
-        # step += 1
+        gamestate: melee.GameState = console.step()
+        p1: melee.PlayerState = gamestate.players.get(1)
+        print(p1.controller_state)
+        # print(p1.nickName)
