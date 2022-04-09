@@ -1,31 +1,27 @@
 #!/usr/bin/python3
-import argparse
-import copy
-import time
-
-import torch
 
 import Args
-import GameManager
 import melee
-import platform
 
 import os
 
+from ReplayManager import filter_replays
 
 args = Args.get_args()
-start_time = time.time()
 if __name__ == '__main__':
-    replay_path = '/home/human/Slippi/Game_20220409T153244.slp'
-    console = melee.Console(is_dolphin=False,
-                            allow_old_version=True,
-                            path=replay_path)
-    console.connect()
+    player_character = melee.Character.FALCO
+    opponent_character = melee.Character.FOX
 
 
+    replay_folder = '/home/human/Documents/replays_lite/'
 
-    while True:  # Training loop
-        gamestate: melee.GameState = console.step()
-        p1: melee.PlayerState = gamestate.players.get(1)
-        print(p1.controller_state)
-        # print(p1.nickName)
+    replay_paths = []
+    for root, dirs, files in os.walk(replay_folder):
+        for name in files:
+            replay_paths.append(os.path.join(root, name))
+
+    print(len(replay_paths))
+    replay_paths = filter_replays(replay_paths, opponent_character=opponent_character, player_character=player_character, win_only=False)
+    print(len(replay_paths))
+
+
