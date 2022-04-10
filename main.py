@@ -8,6 +8,12 @@ import os
 from ReplayManager import filter_replays
 
 args = Args.get_args()
+
+
+MIN_BUFFER_SIZE = 60_000
+
+
+
 if __name__ == '__main__':
     player_character = melee.Character.FALCO
     opponent_character = melee.Character.FOX
@@ -20,8 +26,6 @@ if __name__ == '__main__':
         for name in files:
             replay_paths.append(os.path.join(root, name))
 
-    print(len(replay_paths))
     replay_paths = filter_replays(replay_paths, opponent_character=opponent_character, player_character=player_character, win_only=False)
-    print(len(replay_paths))
 
 

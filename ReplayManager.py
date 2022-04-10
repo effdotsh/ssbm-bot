@@ -1,6 +1,7 @@
 import melee
 from tqdm import tqdm
 
+
 def get_ports(gamestate: melee.GameState, player_character: melee.Character, opponent_character: melee.Character):
 
     ports = list(gamestate.players.keys())
