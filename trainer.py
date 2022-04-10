@@ -1,11 +1,12 @@
+import keras.metrics
 import numpy as np
 import melee
-import torch
-from torch import nn, optim
 
 import MovesList
 from ReplayManager import get_ports
-from network import Network
+
+from keras.models import Sequential
+from keras.layers.core import Dense
 
 framedata = melee.FrameData()
 
@@ -85,6 +86,7 @@ class Datapoint:
 
 def update_buffer(buffer: np.ndarray, replay_paths, min_buffer_size: int, player_character: melee.Character,
                   opponent_character: melee.Character):
+
     while len(buffer) < min_buffer_size and len(replay_paths) >= 1:
         path = replay_paths[0]
         replay_paths = replay_paths[1:]
@@ -114,40 +116,33 @@ def update_buffer(buffer: np.ndarray, replay_paths, min_buffer_size: int, player
 
 
 def train(replay_paths, min_buffer_size: int, player_character: melee.Character, opponent_character: melee.Character,
-          batch_size=512):
+          batch_size=1024):
     buffer = update_buffer(buffer=np.array([], dtype=Datapoint), replay_paths=replay_paths,
                            min_buffer_size=min_buffer_size,
                            player_character=player_character, opponent_character=opponent_character)
-    print(buffer[:2])
-    model = Network(input_dim=len(buffer[0].x), output_dim=len(buffer[0].y))
+    input_dim=len(buffer[0].x)
+    output_dim=len(buffer[0].y)
 
-    criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=3e-2)
+    model = Sequential()
+    model.add(Dense(128, input_dim=input_dim, activation='tanh'))
+    model.add(Dense(128))
+    model.add(Dense(output_dim, activation='tanh'))
+
+    model.compile(loss='mean_squared_error',
+                  optimizer='adam',
+                  metrics=[])
+
+
     while len(buffer) > 0:
         buffer = update_buffer(buffer=buffer, replay_paths=replay_paths, min_buffer_size=min_buffer_size,
                                player_character=player_character, opponent_character=opponent_character)
 
-        ep_loss = 0
-        for _ in range(batch_size):
-            i = np.random.randint(0, len(buffer) - 1)
-            inp, target = torch.Tensor(buffer[i].x), torch.Tensor(buffer[i].y)
-            buffer = np.delete(buffer, i)
+        indices = [np.random.randint(0, len(buffer) - 1) for i in range(batch_size)]
+        elements = buffer[indices]
+        X = np.array([i.x for i in elements])
+        Y = np.array([i.y for i in elements])
 
-            output = model(inp)
+        buffer = np.delete(buffer, indices)
+        model.fit(X, Y, verbose=2)
 
-            loss = criterion(output, target)
-
-            # backpropogate through the loss gradiants
-            loss.backward()
-
-            # update model weights
-            optimizer.step()
-
-            # remove current gradients for next iteration
-            optimizer.zero_grad()
-
-            # append to loss
-            ep_loss += loss
-
-
-        print(ep_loss / batch_size)
+        model.save('model/')
