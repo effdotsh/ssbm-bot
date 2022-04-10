@@ -3,7 +3,8 @@ from tqdm import tqdm
 
 
 def get_ports(gamestate: melee.GameState, player_character: melee.Character, opponent_character: melee.Character):
-
+    if gamestate is None:
+        return -1, -1
     ports = list(gamestate.players.keys())
     if len(ports) != 2:
         return -1, -1
@@ -40,6 +41,7 @@ def valid_replay(replay_path, player_character: melee.Character, opponent_charac
     gamestate: melee.GameState = console.step()
 
     player_port, opponent_port = get_ports(gamestate=gamestate, player_character=player_character, opponent_character=opponent_character)
+
 
     if player_port != -1:
         if not win_only:

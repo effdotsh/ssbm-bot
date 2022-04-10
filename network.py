@@ -5,6 +5,8 @@ import MovesList
 from ReplayManager import get_ports
 
 framedata = melee.FrameData()
+
+
 def get_player_obs(player: melee.PlayerState) -> list:
     x = player.position.x / 100
     y = player.position.y / 100
@@ -34,11 +36,10 @@ def get_player_obs(player: melee.PlayerState) -> list:
 
     is_bmove = 1 if framedata.is_bmove(player.character, player.action) else -1
 
-    stock = player.stock/4
+    stock = player.stock / 4
 
     return [special_fall, is_dead, vel_x, vel_y, x, y, percent, shield, on_ground, is_attacking, facing,
             in_hitstun, is_invulnerable, jumps_left, attack_windup, attack_active, attack_cooldown, is_bmove, stock]
-
 
 
 def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: int):
@@ -51,13 +52,31 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
     return np.array(obs).flatten()
 
 
+buttons = [[melee.Button.BUTTON_A], [melee.Button.BUTTON_B], [melee.Button.BUTTON_X, melee.Button.BUTTON_Y],
+           [melee.Button.BUTTON_Z], [melee.Button.BUTTON_L, melee.Button.BUTTON_R]]
+
+
 def generate_output(gamestate: melee.GameState, player_port: int):
-    return 7
+    controller: melee.ControllerState = gamestate.players.get(player_port).controller_state
+    state = []
+    for combo in buttons:
+        active = False
+        for b in combo:
+            active = active or controller.button.get(b)
+        state.append(1 if active else 0)
+
+    state.append(controller.l_shoulder + controller.r_shoulder)
+    state.append((controller.c_stick[0] - 0.5) * 2)
+    state.append((controller.c_stick[1] - 0.5) * 2)
+    state.append((controller.main_stick[0] - 0.5) * 2)
+    state.append((controller.main_stick[1] - 0.5) * 2)
+
+    return np.array(state)
 
 
 def update_buffer(buffer: np.ndarray, replay_paths, min_buffer_size: int, player_character: melee.Character,
                   opponent_character: melee.Character):
-    while len(buffer) < min_buffer_size:
+    while len(buffer) < min_buffer_size and len(replay_paths) >= 1:
         path = replay_paths[0]
         replay_paths = replay_paths[1:]
 
@@ -80,11 +99,14 @@ def update_buffer(buffer: np.ndarray, replay_paths, min_buffer_size: int, player
             out = generate_output(gamestate=gamestate, player_port=player_port)
             buffer = np.append(buffer, (inp, out))
 
+            gamestate: melee.GameState = console.step()
+
         return buffer
 
 
 def train(replay_paths, min_buffer_size: int, player_character: melee.Character, opponent_character: melee.Character):
-    buffer = np.array([])
-    while len(replay_paths) > 1:
+    buffer = update_buffer(buffer=np.array([]), replay_paths=replay_paths, min_buffer_size=min_buffer_size,
+                           player_character=player_character, opponent_character=opponent_character)
+    while len(buffer) > 0:
         buffer = update_buffer(buffer=buffer, replay_paths=replay_paths, min_buffer_size=min_buffer_size,
                                player_character=player_character, opponent_character=opponent_character)
