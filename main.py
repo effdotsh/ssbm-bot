@@ -6,7 +6,7 @@ import melee
 import os
 
 from ReplayManager import filter_replays
-from network import train
+from trainer import train
 
 args = Args.get_args()
 
