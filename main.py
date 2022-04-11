@@ -14,8 +14,8 @@ args = Args.get_args()
 MIN_BUFFER_SIZE = 60_000
 
 if __name__ == '__main__':
-    player_character = melee.Character.FALCO
-    opponent_character = melee.Character.FOX
+    player_character = melee.Character.MARTH
+    opponent_character = melee.Character.CPTFALCON
     stage = melee.Stage.BATTLEFIELD
 
 

@@ -133,7 +133,6 @@ def train(replay_paths, min_buffer_size: int, player_character: melee.Character,
                   optimizer='adam',
                   metrics=['MeanSquaredError'])
 
-    checkpoint_filepath = '/tmp/checkpoint'
 
     checkpoint = ModelCheckpoint(filepath='model/check/',
                                  monitor='mean_squared_error',
