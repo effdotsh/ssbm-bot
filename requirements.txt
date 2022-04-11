@@ -7,13 +7,7 @@ matplotlib
 
 tqdm
 
-torch
-
-git+https://github.com/AI-Spawn/torchsample.git#egg=torchsample
-nibabel
-pandas
-
 colorama
 wandb
 
-pygame
+tensorflow
