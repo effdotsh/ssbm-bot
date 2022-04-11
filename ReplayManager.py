@@ -20,12 +20,13 @@ def get_ports(gamestate: melee.GameState, player_character: melee.Character, opp
         player_port = ports[1]
         opponent_port = ports[0]
     else:
-        player_port=-1
+        player_port = -1
         opponent_port = -1
     return player_port, opponent_port
 
 
-def valid_replay(replay_path, player_character: melee.Character, opponent_character: melee.Character, win_only=False):
+def valid_replay(replay_path, player_character: melee.Character, opponent_character: melee.Character,
+                 stage: melee.Stage, win_only=False):
     split = replay_path.split('.')
     if split[-1] != 'slp':
         return False
@@ -40,8 +41,11 @@ def valid_replay(replay_path, player_character: melee.Character, opponent_charac
         return False
     gamestate: melee.GameState = console.step()
 
-    player_port, opponent_port = get_ports(gamestate=gamestate, player_character=player_character, opponent_character=opponent_character)
+    if gamestate.stage != stage:
+        return False
 
+    player_port, opponent_port = get_ports(gamestate=gamestate, player_character=player_character,
+                                           opponent_character=opponent_character)
 
     if player_port != -1:
         if not win_only:
@@ -64,7 +68,10 @@ def valid_replay(replay_path, player_character: melee.Character, opponent_charac
     return False
 
 
-def filter_replays(replays, player_character: melee.Character, opponent_character: melee.Character, win_only=False):
-    return [r for r in tqdm(replays) if
+def filter_replays(replays, player_character: melee.Character, opponent_character: melee.Character, stage: melee.Stage,
+                   win_only=False):
+    arr= [r for r in tqdm(replays) if
             valid_replay(replay_path=r, player_character=player_character, opponent_character=opponent_character,
-                         win_only=win_only)]
+                         win_only=win_only, stage=stage)]
+    print(len(arr))
+    return arr
