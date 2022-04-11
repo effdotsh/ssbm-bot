@@ -7,6 +7,7 @@ from ReplayManager import get_ports
 
 from keras.models import Sequential
 from keras.layers.core import Dense
+from keras.callbacks import ModelCheckpoint
 
 framedata = melee.FrameData()
 
@@ -86,7 +87,6 @@ class Datapoint:
 
 def update_buffer(buffer: np.ndarray, replay_paths, min_buffer_size: int, player_character: melee.Character,
                   opponent_character: melee.Character):
-
     while len(buffer) < min_buffer_size and len(replay_paths) >= 1:
         path = replay_paths[0]
         replay_paths = replay_paths[1:]
@@ -111,17 +111,18 @@ def update_buffer(buffer: np.ndarray, replay_paths, min_buffer_size: int, player
             buffer = np.append(buffer, [Datapoint(inp, out)])
 
             gamestate: melee.GameState = console.step()
-        print(len(buffer))
-    return buffer
+        print(len(replay_paths))
+
+    return buffer, replay_paths
 
 
 def train(replay_paths, min_buffer_size: int, player_character: melee.Character, opponent_character: melee.Character,
           batch_size=1024):
-    buffer = update_buffer(buffer=np.array([], dtype=Datapoint), replay_paths=replay_paths,
-                           min_buffer_size=min_buffer_size,
-                           player_character=player_character, opponent_character=opponent_character)
-    input_dim=len(buffer[0].x)
-    output_dim=len(buffer[0].y)
+    buffer, replay_paths = update_buffer(buffer=np.array([], dtype=Datapoint), replay_paths=replay_paths,
+                                         min_buffer_size=min_buffer_size,
+                                         player_character=player_character, opponent_character=opponent_character)
+    input_dim = len(buffer[0].x)
+    output_dim = len(buffer[0].y)
 
     model = Sequential()
     model.add(Dense(128, input_dim=input_dim, activation='tanh'))
@@ -130,19 +131,26 @@ def train(replay_paths, min_buffer_size: int, player_character: melee.Character,
 
     model.compile(loss='mean_squared_error',
                   optimizer='adam',
-                  metrics=[])
+                  metrics=['MeanSquaredError'])
 
+    checkpoint_filepath = '/tmp/checkpoint'
+
+    checkpoint = ModelCheckpoint(filepath='model/check/',
+                                 monitor='mean_squared_error',
+                                 verbose=1,
+                                 save_best_only=True,
+                                 mode='min')
 
     while len(buffer) > 0:
-        buffer = update_buffer(buffer=buffer, replay_paths=replay_paths, min_buffer_size=min_buffer_size,
-                               player_character=player_character, opponent_character=opponent_character)
+        buffer, replay_paths = update_buffer(buffer=buffer, replay_paths=replay_paths, min_buffer_size=min_buffer_size,
+                                             player_character=player_character, opponent_character=opponent_character)
 
-        indices = [np.random.randint(0, len(buffer) - 1) for i in range(batch_size)]
-        elements = buffer[indices]
-        X = np.array([i.x for i in elements])
-        Y = np.array([i.y for i in elements])
+        bs = min(batch_size, len(buffer))
 
-        buffer = np.delete(buffer, indices)
-        model.fit(X, Y, verbose=2)
+        X = np.array([buffer[i].x for i in range(bs)])
+        Y= np.array([buffer[i].y for i in range(bs)])
 
-        model.save('model/')
+        buffer = buffer[bs:]
+        model.fit(X, Y, verbose=2, use_multiprocessing=True, callbacks=[checkpoint], batch_size=bs)
+
+    model.save('model/final')
