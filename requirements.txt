@@ -10,4 +10,8 @@ tqdm
 colorama
 wandb
 
-tensorflow
+torch
+
+git+https://github.com/AI-Spawn/torchsample.git#egg=torchsample
+nibabel
+pandas
