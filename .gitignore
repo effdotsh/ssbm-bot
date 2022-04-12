@@ -16,3 +16,4 @@ runs
 saved
 *.model
 models
+replays.json
