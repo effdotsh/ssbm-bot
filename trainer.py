@@ -85,7 +85,7 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
 
 
 buttons = [[melee.Button.BUTTON_A], [melee.Button.BUTTON_B], [melee.Button.BUTTON_X, melee.Button.BUTTON_Y],
-           [melee.Button.BUTTON_Z], [melee.Button.BUTTON_L, melee.Button.BUTTON_R]]
+           [melee.Button.BUTTON_Z]]
 
 
 def generate_output(gamestate: melee.GameState, player_port: int):
@@ -97,7 +97,7 @@ def generate_output(gamestate: melee.GameState, player_port: int):
             active = active or controller.button.get(b)
         state.append(1 if active else 0)
 
-    state.append(controller.l_shoulder + controller.r_shoulder)
+    # state.append(controller.l_shoulder + controller.r_shoulder)
     state.append((controller.c_stick[0] - 0.5) * 2)
     state.append((controller.c_stick[1] - 0.5) * 2)
     state.append((controller.main_stick[0] - 0.5) * 2)
@@ -126,16 +126,14 @@ def load_data(replay_paths, player_character: melee.Character,
         if player_port == -1:
             continue
 
-        for i in range(100):
-            if gamestate is not None:
-                gamestate = console.step()
-            else:
-                break
         while gamestate is not None:
             inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
             out = generate_output(gamestate=gamestate, player_port=player_port)
-            X.append(inp)
-            Y.append(out)
+            for val in out:
+                if val != 0:
+                    X.append(inp)
+                    Y.append(out)
+                    break
             gamestate: melee.GameState = console.step()
 
     return np.array(X), np.array(Y)
@@ -154,7 +152,7 @@ def train(replay_paths, player_character: melee.Character, opponent_character: m
     trainer = ModuleTrainer(model)
 
     optim = torch.optim.Adam(model.parameters(),
-                             lr=3e-3)
+                             lr=3e-4)
     trainer.compile(loss='mse_loss',
                          optimizer=optim)
     trainer.fit(torch.Tensor(X), torch.Tensor(Y), batch_size=128, verbose=1, shuffle=True)
@@ -163,4 +161,6 @@ def train(replay_paths, player_character: melee.Character, opponent_character: m
     model_name = f'{player_character.name}_v_{opponent_character.name}_on_BATTLEFIELD'
     if not os.path.isdir(save_dir):
         os.makedirs(save_dir)
-    torch.save(model.state_dict(), os.path.join(save_dir, model_name))
+
+
+    torch.save(model, os.path.join(save_dir, model_name))

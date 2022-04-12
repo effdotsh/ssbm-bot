@@ -16,7 +16,7 @@ if __name__ == '__main__':
     stage = melee.Stage.BATTLEFIELD
 
 
-    replay_folder = '/media/human/Data/replays_lite'
+    replay_folder = '/media/human/Data/replays'
 
     replay_paths = []
     for root, dirs, files in os.walk(replay_folder):
