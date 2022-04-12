@@ -10,16 +10,13 @@ from trainer import train
 
 args = Args.get_args()
 
-
-MIN_BUFFER_SIZE = 60_000
-
 if __name__ == '__main__':
     player_character = melee.Character.MARTH
     opponent_character = melee.Character.CPTFALCON
     stage = melee.Stage.BATTLEFIELD
 
 
-    replay_folder = '/media/human/Data/replays'
+    replay_folder = '/media/human/Data/replays_lite'
 
     replay_paths = []
     for root, dirs, files in os.walk(replay_folder):
@@ -28,5 +25,5 @@ if __name__ == '__main__':
 
     replay_paths = filter_replays(replay_paths, opponent_character=opponent_character,
                                   player_character=player_character, win_only=False, stage=stage)
-    train(replay_paths=replay_paths, min_buffer_size=MIN_BUFFER_SIZE, player_character=player_character,
+    train(replay_paths=replay_paths, player_character=player_character,
           opponent_character=opponent_character)

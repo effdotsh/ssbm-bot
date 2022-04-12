@@ -1,15 +1,42 @@
-import keras.metrics
+import os
+
 import numpy as np
 import melee
 
 import MovesList
 from ReplayManager import get_ports
 
-from keras.models import Sequential
-from keras.layers.core import Dense
-from keras.callbacks import ModelCheckpoint
+from torch import nn
+import torch
+from tqdm import tqdm
+
+from torchsample.modules import ModuleTrainer
 
 framedata = melee.FrameData()
+
+
+class Network(nn.Module):
+    def __init__(self, obs_dim: int, action_dim: int):
+        super().__init__()
+        self.l1 = nn.Linear(obs_dim, 256)
+        self.l2 = nn.Linear(256, 256)
+        self.l3 = nn.Linear(256, 128)
+        self.l4 = nn.Linear(128, action_dim)
+        # self.layers = nn.Sequential(
+        #     nn.Linear(obs_dim, 256),
+        #     nn.LeakyReLU(),
+        #     nn.Linear(256, 256),
+        #     nn.LeakyReLU(),
+        #     nn.Linear(256, action_dim)
+        # )
+
+    def forward(self, x):
+        x = torch.relu(self.l1(x))
+        x = torch.relu(self.l2(x))
+        x = torch.relu(self.l3(x))
+        x = torch.relu(self.l4(x))
+
+        return x
 
 
 def get_player_obs(player: melee.PlayerState) -> list:
@@ -79,18 +106,11 @@ def generate_output(gamestate: melee.GameState, player_port: int):
     return np.array(state)
 
 
-class Datapoint:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-
-def update_buffer(buffer: np.ndarray, replay_paths, min_buffer_size: int, player_character: melee.Character,
-                  opponent_character: melee.Character):
-    while len(buffer) < min_buffer_size and len(replay_paths) >= 1:
-        path = replay_paths[0]
-        replay_paths = replay_paths[1:]
-
+def load_data(replay_paths, player_character: melee.Character,
+              opponent_character: melee.Character):
+    X = []
+    Y = []
+    for path in tqdm(replay_paths):
         console = melee.Console(is_dolphin=False,
                                 allow_old_version=True,
                                 path=path)
@@ -105,51 +125,42 @@ def update_buffer(buffer: np.ndarray, replay_paths, min_buffer_size: int, player
                                                opponent_character=opponent_character)
         if player_port == -1:
             continue
+
+        for i in range(100):
+            if gamestate is not None:
+                gamestate = console.step()
+            else:
+                break
         while gamestate is not None:
             inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
             out = generate_output(gamestate=gamestate, player_port=player_port)
-            buffer = np.append(buffer, [Datapoint(inp, out)])
-
+            X.append(inp)
+            Y.append(out)
             gamestate: melee.GameState = console.step()
-        print(len(replay_paths))
 
-    return buffer, replay_paths
+    return np.array(X), np.array(Y)
 
 
-def train(replay_paths, min_buffer_size: int, player_character: melee.Character, opponent_character: melee.Character,
+def train(replay_paths, player_character: melee.Character, opponent_character: melee.Character,
           batch_size=1024):
-    buffer, replay_paths = update_buffer(buffer=np.array([], dtype=Datapoint), replay_paths=replay_paths,
-                                         min_buffer_size=min_buffer_size,
-                                         player_character=player_character, opponent_character=opponent_character)
-    input_dim = len(buffer[0].x)
-    output_dim = len(buffer[0].y)
+    X, Y = load_data(replay_paths=replay_paths, player_character=player_character,
+                                     opponent_character=opponent_character)
 
-    model = Sequential()
-    model.add(Dense(128, input_dim=input_dim, activation='tanh'))
-    model.add(Dense(128))
-    model.add(Dense(output_dim, activation='tanh'))
-
-    model.compile(loss='mean_squared_error',
-                  optimizer='adam',
-                  metrics=['MeanSquaredError'])
+    input_dim = len(X[0])
+    output_dim = len(Y[0])
 
 
-    checkpoint = ModelCheckpoint(filepath='model/check/',
-                                 monitor='mean_squared_error',
-                                 verbose=1,
-                                 save_best_only=True,
-                                 mode='min')
+    model = Network(input_dim, output_dim)
+    trainer = ModuleTrainer(model)
 
-    while len(buffer) > 0:
-        buffer, replay_paths = update_buffer(buffer=buffer, replay_paths=replay_paths, min_buffer_size=min_buffer_size,
-                                             player_character=player_character, opponent_character=opponent_character)
+    optim = torch.optim.Adam(model.parameters(),
+                             lr=3e-3)
+    trainer.compile(loss='mse_loss',
+                         optimizer=optim)
+    trainer.fit(torch.Tensor(X), torch.Tensor(Y), batch_size=128, verbose=1, shuffle=True)
 
-        bs = min(batch_size, len(buffer))
-
-        X = np.array([buffer[i].x for i in range(bs)])
-        Y= np.array([buffer[i].y for i in range(bs)])
-
-        buffer = buffer[bs:]
-        model.fit(X, Y, verbose=2, use_multiprocessing=True, callbacks=[checkpoint], batch_size=bs)
-
-    model.save('model/final')
+    save_dir = 'models/'
+    model_name = f'{player_character.name}_v_{opponent_character.name}_on_BATTLEFIELD'
+    if not os.path.isdir(save_dir):
+        os.makedirs(save_dir)
+    torch.save(model.state_dict(), os.path.join(save_dir, model_name))
