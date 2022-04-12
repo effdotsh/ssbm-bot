@@ -9,8 +9,8 @@ class Network(nn.Module):
         super(Network, self).__init__()
         self.layers = nn.Sequential(
             nn.Linear(input_dim, hidden_size),
-            nn.Tanh(),
-            nn.Linear(hidden_size, hidden_size),
+            # nn.Tanh(),
+            # nn.Linear(hidden_size, hidden_size),
             nn.Tanh(),
             nn.Linear(hidden_size, output_dim)
         )

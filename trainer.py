@@ -52,7 +52,7 @@ def get_player_obs(player: melee.PlayerState) -> list:
     vel_x = (player.speed_x_attack + player.speed_air_x_self + player.speed_ground_x_self) / 10
 
     facing = 1 if player.facing else -1
-
+    return [x, y, percent, shield, is_attacking, on_ground, vel_x, vel_y, facing]
     in_hitstun = 1 if player.hitlag_left else -1
     is_invulnerable = 1 if player.invulnerable else -1
 
@@ -98,10 +98,10 @@ def generate_output(gamestate: melee.GameState, player_port: int):
         state.append(1 if active else 0)
 
     # state.append(controller.l_shoulder + controller.r_shoulder)
-    state.append((controller.c_stick[0] - 0.5) * 2)
-    state.append((controller.c_stick[1] - 0.5) * 2)
-    state.append((controller.main_stick[0] - 0.5) * 2)
-    state.append((controller.main_stick[1] - 0.5) * 2)
+    # state.append((controller.c_stick[0] - 0.5) * 2)
+    # state.append((controller.c_stick[1] - 0.5) * 2)
+    state.append(1 if (controller.main_stick[0] - 0.5) * 2 > 0.2 else -1 if (controller.main_stick[0] - 0.5) * 2 < -0.2 else 0)
+    state.append(1 if (controller.main_stick[1] - 0.5) * 2 > 0.2 else -1 if (controller.main_stick[1] - 0.5) * 2 < -0.2 else 0)
 
     return np.array(state)
 
@@ -129,8 +129,7 @@ def load_data(replay_paths, player_character: melee.Character,
         while gamestate is not None:
             inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
             out = generate_output(gamestate=gamestate, player_port=player_port)
-            print(out)
-            for val in out:
+            for val in out[:4]:
                 if val != 0:
                     X.append(inp)
                     Y.append(out)
