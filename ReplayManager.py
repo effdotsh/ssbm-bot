@@ -1,3 +1,5 @@
+import json
+
 import melee
 from tqdm import tqdm
 
@@ -67,11 +69,26 @@ def valid_replay(replay_path, player_character: melee.Character, opponent_charac
     console.stop()
     return False
 
-
+import os
 def filter_replays(replays, player_character: melee.Character, opponent_character: melee.Character, stage: melee.Stage,
                    win_only=False):
-    arr= [r for r in tqdm(replays) if
-            valid_replay(replay_path=r, player_character=player_character, opponent_character=opponent_character,
-                         win_only=win_only, stage=stage)]
+
+    if not os.path.exists('replays.json'):
+        with open('replays.json', 'w') as file:
+            json.dump({}, file, indent=4)
+
+    f = open('replays.json', 'r')
+    j = json.load(f)
+    key = f'{player_character.name}_{opponent_character.name}'
+    if key in j:
+        return j[key]
+    else:
+        arr= [r for r in tqdm(replays) if
+                valid_replay(replay_path=r, player_character=player_character, opponent_character=opponent_character,
+                             win_only=win_only, stage=stage)]
+        j[key] = arr
+
+        with open('replays.json', 'w') as file:
+            json.dump(j, file, indent=4)
     print(len(arr))
     return arr

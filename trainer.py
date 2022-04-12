@@ -129,10 +129,12 @@ def load_data(replay_paths, player_character: melee.Character,
         while gamestate is not None:
             inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
             out = generate_output(gamestate=gamestate, player_port=player_port)
+            print(out)
             for val in out:
                 if val != 0:
                     X.append(inp)
                     Y.append(out)
+                    # print(out)
                     break
             gamestate: melee.GameState = console.step()
 
