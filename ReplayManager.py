@@ -36,7 +36,6 @@ def valid_replay(replay_path, player_character: melee.Character, opponent_charac
     console = melee.Console(is_dolphin=False,
                             allow_old_version=True,
                             path=replay_path)
-    print(console.version)
     try:
         console.connect()
     except:
@@ -91,5 +90,4 @@ def filter_replays(replays, player_character: melee.Character, opponent_characte
 
         with open('replays.json', 'w') as file:
             json.dump(j, file, indent=4)
-    print(len(arr))
     return arr

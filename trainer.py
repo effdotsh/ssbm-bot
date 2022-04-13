@@ -51,22 +51,22 @@ def get_player_obs(player: melee.PlayerState) -> list:
     vel_y = (player.speed_y_self + player.speed_y_attack) / 10
     vel_x = (player.speed_x_attack + player.speed_air_x_self + player.speed_ground_x_self) / 10
 
-    facing = 1 if player.facing else -1
+    facing = 1.0 if player.facing else -1.0
     return [x, y, percent, shield, is_attacking, on_ground, vel_x, vel_y, facing]
-    in_hitstun = 1 if player.hitlag_left else -1
-    is_invulnerable = 1 if player.invulnerable else -1
+    in_hitstun = 1.0 if player.hitlag_left else -1.0
+    is_invulnerable = 1.0 if player.invulnerable else -1.0
 
-    special_fall = 1 if player.action in MovesList.special_fall_list else -1
-    is_dead = 1 if player.action in MovesList.dead_list else -1
+    special_fall = 1.0 if player.action in MovesList.special_fall_list else -1.0
+    is_dead = 1.0 if player.action in MovesList.dead_list else -1.0
 
     jumps_left = player.jumps_left / framedata.max_jumps(player.character)
 
     attack_state = framedata.attack_state(player.character, player.action, player.action_frame)
-    attack_active = 1 if attack_state == melee.AttackState.ATTACKING else -1
-    attack_cooldown = 1 if attack_state == melee.AttackState.COOLDOWN else -1
-    attack_windup = 1 if attack_state == melee.AttackState.WINDUP else -1
+    attack_active = 1.0 if attack_state == melee.AttackState.ATTACKING else -1.0
+    attack_cooldown = 1.0 if attack_state == melee.AttackState.COOLDOWN else -1.0
+    attack_windup = 1.0 if attack_state == melee.AttackState.WINDUP else -1.0
 
-    is_bmove = 1 if framedata.is_bmove(player.character, player.action) else -1
+    is_bmove = 1.0 if framedata.is_bmove(player.character, player.action) else -1.0
 
     stock = player.stock / 4
 
@@ -85,7 +85,7 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
 
 
 buttons = [[melee.Button.BUTTON_A], [melee.Button.BUTTON_B], [melee.Button.BUTTON_X, melee.Button.BUTTON_Y],
-           [melee.Button.BUTTON_Z]]
+           [melee.Button.BUTTON_Z], [melee.Button.BUTTON_L, melee.Button.BUTTON_R]]
 
 
 def generate_output(gamestate: melee.GameState, player_port: int):
@@ -95,13 +95,15 @@ def generate_output(gamestate: melee.GameState, player_port: int):
         active = False
         for b in combo:
             active = active or controller.button.get(b)
-        state.append(1 if active else 0)
+        state.append(1.0 if active else 0.0)
 
-    # state.append(controller.l_shoulder + controller.r_shoulder)
-    # state.append((controller.c_stick[0] - 0.5) * 2)
-    # state.append((controller.c_stick[1] - 0.5) * 2)
-    state.append(1 if (controller.main_stick[0] - 0.5) * 2 > 0.2 else -1 if (controller.main_stick[0] - 0.5) * 2 < -0.2 else 0)
-    state.append(1 if (controller.main_stick[1] - 0.5) * 2 > 0.2 else -1 if (controller.main_stick[1] - 0.5) * 2 < -0.2 else 0)
+    state.append(controller.l_shoulder + controller.r_shoulder)
+    state.append((controller.c_stick[0] - 0.5) * 2)
+    state.append((controller.c_stick[1] - 0.5) * 2)
+    state.append(
+        1.0 if (controller.main_stick[0] - 0.5) * 2 > 0.2 else -1.0 if (controller.main_stick[0] - 0.5) * 2 < -0.2 else 0.0)
+    state.append(
+        1.0 if (controller.main_stick[1] - 0.5) * 2 > 0.2 else -1.0 if (controller.main_stick[1] - 0.5) * 2 < -0.2 else 0.0)
 
     return np.array(state)
 
@@ -133,7 +135,6 @@ def load_data(replay_paths, player_character: melee.Character,
                 if val != 0:
                     X.append(inp)
                     Y.append(out)
-                    # print(out)
                     break
             gamestate: melee.GameState = console.step()
 
@@ -143,11 +144,10 @@ def load_data(replay_paths, player_character: melee.Character,
 def train(replay_paths, player_character: melee.Character, opponent_character: melee.Character,
           batch_size=1024):
     X, Y = load_data(replay_paths=replay_paths, player_character=player_character,
-                                     opponent_character=opponent_character)
+                     opponent_character=opponent_character)
 
     input_dim = len(X[0])
     output_dim = len(Y[0])
-
 
     model = Network(input_dim, output_dim)
     trainer = ModuleTrainer(model)
@@ -155,13 +155,12 @@ def train(replay_paths, player_character: melee.Character, opponent_character: m
     optim = torch.optim.Adam(model.parameters(),
                              lr=3e-4)
     trainer.compile(loss='mse_loss',
-                         optimizer=optim)
+                    optimizer=optim)
     trainer.fit(torch.Tensor(X), torch.Tensor(Y), batch_size=128, verbose=1, shuffle=True)
 
     save_dir = 'models/'
     model_name = f'{player_character.name}_v_{opponent_character.name}_on_BATTLEFIELD'
     if not os.path.isdir(save_dir):
         os.makedirs(save_dir)
-
 
     torch.save(model, os.path.join(save_dir, model_name))
