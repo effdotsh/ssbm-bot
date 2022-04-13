@@ -29,13 +29,14 @@ def get_ports(gamestate: melee.GameState, player_character: melee.Character, opp
 
 def valid_replay(replay_path, player_character: melee.Character, opponent_character: melee.Character,
                  stage: melee.Stage, win_only=False):
-    split = replay_path.split('.')
-    if split[-1] != 'slp':
-        return False
+    # split = replay_path.split('.')
+    # if split[-1] != 'slp':
+    #     return False
 
     console = melee.Console(is_dolphin=False,
                             allow_old_version=True,
                             path=replay_path)
+    print(console.version)
     try:
         console.connect()
     except:
