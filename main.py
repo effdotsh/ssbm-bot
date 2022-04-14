@@ -15,8 +15,8 @@ if __name__ == '__main__':
     opponent_character = melee.Character.CPTFALCON
     stage = melee.Stage.BATTLEFIELD
 
-    replay_folder = '/media/human/Data/replays'
-
+    # replay_folder = '/media/human/Data/replays'
+    replay_folder = '/media/human/Data/melee_public_slp_dataset_v2'
     replay_paths = []
     for root, dirs, files in os.walk(replay_folder):
         for name in files:
