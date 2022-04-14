@@ -19,7 +19,7 @@ class Network(nn.Module):
     def __init__(self, obs_dim: int, action_dim: int):
         super().__init__()
         self.l1 = nn.Linear(obs_dim, 256)
-        # self.l2 = nn.Linear(256, 256)
+        self.l2 = nn.Linear(256, 256)
         self.l3 = nn.Linear(256, 128)
         self.l4 = nn.Linear(128, action_dim)
         # self.layers = nn.Sequential(
@@ -32,7 +32,7 @@ class Network(nn.Module):
 
     def forward(self, x):
         x = torch.tanh(self.l1(x))
-        # x = torch.relu(self.l2(x))
+        x = torch.relu(self.l2(x))
         x = torch.tanh(self.l3(x))
         x = torch.tanh(self.l4(x))
 
@@ -78,9 +78,11 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
     player: melee.PlayerState = gamestate.players.get(player_port)
     opponent: melee.PlayerState = gamestate.players.get(opponent_port)
 
-    obs = []
-    obs.append(get_player_obs(player))
-    obs.append(get_player_obs(opponent))
+    edge = melee.EDGE_POSITION.get(gamestate.stage) / 100.0
+    obs = [1.0, edge, gamestate.distance / 50.0, (player.x - opponent.x) / 50.0, (player.y - opponent.y) / 50.0]
+    obs += (get_player_obs(player))
+    obs += (get_player_obs(opponent))
+
     return np.array(obs).flatten()
 
 
@@ -91,8 +93,7 @@ buttons = [[melee.Button.BUTTON_A], [melee.Button.BUTTON_B], [melee.Button.BUTTO
 def generate_output(gamestate: melee.GameState, player_port: int):
     controller: melee.ControllerState = gamestate.players.get(player_port).controller_state
 
-    edge = melee.EDGE_POSITION.get(gamestate.stage)
-    state = [1, edge]
+    state = []
     for combo in buttons:
         active = False
         for b in combo:
@@ -155,7 +156,7 @@ def load_data(replay_paths, player_character: melee.Character,
 
 
 def train(replay_paths, player_character: melee.Character, opponent_character: melee.Character,
-          batch_size=1024):
+        stage: melee.Stage):
     X, Y = load_data(replay_paths=replay_paths, player_character=player_character,
                      opponent_character=opponent_character)
 
@@ -172,7 +173,7 @@ def train(replay_paths, player_character: melee.Character, opponent_character: m
     trainer.fit(torch.Tensor(X), torch.Tensor(Y), batch_size=128, verbose=1, shuffle=True)
 
     save_dir = 'models/'
-    model_name = f'{player_character.name}_v_{opponent_character.name}_on_BATTLEFIELD'
+    model_name = f'{player_character.name}_v_{opponent_character.name}_on_{stage.name}'
     if not os.path.isdir(save_dir):
         os.makedirs(save_dir)
 
