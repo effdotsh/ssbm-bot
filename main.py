@@ -11,7 +11,7 @@ from trainer import train
 args = Args.get_args()
 
 if __name__ == '__main__':
-    player_character = melee.Character.CPTFALCON
+    player_character = melee.Character.MARTH
     opponent_character = melee.Character.CPTFALCON
     stage = melee.Stage.FINAL_DESTINATION
 
