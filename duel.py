@@ -7,22 +7,21 @@ import os
 import torch
 import trainer
 import numpy as np
-import network
 
 args = Args.get_args()
 if __name__ == '__main__':
     character = melee.Character.CPTFALCON
     opponent = melee.Character.CPTFALCON if not args.compete else character
-    stage = melee.Stage.BATTLEFIELD
+    stage = melee.Stage.FINAL_DESTINATION
 
     model = torch.load(f"models/{character.name}_v_{opponent.name}_on_{stage.name}")
     # print(loaded)
     # model = network.Network(19*2, 10)
     # model.load_state_dict(loaded)
     game = GameManager.Game(args)
-    game.enterMatch(cpu_level=4, opponant_character=opponent,
+    game.enterMatch(cpu_level=9, opponant_character=opponent,
                     player_character=character,
-                    stage=stage)
+                    stage=stage, rules=False)
 
     with torch.no_grad():
         while True:

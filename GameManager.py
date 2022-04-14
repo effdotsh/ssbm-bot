@@ -172,13 +172,15 @@ class Game:
 
     def enterMatch(self, player_character: melee.Character = melee.Character.FOX,
                    opponant_character: melee.Character = melee.Character.FOX,
-                   stage: melee.Stage = melee.Stage.BATTLEFIELD, cpu_level: int = 0):
+                   stage: melee.Stage = melee.Stage.BATTLEFIELD, cpu_level: int = 0, rules:bool = True):
         self.stage = stage
         # "step" to the next frame
         gamestate = self.get_gamestate()
 
+
         # Set unlimited time
-        self.set_rules()
+        if rules:
+            self.set_rules()
 
         # # What menu are we in?
         t = time.time()
