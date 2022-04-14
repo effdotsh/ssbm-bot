@@ -36,7 +36,7 @@ if __name__ == '__main__':
                 if out[i] > 0.3:
                     game.controller.press_button(trainer.buttons[i][0])
                     print(trainer.buttons[i][0])
-                    # break
+                    break
             if out[-5] > 0.3:
                 game.controller.press_shoulder(melee.Button.BUTTON_R, 1)
             game.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, np.sign(out[-2]) if abs(out[-2]) > 0.2 else 0,
