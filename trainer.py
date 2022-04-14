@@ -19,7 +19,7 @@ class Network(nn.Module):
     def __init__(self, obs_dim: int, action_dim: int):
         super().__init__()
         self.l1 = nn.Linear(obs_dim, 256)
-        self.l2 = nn.Linear(256, 256)
+        # self.l2 = nn.Linear(256, 256)
         self.l3 = nn.Linear(256, 128)
         self.l4 = nn.Linear(128, action_dim)
         # self.layers = nn.Sequential(
@@ -31,10 +31,10 @@ class Network(nn.Module):
         # )
 
     def forward(self, x):
-        x = torch.relu(self.l1(x))
-        x = torch.relu(self.l2(x))
-        x = torch.relu(self.l3(x))
-        x = torch.relu(self.l4(x))
+        x = torch.tanh(self.l1(x))
+        # x = torch.relu(self.l2(x))
+        x = torch.tanh(self.l3(x))
+        x = torch.tanh(self.l4(x))
 
         return x
 
@@ -90,7 +90,9 @@ buttons = [[melee.Button.BUTTON_A], [melee.Button.BUTTON_B], [melee.Button.BUTTO
 
 def generate_output(gamestate: melee.GameState, player_port: int):
     controller: melee.ControllerState = gamestate.players.get(player_port).controller_state
-    state = []
+
+    edge = melee.EDGE_POSITION.get(gamestate.stage)
+    state = [1, edge]
     for combo in buttons:
         active = False
         for b in combo:
