@@ -31,10 +31,10 @@ class Network(nn.Module):
         # )
 
     def forward(self, x):
-        x = torch.tanh(self.l1(x))
+        x = torch.relu(self.l1(x))
         x = torch.relu(self.l2(x))
-        x = torch.tanh(self.l3(x))
-        x = torch.tanh(self.l4(x))
+        x = torch.relu(self.l3(x))
+        x = torch.relu(self.l4(x))
 
         return x
 
@@ -93,24 +93,28 @@ buttons = [[melee.Button.BUTTON_A], [melee.Button.BUTTON_B], [melee.Button.BUTTO
 def generate_output(gamestate: melee.GameState, player_port: int):
     controller: melee.ControllerState = gamestate.players.get(player_port).controller_state
 
-    state = []
-    for combo in buttons:
-        active = False
-        for b in combo:
-            active = active or controller.button.get(b)
-        state.append(1.0 if active else 0.0)
 
-    state.append(controller.l_shoulder + controller.r_shoulder)
-    state.append((controller.c_stick[0] - 0.5) * 2)
-    state.append((controller.c_stick[1] - 0.5) * 2)
-    state.append(
-        1.0 if (controller.main_stick[0] - 0.5) * 2 > 0.2 else -1.0 if (controller.main_stick[
-                                                                            0] - 0.5) * 2 < -0.2 else 0.0)
-    state.append(
-        1.0 if (controller.main_stick[1] - 0.5) * 2 > 0.2 else -1.0 if (controller.main_stick[
-                                                                            1] - 0.5) * 2 < -0.2 else 0.0)
+    button = 0
+    num_buttons = len(buttons)+1
+    for e,b in enumerate(buttons):
+        if controller.button.get(b[0]):
+            button = e+1
+            break
 
-    return np.array(state)
+    move_x = 0 if controller.main_stick[0] < -0.2 else 1 if controller.main_stick[0] < 0.2 else 2
+    move_y = 0 if controller.main_stick[1] < -0.2 else 1 if controller.main_stick[1] < 0.2 else 2
+    num_move_single_axis = 3
+    move = move_x * num_move_single_axis + move_y
+    num_moves = 9
+
+    action = button*num_moves + move
+
+
+    state = np.zeros(num_moves*num_buttons)
+    state[action]=1
+
+    return state
+
 
 
 def load_data(replay_paths, player_character: melee.Character,
@@ -136,19 +140,13 @@ def load_data(replay_paths, player_character: melee.Character,
         while gamestate is not None:
             inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
             out = generate_output(gamestate=gamestate, player_port=player_port)
-            for val in out[:4]:
-                if val != 0:
-                    X.append(inp)
-                    Y.append(out)
-                    break
+            X.append(inp)
+            Y.append(out)
             if player_character == opponent_character:
                 inp = generate_input(gamestate=gamestate, player_port=opponent_port, opponent_port=player_port)
                 out = generate_output(gamestate=gamestate, player_port=opponent_port)
-                for val in out[:4]:
-                    if val != 0:
-                        X.append(inp)
-                        Y.append(out)
-                        break
+                X.append(inp)
+                Y.append(out)
 
             gamestate: melee.GameState = console.step()
 
