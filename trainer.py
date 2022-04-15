@@ -11,6 +11,7 @@ import torch
 from tqdm import tqdm
 
 from torchsample.modules import ModuleTrainer
+from encoder import encode_to_number, decode_from_number
 
 framedata = melee.FrameData()
 
@@ -92,29 +93,35 @@ buttons = [[melee.Button.BUTTON_A], [melee.Button.BUTTON_B], [melee.Button.BUTTO
 
 def generate_output(gamestate: melee.GameState, player_port: int):
     controller: melee.ControllerState = gamestate.players.get(player_port).controller_state
-
-
     button = 0
-    num_buttons = len(buttons)+1
-    for e,b in enumerate(buttons):
+    num_buttons = len(buttons) + 1
+    for e, b in enumerate(buttons):
         if controller.button.get(b[0]):
-            button = e+1
+            button = e + 1
             break
 
-    move_x = 0 if controller.main_stick[0] < -0.2 else 1 if controller.main_stick[0] < 0.2 else 2
-    move_y = 0 if controller.main_stick[1] < -0.2 else 1 if controller.main_stick[1] < 0.2 else 2
+    move_x = 0 if controller.main_stick[0] < 0.3 else 1 if controller.main_stick[0] < 0.7 else 2
+    move_y = 0 if controller.main_stick[1] < 0.3 else 1 if controller.main_stick[1] < 0.7 else 2
     num_move_single_axis = 3
-    move = move_x * num_move_single_axis + move_y
-    num_moves = 9
 
-    action = button*num_moves + move
+    num_c = 5
+    c = 0
+    if controller.c_stick[0] < 0.3:
+        c = 1
+    elif controller.c_stick[0] > 0.7:
+        c = 2
+    elif controller.c_stick[1] < 0.3:
+        c = 3
+    elif controller.c_stick[1] > 0.7:
+        c = 4
 
+    maxes = [num_move_single_axis, num_move_single_axis, num_c, num_buttons]
+    action = encode_to_number([move_x, move_y, c, button], maxes)
 
-    state = np.zeros(num_moves*num_buttons)
-    state[action]=1
+    state = np.zeros(np.prod(maxes))
+    state[action] = 1
 
-    return state
-
+    return state, maxes, np.array([move_x, move_y, c, button])
 
 
 def load_data(replay_paths, player_character: melee.Character,
@@ -139,14 +146,19 @@ def load_data(replay_paths, player_character: melee.Character,
 
         while gamestate is not None:
             inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
-            out = generate_output(gamestate=gamestate, player_port=player_port)
+            out, maxes, check_arr = generate_output(gamestate=gamestate, player_port=player_port)
+
+            d = decode_from_number(np.argmax(out), maxes)
+            if (d != check_arr).all():
+                print(f'{d} - {check_arr}')
+                print('Nooooo')
             X.append(inp)
             Y.append(out)
-            if player_character == opponent_character:
-                inp = generate_input(gamestate=gamestate, player_port=opponent_port, opponent_port=player_port)
-                out = generate_output(gamestate=gamestate, player_port=opponent_port)
-                X.append(inp)
-                Y.append(out)
+            # if player_character == opponent_character:
+            # inp = generate_input(gamestate=gamestate, player_port=opponent_port, opponent_port=player_port)
+            # out = generate_output(gamestate=gamestate, player_port=opponent_port)
+            # X.append(inp)
+            # Y.append(out)
 
             gamestate: melee.GameState = console.step()
 
@@ -154,7 +166,7 @@ def load_data(replay_paths, player_character: melee.Character,
 
 
 def train(replay_paths, player_character: melee.Character, opponent_character: melee.Character,
-        stage: melee.Stage):
+          stage: melee.Stage):
     X, Y = load_data(replay_paths=replay_paths, player_character=player_character,
                      opponent_character=opponent_character)
 
