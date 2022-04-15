@@ -15,6 +15,7 @@ if __name__ == '__main__':
     opponent_character = melee.Character.CPTFALCON
     stage = melee.Stage.FINAL_DESTINATION
 
+    print(f'{player_character.name} vs. {opponent_character.name} on {stage.name}')
     # replay_folder = '/media/human/Data/replays'
     replay_folder = '/media/human/Data/melee_public_slp_dataset_v2'
     replay_paths = []
