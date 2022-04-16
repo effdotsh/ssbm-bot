@@ -13,7 +13,7 @@ from encoder import decode_from_number
 args = Args.get_args()
 
 if __name__ == '__main__':
-    character = melee.Character.MARTH
+    character = melee.Character.JIGGLYPUFF
     opponent = melee.Character.CPTFALCON if not args.compete else character
     stage = melee.Stage.FINAL_DESTINATION
 
@@ -39,26 +39,35 @@ if __name__ == '__main__':
 
             action = np.argmax(out)
             move_x, move_y, c, button = decode_from_number(action, maxes)
-            # print(action)
+            print(action)
             # print(button)
-            # print(move)
-            # print('----------')
+            # print(move_x)
+            # print(move_y)
+            # print(c)
+            # print(out)
+            print('----------')
             # print(trainer.buttons)
             if button > 0:
                 game.controller.press_button(trainer.buttons[button - 1][0])
 
             if c == 0:
                 game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 0.5)
-
-            if c == 1:
-                game.controller.tilt_analog(melee.Button.BUTTON_C, 0, 0.5)
-            elif c == 2:
-                game.controller.tilt_analog(melee.Button.BUTTON_C, 1, 0.5)
-            elif c == 3:
-                game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 0)
-            elif c == 4:
-                game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 1)
+            else:
+                if c == 1:
+                    game.controller.tilt_analog(melee.Button.BUTTON_C, 0, 0.5)
+                elif c == 2:
+                    game.controller.tilt_analog(melee.Button.BUTTON_C, 1, 0.5)
+                elif c == 3:
+                    game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 0)
+                elif c == 4:
+                    game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 1)
+                for i in range(5):
+                    gamestate = game.get_gamestate()
 
             game.controller.tilt_analog(melee.Button.BUTTON_MAIN, move_x / 2, move_y / 2)
             gamestate = game.get_gamestate()
-            game.controller.release_all()
+            for b in trainer.buttons:
+                game.controller.release_button(b[0])
+            game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 0.5)
+
+            # game.controller.release_all()
