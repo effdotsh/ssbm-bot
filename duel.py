@@ -13,7 +13,7 @@ args = Args.get_args()
 
 if __name__ == '__main__':
     character = melee.Character.CPTFALCON
-    opponent = melee.Character.CPTFALCON if not args.compete else character
+    opponent = melee.Character.JIGGLYPUFF if not args.compete else character
     stage = melee.Stage.FINAL_DESTINATION
 
     tree, map = DataHandler.load_model(player_character=character, opponent_character=opponent, stage=stage)
