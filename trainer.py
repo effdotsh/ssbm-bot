@@ -1,4 +1,5 @@
 import os
+import pickle
 
 import numpy as np
 import melee
@@ -125,9 +126,15 @@ def generate_output(gamestate: melee.GameState, player_port: int):
 
 
 def load_data(replay_paths, player_character: melee.Character,
-              opponent_character: melee.Character):
+              opponent_character: melee.Character, stage: melee.Stage):
     X = []
     Y = []
+
+    pickle_file_path = f'data/{player_character.name}_v_{opponent_character.name}_on_{stage.name}.pkl'
+    if os.path.exists(pickle_file_path):
+        with open(pickle_file_path, 'rb') as file:
+            data = pickle.load(file)
+            return np.array(data['X']), np.array(data['Y'])
     for path in tqdm(replay_paths):
         console = melee.Console(is_dolphin=False,
                                 allow_old_version=True,
@@ -154,21 +161,20 @@ def load_data(replay_paths, player_character: melee.Character,
                 print('Nooooo')
             X.append(inp)
             Y.append(out)
-            # if player_character == opponent_character:
-            # inp = generate_input(gamestate=gamestate, player_port=opponent_port, opponent_port=player_port)
-            # out = generate_output(gamestate=gamestate, player_port=opponent_port)
-            # X.append(inp)
-            # Y.append(out)
 
             gamestate: melee.GameState = console.step()
 
+    with open(pickle_file_path, 'wb') as file:
+
+        # A new file will be created
+        pickle.dump({'X': X, 'Y': Y}, file)
     return np.array(X), np.array(Y)
 
 
 def train(replay_paths, player_character: melee.Character, opponent_character: melee.Character,
           stage: melee.Stage):
     X, Y = load_data(replay_paths=replay_paths, player_character=player_character,
-                     opponent_character=opponent_character)
+                     opponent_character=opponent_character, stage=stage)
 
     input_dim = len(X[0])
     output_dim = len(Y[0])
