@@ -21,37 +21,37 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
     x = player.position.x
     y = player.position.y
 
-    percent = player.percent / 10
-    shield = player.shield_strength / 20
+    percent = player.percent
+    shield = player.shield_strength
 
     edge = melee.EDGE_POSITION.get(gamestate.stage)
 
-    offstage = 999999 if abs(player.position.x) > edge else 0
+    offstage = 999999 if abs(player.position.x) > edge-1 else 0
 
-    is_attacking = 10 if framedata.is_attack(player.character, player.action) else 0
-    on_ground = 5 if player.on_ground else 0
+    is_attacking = 1000 if framedata.is_attack(player.character, player.action) else 0
+    on_ground = 50 if player.on_ground else 0
 
     vel_y = (player.speed_y_self + player.speed_y_attack)
     vel_x = (player.speed_x_attack + player.speed_air_x_self + player.speed_ground_x_self)
 
-    facing = 200.0 if player.facing else 0
+    facing = 500.0 if player.facing else 0
     # return [x, y, percent, shield, is_attacking, on_ground, vel_x, vel_y, facing]
-    in_hitstun = 20.0 if player.hitlag_left else 0
+    in_hitstun = 2000.0 if player.hitlag_left else 0
     is_invulnerable = 5 if player.invulnerable else 0
 
-    special_fall = 300.0 if player.action in MovesList.special_fall_list else 0
+    special_fall = 99999999.0 if player.action in MovesList.special_fall_list else 0
     is_dead = 99999999 if player.action in MovesList.dead_list else 0
 
     jumps_left = player.jumps_left * 500
 
     attack_state = framedata.attack_state(player.character, player.action, player.action_frame)
-    attack_active = 5.0 if attack_state == melee.AttackState.ATTACKING else 0
-    attack_cooldown = 5.0 if attack_state == melee.AttackState.COOLDOWN else 0
-    attack_windup = 5.0 if attack_state == melee.AttackState.WINDUP else 0
+    attack_active = 500.0 if attack_state == melee.AttackState.ATTACKING else 0
+    attack_cooldown = 500.0 if attack_state == melee.AttackState.COOLDOWN else 0
+    attack_windup = 500.0 if attack_state == melee.AttackState.WINDUP else 0
 
-    is_bmove = 10.0 if framedata.is_bmove(player.character, player.action) else 0
+    is_bmove = 1000.0 if framedata.is_bmove(player.character, player.action) else 0
 
-    return [special_fall, is_dead, vel_x, vel_y, x, y, percent, shield, on_ground, is_attacking, facing,
+    return [offstage, special_fall, is_dead, vel_x, vel_y, x, y, percent, shield, on_ground, is_attacking, facing,
             in_hitstun, is_invulnerable, jumps_left, attack_windup, attack_active, attack_cooldown, is_bmove]
 
 
@@ -59,7 +59,13 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
     player: melee.PlayerState = gamestate.players.get(player_port)
     opponent: melee.PlayerState = gamestate.players.get(opponent_port)
 
-    obs = []
+
+    x_dist = (player.position.x - opponent.position.x)
+    if abs(x_dist) < 10:
+        x_dist/=10
+    else:
+        x_dist **= 3
+    obs = [x_dist]
     obs += get_player_obs(player, gamestate)
     obs += get_player_obs(opponent, gamestate)
 
