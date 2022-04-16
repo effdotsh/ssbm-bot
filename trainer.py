@@ -164,6 +164,8 @@ def load_data(replay_paths, player_character: melee.Character,
 
             gamestate: melee.GameState = console.step()
 
+    if not os.path.isdir('data'):
+        os.mkdir('data/')
     with open(pickle_file_path, 'wb') as file:
 
         # A new file will be created
@@ -183,7 +185,7 @@ def train(replay_paths, player_character: melee.Character, opponent_character: m
     trainer = ModuleTrainer(model)
 
     optim = torch.optim.Adam(model.parameters(),
-                             lr=3e-4)
+                             lr=3e-5)
     trainer.compile(loss='mse_loss',
                     optimizer=optim)
     trainer.fit(torch.Tensor(X), torch.Tensor(Y), batch_size=128, verbose=1, shuffle=True)
