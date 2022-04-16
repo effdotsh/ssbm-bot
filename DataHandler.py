@@ -102,7 +102,7 @@ def generate_output(gamestate: melee.GameState, player_port: int):
 
     return action, maxes, np.array([move_x, move_y, c, button])
 
-
+# nothing_chance = 0.05
 def create_model(replay_paths, player_character: melee.Character,
                  opponent_character: melee.Character, stage: melee.Stage):
     pickle_file_path = f'models/{player_character.name}_v_{opponent_character.name}_on_{stage.name}.pkl'
@@ -129,16 +129,11 @@ def create_model(replay_paths, player_character: melee.Character,
             inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
             action, maxes, check_arr = generate_output(gamestate=gamestate, player_port=player_port)
 
-            # Check to make sure encode/decode works
-            # d = decode_from_number(action, maxes)
-            # if (d != check_arr).all():
-            #     print(f'{d} - {check_arr}')
-            #     print('Nooooo')
-            X.append(inp)
-            key = str(list(inp.astype(int)))
-            # print(key)
+            if action != 120:
+                X.append(inp)
+                key = str(list(inp.astype(int)))
 
-            map |= {key: action}
+                map |= {key: action}
 
             gamestate: melee.GameState = console.step()
 
@@ -162,13 +157,16 @@ def load_model(player_character: melee.Character,
         quit()
 
 
-def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: int, opponent_port: int, num_points=20):
+def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: int, opponent_port: int, num_points=7):
     inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
-    _dist, ind = tree.query([inp], k=num_points)
+    dist, ind = tree.query([inp], k=num_points)
+    print(dist[0][0])
+
     votes = []
     for i in ind[0]:
         point = list(np.array(tree.data[i]).astype(int))
         vote = map[str(point)]
+        # if vote != 120:
         votes.append(vote)
 
     vals, counts = np.unique(votes, return_counts=True)

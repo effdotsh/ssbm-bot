@@ -28,19 +28,14 @@ if __name__ == '__main__':
     num_c = 5
     maxes = [axis_size, axis_size, num_c, num_buttons]
 
-
     while True:
         gamestate = game.get_gamestate()
 
         action = DataHandler.predict(tree=tree, map=map, gamestate=gamestate, player_port=game.controller.port,
                                      opponent_port=game.controller_opponent.port)
         move_x, move_y, c, button = decode_from_number(action, maxes)
-        print(action)
-        # print(button)
-        # print(move_x)
-        # print(move_y)
-        # print(c)
-        # print(out)
+
+        print(move_x - 1, move_y - 1, c, button)
         print('----------')
         # print(trainer.buttons)
         if button > 0:
@@ -57,13 +52,19 @@ if __name__ == '__main__':
                 game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 0)
             elif c == 4:
                 game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 1)
-            for i in range(5):
-                gamestate = game.get_gamestate()
+
 
         game.controller.tilt_analog(melee.Button.BUTTON_MAIN, move_x / 2, move_y / 2)
+
+
+        if c > 0 or button > 0:
+            for i in range(10):
+                gamestate = game.get_gamestate()
         gamestate = game.get_gamestate()
+
         for b in DataHandler.buttons:
             game.controller.release_button(b[0])
-        game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 0.5)
+        # game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 0.5)
+        game.controller.tilt_analog(melee.Button.BUTTON_MAIN, move_x / 2, move_y / 2)
 
         # game.controller.release_all()
