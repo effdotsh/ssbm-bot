@@ -9,6 +9,7 @@ import os
 import DataHandler
 import numpy as np
 
+import encoder
 from encoder import decode_from_number
 
 args = Args.get_args()
@@ -24,10 +25,13 @@ def validate_action(action, maxes, gamestate: melee, player_port: int):
     edge: float = melee.EDGE_POSITION.get(gamestate.stage)
     edge_buffer = 20
     # Prevent running off edge
-    if button == 0 and c == 0 and (
-            move_x == -1 and player.position.x < -edge + edge_buffer or move_x == 1 and player.position.x > edge - edge_buffer):
+    if button == 0 and c == 0 and move_x == -1 and player.position.x < -edge + edge_buffer:
         print("Stopping running SD")
-        return 120
+        return encoder.encode_to_number([2, 1, 0, 0], maxes)
+
+    if button == 0 and c == 0 and move_x == 1 and player.position.x > edge - edge_buffer:
+        print("Stopping running SD")
+        return encoder.encode_to_number([0, 1, 0, 0], maxes)
 
     if player.character == melee.Character.FOX:
         a = melee.Action
@@ -59,7 +63,7 @@ if __name__ == '__main__':
     tree, map = DataHandler.load_model(player_character=character, opponent_character=opponent, stage=stage)
 
     game = GameManager.Game(args)
-    game.enterMatch(cpu_level=0, opponant_character=opponent,
+    game.enterMatch(cpu_level=9, opponant_character=opponent,
                     player_character=character,
                     stage=stage, rules=False)
 
