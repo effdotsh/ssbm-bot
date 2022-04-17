@@ -10,7 +10,7 @@ from DataHandler import create_model
 args = Args.get_args()
 
 if __name__ == '__main__':
-    player_character = melee.Character.MARTH
+    player_character = melee.Character.FOX
     opponent_character = melee.Character.MARTH
     stage = melee.Stage.FINAL_DESTINATION
 
