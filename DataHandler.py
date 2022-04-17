@@ -44,20 +44,20 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
     x = player.position.x
     y = player.position.y
 
-    percent = player.percent
+    percent = player.percent*10
     shield = player.shield_strength
 
     edge = melee.EDGE_POSITION.get(gamestate.stage)
 
     offstage = 999999 if abs(player.position.x) > edge - 1 else 0
-
+    tumbling = 999999 if player.action in [melee.Action.TUMBLING] else 0
     is_attacking = 1000 if framedata.is_attack(player.character, player.action) else 0
     on_ground = 50 if player.on_ground else 0
 
     vel_y = (player.speed_y_self + player.speed_y_attack)
     vel_x = (player.speed_x_attack + player.speed_air_x_self + player.speed_ground_x_self)
 
-    facing = 99909.0 if player.facing else 0
+    facing = 999099.0 if player.facing else 0
     # return [x, y, percent, shield, is_attacking, on_ground, vel_x, vel_y, facing]
     in_hitstun = 2000.0 if player.hitlag_left else 0
     is_invulnerable = 5 if player.invulnerable else 0
@@ -74,7 +74,7 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
 
     is_bmove = 1000.0 if framedata.is_bmove(player.character, player.action) else 0
 
-    return [offstage, special_fall, is_dead, vel_x, vel_y, x, y, percent, shield, on_ground, is_attacking, facing,
+    return [tumbling, offstage, special_fall, is_dead, vel_x, vel_y, x, y, percent, shield, on_ground, is_attacking, facing,
             in_hitstun, is_invulnerable, jumps_left, attack_windup, attack_active, attack_cooldown, is_bmove]
 
 
@@ -91,7 +91,8 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
     elif x_dist < 30:
         d = 3000
 
-    obs = [x_dist * 20, d]
+    direction = 99909 if player.position.x < opponent.position.x else 0
+    obs = [direction * 20, d]
     obs += get_player_obs(player, gamestate)
     obs += get_player_obs(opponent, gamestate)
 
@@ -142,7 +143,7 @@ def create_model(replay_paths, player_character: melee.Character,
     X = []
     map = {}
 
-    for path in tqdm(replay_paths[300:]):
+    for path in tqdm(replay_paths):
         console = melee.Console(is_dolphin=False,
                                 allow_old_version=True,
                                 path=path)
@@ -165,14 +166,15 @@ def create_model(replay_paths, player_character: melee.Character,
             inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
             action, maxes, check_arr = generate_output(gamestate=gamestate, player_port=player_port)
 
-            if action != 120:
+            if action not in [120, 121]:
                 X.append(inp)
                 key = str(list(inp.astype(int)))
 
                 map |= {key: action}
-
-            gamestate: melee.GameState = console.step()
-
+            try:
+                gamestate: melee.GameState = console.step()
+            except:
+                gamestate = None
     tree = KDTree(X)
     if not os.path.isdir('models'):
         os.mkdir('models/')
@@ -194,17 +196,20 @@ def load_model(player_character: melee.Character,
 
 
 def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: int, opponent_port: int, maxes: list,
-            num_points=30):
+            num_points=200):
     inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
     dist, ind = tree.query([inp], k=num_points)
     # print(dist[0][0])
 
     votes = []
     biased = []
-    for i in ind[0]:
+    for e, i in enumerate(ind[0]):
         point = list(np.array(tree.data[i]).astype(int))
         vote = map[str(point)]
-        # if vote != 120:
+        if vote in [120, 121]:
+          continue
+        # if dist[0][e] > 50:
+        #     continue
         votes.append(vote)
         d = decode_from_number(vote, maxes)
 

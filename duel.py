@@ -14,14 +14,15 @@ from encoder import decode_from_number
 args = Args.get_args()
 
 if __name__ == '__main__':
-    character = melee.Character.CPTFALCON
-    opponent = melee.Character.CPTFALCON if not args.compete else character
+    character = melee.Character.FOX
+    opponent = melee.Character.MARTH if not args.compete else character
     stage = melee.Stage.FINAL_DESTINATION
+    print(f'{character.name} vs. {opponent.name} on {stage.name}')
 
     tree, map = DataHandler.load_model(player_character=character, opponent_character=opponent, stage=stage)
 
     game = GameManager.Game(args)
-    game.enterMatch(cpu_level=5, opponant_character=opponent,
+    game.enterMatch(cpu_level=0, opponant_character=opponent,
                     player_character=character,
                     stage=stage, rules=False)
 
@@ -38,8 +39,9 @@ if __name__ == '__main__':
 
         print(action)
         move_x, move_y, c, button = decode_from_number(action, maxes)
-
+        print(gamestate.players.get(game.controller.port).action)
         print(move_x - 1, move_y - 1, c, button)
+
         # print('----------')
         # print(trainer.buttons)
         # print(gamestate.players.get(1).position.x)
@@ -49,7 +51,7 @@ if __name__ == '__main__':
         if c == 0:
             game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 0.5)
         else:
-            for i in range(10):
+            for i in range(3):
                 if c == 1:
                     game.controller.tilt_analog(melee.Button.BUTTON_C, 0, 0.5)
                 elif c == 2:
@@ -62,7 +64,7 @@ if __name__ == '__main__':
         game.controller.tilt_analog(melee.Button.BUTTON_MAIN, move_x / 2, move_y / 2)
 
         if button > 0:
-            for i in range(10):
+            for i in range(3):
                 gamestate = game.get_gamestate()
         gamestate = game.get_gamestate()
 
