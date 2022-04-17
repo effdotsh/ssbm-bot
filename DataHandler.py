@@ -43,7 +43,7 @@ def get_ports(gamestate: melee.GameState, player_character: melee.Character, opp
 
 def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> list:
     x = player.position.x
-    y = player.position.y
+    y = player.position.y*50
 
     percent = player.percent * 10
     shield = player.shield_strength
@@ -221,13 +221,14 @@ def load_model(player_character: melee.Character,
 
 
 def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: int, opponent_port: int, maxes: list,
-            num_points=200):
+            num_points=50):
     inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
     dist, ind = tree.query([inp], k=num_points)
     # print(dist[0][0])
 
     votes = []
     biased = []
+    multiplier=10
     for e, i in enumerate(ind[0]):
         point = list(np.array(tree.data[i]).astype(int))
         vote = map[str(point)]
@@ -244,11 +245,11 @@ def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: in
         # if d[3] > 2:
         #     continue
 
-        if 0 < d[3] <= 2:
-            biased.append(vote)
+        if 0 < d[3] <= 2 or d[2] > 0:
+            for i in range(multiplier):
+                votes.append(vote)
+            # biased.append(vote)
 
-        if d[2] > 0:
-            biased.append(vote)
 
     if len(votes) > 0:
         vals, counts = np.unique(votes if len(biased) == 0 else biased, return_counts=True)
