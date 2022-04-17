@@ -1,11 +1,11 @@
 import os
 import pickle
+import time
 
 import numpy as np
 import melee
 
 import MovesList
-from ReplayManager import get_ports
 
 from tqdm import tqdm
 
@@ -16,6 +16,29 @@ from sklearn.neighbors import KDTree
 
 framedata = melee.FrameData()
 
+
+def get_ports(gamestate: melee.GameState, player_character: melee.Character, opponent_character: melee.Character):
+    if gamestate is None:
+        return -1, -1
+    ports = list(gamestate.players.keys())
+    if len(ports) != 2:
+        return -1, -1
+    player_port = ports[0]
+    opponent_port = ports[1]
+    p1: melee.PlayerState = gamestate.players.get(player_port)
+    p2: melee.PlayerState = gamestate.players.get(opponent_port)
+
+    if p1.character == player_character and p2.character == opponent_character:
+        player_port = ports[0]
+        opponent_port = ports[1]
+    elif p2.character == player_character and p1.character == opponent_character:
+        player_port = ports[1]
+        opponent_port = ports[0]
+    else:
+        print(p1.character, p2.character)
+        player_port = -1
+        opponent_port = -1
+    return player_port, opponent_port
 
 def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> list:
     x = player.position.x
@@ -34,7 +57,7 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
     vel_y = (player.speed_y_self + player.speed_y_attack)
     vel_x = (player.speed_x_attack + player.speed_air_x_self + player.speed_ground_x_self)
 
-    facing = 500.0 if player.facing else 0
+    facing = 99909.0 if player.facing else 0
     # return [x, y, percent, shield, is_attacking, on_ground, vel_x, vel_y, facing]
     in_hitstun = 2000.0 if player.hitlag_left else 0
     is_invulnerable = 5 if player.invulnerable else 0
@@ -119,7 +142,7 @@ def create_model(replay_paths, player_character: melee.Character,
     X = []
     map = {}
 
-    for path in tqdm(replay_paths):
+    for path in tqdm(replay_paths[300:]):
         console = melee.Console(is_dolphin=False,
                                 allow_old_version=True,
                                 path=path)
@@ -127,12 +150,15 @@ def create_model(replay_paths, player_character: melee.Character,
             console.connect()
         except:
             console.stop()
+            print('console failed to connect', path,  time.time())
             continue
 
         gamestate: melee.GameState = console.step()
         player_port, opponent_port = get_ports(gamestate, player_character=player_character,
                                                opponent_character=opponent_character)
         if player_port == -1:
+            print('bad port', path, gamestate.players.keys(), time.time())
+
             continue
 
         while gamestate is not None:
@@ -168,7 +194,7 @@ def load_model(player_character: melee.Character,
 
 
 def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: int, opponent_port: int, maxes: list,
-            num_points=50):
+            num_points=30):
     inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
     dist, ind = tree.query([inp], k=num_points)
     # print(dist[0][0])
@@ -181,9 +207,20 @@ def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: in
         # if vote != 120:
         votes.append(vote)
         d = decode_from_number(vote, maxes)
-        if d[2] > 0 or d[3] > 0:
+
+        # if d[3] > 2:
+        #     continue
+
+        if 0 < d[3] <= 2:
+            print(buttons[d[3]-1])
             biased.append(vote)
 
-    vals, counts = np.unique(votes if len(biased) == 0 else biased, return_counts=True)
-    mode_value = np.argwhere(counts == np.max(counts))
-    return vals[mode_value].flatten()[0]
+        if d[2] > 0:
+            print(d[2])
+            biased.append(vote)
+
+    if len(votes) > 0:
+        vals, counts = np.unique(votes if len(biased) == 0 else biased, return_counts=True)
+        mode_value = np.argwhere(counts == np.max(counts))
+        return vals[mode_value].flatten()[0]
+    return 120
