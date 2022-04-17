@@ -79,7 +79,7 @@ if __name__ == '__main__':
         action = validate_action(action, maxes, gamestate, game.controller.port)
         move_x, move_y, c, button = decode_from_number(action, maxes)
 
-        print(gamestate.players.get(game.controller.port).action)
+        # print(gamestate.players.get(game.controller.port).action)
         # print(move_x - 1, move_y - 1, c, button)
 
         # print(trainer.buttons)
