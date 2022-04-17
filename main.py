@@ -17,6 +17,6 @@ if __name__ == '__main__':
     f = open('replays.json', 'r')
     j = json.load(f)
 
-    replay_paths = j[f'{player_character.name}_{opponent_character.name}']
+    replay_paths = j[f'{player_character.name}_{opponent_character.name}'][stage.name]
     create_model(replay_paths=replay_paths, player_character=player_character,
                  opponent_character=opponent_character, stage=stage)
