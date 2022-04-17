@@ -40,11 +40,12 @@ def get_ports(gamestate: melee.GameState, player_character: melee.Character, opp
         opponent_port = -1
     return player_port, opponent_port
 
+
 def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> list:
     x = player.position.x
     y = player.position.y
 
-    percent = player.percent*10
+    percent = player.percent * 10
     shield = player.shield_strength
 
     edge = melee.EDGE_POSITION.get(gamestate.stage)
@@ -74,7 +75,8 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
 
     is_bmove = 1000.0 if framedata.is_bmove(player.character, player.action) else 0
 
-    return [tumbling, offstage, special_fall, is_dead, vel_x, vel_y, x, y, percent, shield, on_ground, is_attacking, facing,
+    return [tumbling, offstage, special_fall, is_dead, vel_x, vel_y, x, y, percent, shield, on_ground, is_attacking,
+            facing,
             in_hitstun, is_invulnerable, jumps_left, attack_windup, attack_active, attack_cooldown, is_bmove]
 
 
@@ -92,7 +94,13 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
         d = 3000
 
     direction = 99909 if player.position.x < opponent.position.x else 0
-    obs = [direction * 20, d]
+
+    firefoxing = 99999999999 if player.character in [melee.Character.FOX, melee.Character.FALCO] and player.action in [
+        melee.Action.SWORD_DANCE_3_MID, melee.Action.SWORD_DANCE_3_LOW, melee.Action.SWORD_DANCE_3_HIGH,
+        melee.Action.SWORD_DANCE_3_LOW_AIR, melee.Action.SWORD_DANCE_3_MID_AIR,
+        melee.Action.SWORD_DANCE_3_HIGH_AIR] else 0
+
+    obs = [direction * 20, d, firefoxing]
     obs += get_player_obs(player, gamestate)
     obs += get_player_obs(opponent, gamestate)
 
@@ -151,7 +159,7 @@ def create_model(replay_paths, player_character: melee.Character,
             console.connect()
         except:
             console.stop()
-            print('console failed to connect', path,  time.time())
+            print('console failed to connect', path, time.time())
             continue
 
         gamestate: melee.GameState = console.step()
@@ -207,7 +215,7 @@ def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: in
         point = list(np.array(tree.data[i]).astype(int))
         vote = map[str(point)]
         if vote in [120, 121]:
-          continue
+            continue
         # if dist[0][e] > 50:
         #     continue
         votes.append(vote)
