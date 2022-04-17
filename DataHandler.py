@@ -217,11 +217,9 @@ def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: in
         #     continue
 
         if 0 < d[3] <= 2:
-            print(buttons[d[3]-1])
             biased.append(vote)
 
         if d[2] > 0:
-            print(d[2])
             biased.append(vote)
 
     if len(votes) > 0:
