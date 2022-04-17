@@ -26,7 +26,7 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
 
     edge = melee.EDGE_POSITION.get(gamestate.stage)
 
-    offstage = 999999 if abs(player.position.x) > edge-1 else 0
+    offstage = 999999 if abs(player.position.x) > edge - 1 else 0
 
     is_attacking = 1000 if framedata.is_attack(player.character, player.action) else 0
     on_ground = 50 if player.on_ground else 0
@@ -59,13 +59,16 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
     player: melee.PlayerState = gamestate.players.get(player_port)
     opponent: melee.PlayerState = gamestate.players.get(opponent_port)
 
+    x_dist = player.position.x - opponent.position.x
+    d = 0
+    if x_dist < 5:
+        d = 100000
+    elif x_dist < 10:
+        d = 80000
+    elif x_dist < 30:
+        d = 3000
 
-    x_dist = (player.position.x - opponent.position.x)
-    if abs(x_dist) < 10:
-        x_dist/=10
-    else:
-        x_dist **= 3
-    obs = [x_dist]
+    obs = [x_dist * 20, d]
     obs += get_player_obs(player, gamestate)
     obs += get_player_obs(opponent, gamestate)
 
@@ -107,6 +110,7 @@ def generate_output(gamestate: melee.GameState, player_port: int):
     # state[action] = 1
 
     return action, maxes, np.array([move_x, move_y, c, button])
+
 
 # nothing_chance = 0.05
 def create_model(replay_paths, player_character: melee.Character,
@@ -163,21 +167,23 @@ def load_model(player_character: melee.Character,
         quit()
 
 
-def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: int, opponent_port: int, num_points=7):
+def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: int, opponent_port: int, maxes: list,
+            num_points=50):
     inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
     dist, ind = tree.query([inp], k=num_points)
-    print(dist[0][0])
+    # print(dist[0][0])
 
     votes = []
+    biased = []
     for i in ind[0]:
         point = list(np.array(tree.data[i]).astype(int))
         vote = map[str(point)]
         # if vote != 120:
         votes.append(vote)
+        d = decode_from_number(vote, maxes)
+        if d[2] > 0 or d[3] > 0:
+            biased.append(vote)
 
-    vals, counts = np.unique(votes, return_counts=True)
-
-    # find mode
+    vals, counts = np.unique(votes if len(biased) == 0 else biased, return_counts=True)
     mode_value = np.argwhere(counts == np.max(counts))
-
     return vals[mode_value].flatten()[0]

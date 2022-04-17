@@ -1,3 +1,5 @@
+import time
+
 import Args
 import GameManager
 import melee
@@ -13,7 +15,7 @@ args = Args.get_args()
 
 if __name__ == '__main__':
     character = melee.Character.CPTFALCON
-    opponent = melee.Character.JIGGLYPUFF if not args.compete else character
+    opponent = melee.Character.CPTFALCON if not args.compete else character
     stage = melee.Stage.FINAL_DESTINATION
 
     tree, map = DataHandler.load_model(player_character=character, opponent_character=opponent, stage=stage)
@@ -32,32 +34,32 @@ if __name__ == '__main__':
         gamestate = game.get_gamestate()
 
         action = DataHandler.predict(tree=tree, map=map, gamestate=gamestate, player_port=game.controller.port,
-                                     opponent_port=game.controller_opponent.port)
+                                     opponent_port=game.controller_opponent.port, maxes=maxes)
         move_x, move_y, c, button = decode_from_number(action, maxes)
 
-        print(move_x - 1, move_y - 1, c, button)
-        print('----------')
+        # print(move_x - 1, move_y - 1, c, button)
+        # print('----------')
         # print(trainer.buttons)
+        # print(gamestate.players.get(1).position.x)
         if button > 0:
             game.controller.press_button(DataHandler.buttons[button - 1][0])
 
         if c == 0:
             game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 0.5)
         else:
-            if c == 1:
-                game.controller.tilt_analog(melee.Button.BUTTON_C, 0, 0.5)
-            elif c == 2:
-                game.controller.tilt_analog(melee.Button.BUTTON_C, 1, 0.5)
-            elif c == 3:
-                game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 0)
-            elif c == 4:
-                game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 1)
-
+            for i in range(10):
+                if c == 1:
+                    game.controller.tilt_analog(melee.Button.BUTTON_C, 0, 0.5)
+                elif c == 2:
+                    game.controller.tilt_analog(melee.Button.BUTTON_C, 1, 0.5)
+                elif c == 3:
+                    game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 0)
+                elif c == 4:
+                    game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 1)
 
         game.controller.tilt_analog(melee.Button.BUTTON_MAIN, move_x / 2, move_y / 2)
 
-
-        if c > 0 or button > 0:
+        if button > 0:
             for i in range(10):
                 gamestate = game.get_gamestate()
         gamestate = game.get_gamestate()
