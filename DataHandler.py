@@ -58,7 +58,7 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
     vel_y = (player.speed_y_self + player.speed_y_attack)
     vel_x = (player.speed_x_attack + player.speed_air_x_self + player.speed_ground_x_self)
 
-    facing = 999099.0 if player.facing else 0
+    facing = 999999.0 if player.facing else 0
     # return [x, y, percent, shield, is_attacking, on_ground, vel_x, vel_y, facing]
     in_hitstun = 2000.0 if player.hitlag_left else 0
     is_invulnerable = 5 if player.invulnerable else 0
@@ -75,15 +75,15 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
 
     is_bmove = 1000.0 if framedata.is_bmove(player.character, player.action) else 0
 
-    return [tumbling, offstage, special_fall, is_dead, vel_x, vel_y, x, y, percent, shield, on_ground, is_attacking,
-            facing,
-            in_hitstun, is_invulnerable, jumps_left, attack_windup, attack_active, attack_cooldown, is_bmove]
+    return [tumbling, offstage, special_fall, is_dead, percent, shield, on_ground, is_attacking, x, y, vel_x, vel_y,
+            facing, in_hitstun, is_invulnerable, jumps_left, attack_windup, attack_active, attack_cooldown, is_bmove]
 
 
 def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: int):
     player: melee.PlayerState = gamestate.players.get(player_port)
     opponent: melee.PlayerState = gamestate.players.get(opponent_port)
-
+    if player is None or opponent is None:
+        return None
     x_dist = player.position.x - opponent.position.x
     d = 0
     if x_dist < 5:
@@ -95,7 +95,7 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
 
     direction = 99909 if player.position.x < opponent.position.x else 0
 
-    firefoxing = 99999999999 if player.character in [melee.Character.FOX, melee.Character.FALCO] and player.action in [
+    firefoxing = 50 if player.character in [melee.Character.FOX, melee.Character.FALCO] and player.action in [
         melee.Action.SWORD_DANCE_3_MID, melee.Action.SWORD_DANCE_3_LOW, melee.Action.SWORD_DANCE_3_HIGH,
         melee.Action.SWORD_DANCE_3_LOW_AIR, melee.Action.SWORD_DANCE_3_MID_AIR,
         melee.Action.SWORD_DANCE_3_HIGH_AIR] else 0
@@ -174,15 +174,32 @@ def create_model(replay_paths, player_character: melee.Character,
             inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
             action, maxes, check_arr = generate_output(gamestate=gamestate, player_port=player_port)
 
+            if inp is None:
+                break
+
             if action not in [120, 121]:
                 X.append(inp)
                 key = str(list(inp.astype(int)))
 
                 map |= {key: action}
+
+            if player_character == opponent_character:
+                inp = generate_input(gamestate=gamestate, player_port=opponent_port, opponent_port=player_port)
+                action, maxes, check_arr = generate_output(gamestate=gamestate, player_port=opponent_port)
+
+                if inp is None:
+                    break
+
+                if action not in [120, 121]:
+                    X.append(inp)
+                    key = str(list(inp.astype(int)))
+
+                    map |= {key: action}
+
             try:
                 gamestate: melee.GameState = console.step()
             except:
-                gamestate = None
+                break
     tree = KDTree(X)
     if not os.path.isdir('models'):
         os.mkdir('models/')
@@ -220,6 +237,9 @@ def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: in
         #     continue
         votes.append(vote)
         d = decode_from_number(vote, maxes)
+
+        # if (d == [0, 1, 0, 2]).all():
+        #     return vote
 
         # if d[3] > 2:
         #     continue
