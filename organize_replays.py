@@ -36,6 +36,10 @@ if __name__ == '__main__':
         if gamestate is None:
             print('gamestate is none', path,  time.time())
             continue
+        
+        if gamestate.stage is None:
+            print('stage is none', path, time.time())
+            continue
 
         ports = list(gamestate.players.keys())
 
@@ -47,17 +51,19 @@ if __name__ == '__main__':
 
         key = f'{p1.character.name}_{p2.character.name}'
         if key not in j:
-            j[key] = []
-
-        j[key].append(path)
-
+            j[key] = {}
+        if gamestate.stage.name not in j[key]:
+            j[key][gamestate.stage.name] = []
+        j[key][gamestate.stage.name].append(path)
+        
         if p1.character.name != p2.character.name:
             key = f'{p2.character.name}_{p1.character.name}'
             if key not in j:
-                j[key] = []
-
-            j[key].append(path)
+                j[key] = {}
+            if gamestate.stage.name not in j[key]:
+                j[key][gamestate.stage.name] = []
+            j[key][gamestate.stage.name].append(path)
         console.stop()
 
     with open('replays.json', 'w') as file:
-        json.dump(j, file, indent=4)
+        json.dump(j, file, indent=2)

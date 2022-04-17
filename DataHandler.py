@@ -161,7 +161,7 @@ def create_model(replay_paths, player_character: melee.Character,
 
             continue
 
-        while gamestate is not None:
+        while gamestate is not None and gamestate.stage is not None:
             inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
             action, maxes, check_arr = generate_output(gamestate=gamestate, player_port=player_port)
 
