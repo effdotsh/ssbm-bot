@@ -42,8 +42,8 @@ def get_ports(gamestate: melee.GameState, player_character: melee.Character, opp
 
 
 def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> list:
-    x = player.position.x
-    y = player.position.y*50
+    x = player.position.x*5
+    y = player.position.y*5
 
     percent = player.percent * 10
     shield = player.shield_strength
@@ -61,7 +61,7 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
     facing = 999999.0 if player.facing else 0
     # return [x, y, percent, shield, is_attacking, on_ground, vel_x, vel_y, facing]
     in_hitstun = 2000.0 if player.hitlag_left else 0
-    is_invulnerable = 5 if player.invulnerable else 0
+    is_invulnerable = 50 if player.invulnerable else 0
 
     special_fall = 99999999.0 if player.action in MovesList.special_fall_list else 0
     is_dead = 99999999 if player.action in MovesList.dead_list else 0
@@ -221,21 +221,22 @@ def load_model(player_character: melee.Character,
 
 
 def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: int, opponent_port: int, maxes: list,
-            num_points=50):
+            num_points=200):
     inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
     dist, ind = tree.query([inp], k=num_points)
     # print(dist[0][0])
 
     votes = []
     biased = []
-    multiplier=10
+    multiplier = 80
+    character = gamestate.players.get(player_port).character
     for e, i in enumerate(ind[0]):
         point = list(np.array(tree.data[i]).astype(int))
         vote = map[str(point)]
         if vote in [120, 121]:
             continue
-        # if dist[0][e] > 50:
-        #     continue
+        if dist[0][e] > 2*dist[0][0]:
+            break
         votes.append(vote)
         d = decode_from_number(vote, maxes)
 
@@ -250,6 +251,9 @@ def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: in
                 votes.append(vote)
             # biased.append(vote)
 
+        if character in [melee.Character.FOX, melee.Character.FALCO]:
+            if (d == [0, 0, 0, 2]).all() or (d == [2, 0, 0, 2]).all() or (d == [0, 0, 0, 2]).all():
+                return vote
 
     if len(votes) > 0:
         vals, counts = np.unique(votes if len(biased) == 0 else biased, return_counts=True)

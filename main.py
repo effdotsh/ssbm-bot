@@ -10,8 +10,8 @@ from DataHandler import create_model
 args = Args.get_args()
 
 if __name__ == '__main__':
-    player_character = melee.Character.FOX
-    opponent_character = melee.Character.FOX
+    player_character = melee.Character.CPTFALCON
+    opponent_character = melee.Character.CPTFALCON
     stage = melee.Stage.FINAL_DESTINATION
 
     print(f'{player_character.name} vs. {opponent_character.name} on {stage.name}')
