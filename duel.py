@@ -1,3 +1,4 @@
+import math
 import time
 
 import Args
@@ -9,49 +10,66 @@ import os
 import DataHandler
 import numpy as np
 
-import encoder
 from encoder import decode_from_number
 
 args = Args.get_args()
 
 
-def validate_action(action, maxes, gamestate: melee, player_port: int):
-    move_x, move_y, c, button = decode_from_number(action, maxes)
-
+def validate_action(action_packed, maxes, gamestate: melee, player_port: int):
+    # print(action_packed, maxes)
+    move_x, move_y, c, button = action_packed
+    idle = decode_from_number(120, maxes)
     player: melee.PlayerState = gamestate.players.get(player_port)
     move_x -= 1
     move_y -= 1
 
     edge: float = melee.EDGE_POSITION.get(gamestate.stage)
     edge_buffer = 20
-    # Prevent running off edge
-    if button == 0 and c == 0 and move_x == -1 and player.position.x < -edge + edge_buffer:
-        print("Stopping running SD")
-        return encoder.encode_to_number([2, 1, 0, 0], maxes)
 
-    if button == 0 and c == 0 and move_x == 1 and player.position.x > edge - edge_buffer:
-        print("Stopping running SD")
-        return encoder.encode_to_number([0, 1, 0, 0], maxes)
+    if player.action == melee.Action.TUMBLING:
+        print('Exiting Tumble')
+        return [1, 1, 0, 3]
 
-    if player.character == melee.Character.FOX:
+    if player.character in [melee.Character.FOX, melee.Character.FALCO]:
         a = melee.Action
+        if 'SWORD_DANCE' in player.action.name and abs(player.position.x) > edge - edge_buffer:
+            print('Aiming at ledge')
+            if player.position.x > 0:
+                angle = math.atan2(40-player.position.y, edge-10 - player.position.x)
+            else:
+                angle = math.atan2(40-player.position.y, -edge+10 - player.position.x)
+
+            return [(math.cos(angle)+1)/2, (math.sin(angle)+1)/2, 0, 0]
+
         if player.action in [a.NEUTRAL_B_ATTACKING, a.NEUTRAL_B_ATTACKING_AIR, a.NEUTRAL_B_CHARGING,
                              a.NEUTRAL_B_CHARGING_AIR, a.NEUTRAL_B_FULL_CHARGE, a.NEUTRAL_B_FULL_CHARGE_AIR]:
             if move_x != 0 or move_y != 0:
                 print('Stopping laser lockout')
-                return 120
+                return idle
 
         if button == 2 and c == 0 and (
                 move_x == -1 and player.position.x < -edge + edge_buffer or move_x == 1 and player.position.x > edge - edge_buffer):
             print("Stopping dash SD")
-            return 120
+            return idle
 
+        if button == 0 and player.action in [a.FALLING] and abs(player.position.x) > edge and player.position.y < 0:
+            print('forcing recovery')
+            return [1, 2, 0, 2]
     if player.character == melee.Character.JIGGLYPUFF:
         # Prevent accidental rollout
         if button == 2 and move_x == 0 and move_y == 0:
-            return 120
+            return idle
 
-    return action
+    # Prevent running off edge
+    if button == 0 and c == 0 and move_x == -1 and player.position.x < -edge + edge_buffer:
+        print("Stopping running SD")
+        return [2, 1, 0, 0]
+
+    if button == 0 and c == 0 and move_x == 1 and player.position.x > edge - edge_buffer:
+        print("Stopping running SD")
+        return [0, 1, 0, 0]
+
+    return action_packed
 
 
 if __name__ == '__main__':
@@ -63,7 +81,7 @@ if __name__ == '__main__':
     tree, map = DataHandler.load_model(player_character=character, opponent_character=opponent, stage=stage)
 
     game = GameManager.Game(args)
-    game.enterMatch(cpu_level=5, opponant_character=opponent,
+    game.enterMatch(cpu_level=0, opponant_character=opponent,
                     player_character=character,
                     stage=stage, rules=False)
 
@@ -77,14 +95,13 @@ if __name__ == '__main__':
         gamestate = game.get_gamestate()
         # print('----------')
 
-        action = DataHandler.predict(tree=tree, map=map, gamestate=gamestate, player_port=game.controller.port,
-                                     opponent_port=game.controller_opponent.port, maxes=maxes)
-
-        action = validate_action(action, maxes, gamestate, game.controller.port)
-        move_x, move_y, c, button = decode_from_number(action, maxes)
+        action_packed = DataHandler.predict(tree=tree, map=map, gamestate=gamestate, player_port=game.controller.port,
+                                            opponent_port=game.controller_opponent.port, maxes=maxes)
+        action_packed= validate_action(action_packed, maxes, gamestate, game.controller.port)
+        move_x, move_y, c, button = action_packed
 
         # print(gamestate.players.get(game.controller.port).action)
-        # print(move_x - 1, move_y - 1, c, button)
+        print(move_x - 1, move_y - 1, c, button)
 
         # print(trainer.buttons)
         # print(gamestate.players.get(1).position.x)
@@ -109,12 +126,13 @@ if __name__ == '__main__':
             for i in range(3):
                 gamestate = game.get_gamestate()
 
-        last_action = action
+        last_action = action_packed
         gamestate = game.get_gamestate()
 
         for b in DataHandler.buttons:
             game.controller.release_button(b[0])
         # game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 0.5)
-        game.controller.tilt_analog(melee.Button.BUTTON_MAIN, move_x / 2, move_y / 2)
+        if button != 0:
+            game.controller.tilt_analog(melee.Button.BUTTON_MAIN, move_x / 2, move_y / 2)
 
         # game.controller.release_all()

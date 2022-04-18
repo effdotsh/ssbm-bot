@@ -35,4 +35,4 @@ if __name__ == '__main__':
     last_action = 120
     while True:
         gamestate = game.get_gamestate()
-        print(gamestate.players.get(game.controller.port).action)
+        print(gamestate.players.get(game.controller.port).action_packed)

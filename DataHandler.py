@@ -9,6 +9,7 @@ import MovesList
 
 from tqdm import tqdm
 
+import encoder
 from encoder import encode_to_number, decode_from_number
 
 import sklearn
@@ -140,6 +141,9 @@ def generate_output(gamestate: melee.GameState, player_port: int):
 
     # state = np.zeros(np.prod(maxes))
     # state[action] = 1
+    if c == 0 and button == 0:
+        return action, maxes, np.array([1, 1, 0, 0])
+
 
     return action, maxes, np.array([move_x, move_y, c, button])
 
@@ -210,7 +214,7 @@ def create_model(replay_paths, player_character: melee.Character,
 
 def load_model(player_character: melee.Character,
                opponent_character: melee.Character, stage: melee.Stage):
-    pickle_file_path = f'models/{player_character.name}_v_{opponent_character.name}_on_{stage.name}.pkl'
+    pickle_file_path = f'data/{player_character.name}_v_{opponent_character.name}_on_{stage.name}.pkl'
     if os.path.exists(pickle_file_path):
         with open(pickle_file_path, 'rb') as file:
             data = pickle.load(file)
@@ -225,16 +229,25 @@ def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: in
     inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
     dist, ind = tree.query([inp], k=num_points)
     # print(dist[0][0])
-
     votes = []
     biased = []
-    multiplier = 80
-    character = gamestate.players.get(player_port).character
+    multiplier = 20
+    player: melee.PlayerState = gamestate.players.get(player_port)
+    opponent: melee.PlayerState = gamestate.players.get(opponent_port)
     for e, i in enumerate(ind[0]):
         point = list(np.array(tree.data[i]).astype(int))
         vote = map[str(point)]
         if vote in [120, 121]:
             continue
+
+
+        if e == 0 and dist[0][0] > 500:
+            print('moving to target')
+
+
+            direction = np.sign(opponent.position.x-player.position.x)
+            return [direction+1, 1, 0, 0]
+
         if dist[0][e] > 2*dist[0][0]:
             break
         votes.append(vote)
@@ -251,12 +264,14 @@ def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: in
                 votes.append(vote)
             # biased.append(vote)
 
-        if character in [melee.Character.FOX, melee.Character.FALCO]:
-            if (d == [0, 0, 0, 2]).all() or (d == [2, 0, 0, 2]).all() or (d == [0, 0, 0, 2]).all():
-                return vote
+        # if player.character in [melee.Character.FOX, melee.Character.FALCO]:
+        #     if (d == [0, 1, 0, 2]).all() or (d == [2, 1, 0, 2]).all() or (d == [1, 2, 0, 2]).all():
+        #         return d
 
     if len(votes) > 0:
         vals, counts = np.unique(votes if len(biased) == 0 else biased, return_counts=True)
         mode_value = np.argwhere(counts == np.max(counts))
-        return vals[mode_value].flatten()[0]
-    return 120
+        return decode_from_number(vals[mode_value].flatten()[0], maxes)
+
+    print('nothing')
+    return [1, 1, 0, 0]
