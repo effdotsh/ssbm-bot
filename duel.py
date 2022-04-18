@@ -52,8 +52,8 @@ def validate_action(action_packed, maxes, gamestate: melee, player_port: int):
             print("Stopping dash SD")
             return idle
 
-        if button == 0 and player.action in [a.FALLING] and abs(player.position.x) > edge and player.position.y < 0:
-            print('forcing recovery')
+        if button == 0 and player.action in [a.FALLING] and (abs(player.position.x) > edge or player.position.y < -10):
+            print('forcing recovery', player.position.x, player.position.y, edge)
             return [1, 2, 0, 2]
     if player.character == melee.Character.JIGGLYPUFF:
         # Prevent accidental rollout
@@ -131,7 +131,7 @@ if __name__ == '__main__':
 
         for b in DataHandler.buttons:
             game.controller.release_button(b[0])
-        # game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 0.5)
+        game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 0.5)
         if button != 0:
             game.controller.tilt_analog(melee.Button.BUTTON_MAIN, move_x / 2, move_y / 2)
 
