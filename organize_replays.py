@@ -6,7 +6,7 @@ import melee
 from tqdm import tqdm
 
 if __name__ == '__main__':
-    replay_folder = '/media/human/Data/melee_public_slp_dataset_v2'
+    replay_folder = '/home/human/Documents/training_data'
     replay_paths = []
     for root, dirs, files in os.walk(replay_folder):
         for name in files:

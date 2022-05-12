@@ -43,8 +43,8 @@ def get_ports(gamestate: melee.GameState, player_character: melee.Character, opp
 
 
 def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> list:
-    x = player.position.x*5
-    y = player.position.y*5
+    x = player.position.x
+    y = player.position.y*3
 
     percent = player.percent * 10
     shield = player.shield_strength
@@ -53,16 +53,16 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
 
     offstage = 999999 if abs(player.position.x) > edge - 1 else 0
     tumbling = 999999 if player.action in [melee.Action.TUMBLING] else 0
-    is_attacking = 1000 if framedata.is_attack(player.character, player.action) else 0
-    on_ground = 50 if player.on_ground else 0
+    is_attacking = 999999 if framedata.is_attack(player.character, player.action) else 0
+    on_ground = 999999 if player.on_ground else 0
 
     vel_y = (player.speed_y_self + player.speed_y_attack)
     vel_x = (player.speed_x_attack + player.speed_air_x_self + player.speed_ground_x_self)
 
     facing = 999999.0 if player.facing else 0
     # return [x, y, percent, shield, is_attacking, on_ground, vel_x, vel_y, facing]
-    in_hitstun = 2000.0 if player.hitlag_left else 0
-    is_invulnerable = 50 if player.invulnerable else 0
+    in_hitstun = 999999.0 if player.hitlag_left else 0
+    is_invulnerable = 999999 if player.invulnerable else 0
 
     special_fall = 99999999.0 if player.action in MovesList.special_fall_list else 0
     is_dead = 99999999 if player.action in MovesList.dead_list else 0
@@ -70,11 +70,11 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
     jumps_left = player.jumps_left * 500
 
     attack_state = framedata.attack_state(player.character, player.action, player.action_frame)
-    attack_active = 500.0 if attack_state == melee.AttackState.ATTACKING else 0
-    attack_cooldown = 500.0 if attack_state == melee.AttackState.COOLDOWN else 0
-    attack_windup = 500.0 if attack_state == melee.AttackState.WINDUP else 0
+    attack_active = 999999.0 if attack_state == melee.AttackState.ATTACKING else 0
+    attack_cooldown = 999999.0 if attack_state == melee.AttackState.COOLDOWN else 0
+    attack_windup = 999999.0 if attack_state == melee.AttackState.WINDUP else 0
 
-    is_bmove = 1000.0 if framedata.is_bmove(player.character, player.action) else 0
+    is_bmove = 999999.0 if framedata.is_bmove(player.character, player.action) else 0
 
     return [tumbling, offstage, special_fall, is_dead, percent, shield, on_ground, is_attacking, x, y, vel_x, vel_y,
             facing, in_hitstun, is_invulnerable, jumps_left, attack_windup, attack_active, attack_cooldown, is_bmove]
@@ -86,22 +86,22 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
     if player is None or opponent is None:
         return None
     x_dist = player.position.x - opponent.position.x
-    d = 0
+    d = 999999
     if x_dist < 5:
-        d = 100000
+        d = 999999*2
     elif x_dist < 10:
-        d = 80000
+        d = 999999*3
     elif x_dist < 30:
-        d = 3000
+        d = 999999*4
 
-    direction = 99909 if player.position.x < opponent.position.x else 0
+    direction = 999999 if player.position.x < opponent.position.x else 0
 
-    firefoxing = 50 if player.character in [melee.Character.FOX, melee.Character.FALCO] and player.action in [
+    firefoxing = 999999 if player.character in [melee.Character.FOX, melee.Character.FALCO] and player.action in [
         melee.Action.SWORD_DANCE_3_MID, melee.Action.SWORD_DANCE_3_LOW, melee.Action.SWORD_DANCE_3_HIGH,
         melee.Action.SWORD_DANCE_3_LOW_AIR, melee.Action.SWORD_DANCE_3_MID_AIR,
         melee.Action.SWORD_DANCE_3_HIGH_AIR] else 0
 
-    obs = [direction * 20, d, firefoxing]
+    obs = [direction, d, firefoxing]
     obs += get_player_obs(player, gamestate)
     obs += get_player_obs(opponent, gamestate)
 
@@ -214,7 +214,7 @@ def create_model(replay_paths, player_character: melee.Character,
 
 def load_model(player_character: melee.Character,
                opponent_character: melee.Character, stage: melee.Stage):
-    pickle_file_path = f'data/{player_character.name}_v_{opponent_character.name}_on_{stage.name}.pkl'
+    pickle_file_path = f'models/{player_character.name}_v_{opponent_character.name}_on_{stage.name}.pkl'
     if os.path.exists(pickle_file_path):
         with open(pickle_file_path, 'rb') as file:
             data = pickle.load(file)
@@ -248,7 +248,7 @@ def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: in
             direction = np.sign(opponent.position.x-player.position.x)
             return [direction+1, 1, 0, 0]
 
-        if dist[0][e] > 2*dist[0][0]:
+        if dist[0][e] >= 999999:
             break
         votes.append(vote)
         d = decode_from_number(vote, maxes)
