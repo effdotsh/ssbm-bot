@@ -9,8 +9,6 @@ import MovesList
 
 from tqdm import tqdm
 
-
-
 import sklearn
 from sklearn.neighbors import KDTree
 
@@ -115,21 +113,19 @@ def generate_output(gamestate: melee.GameState, player_port: int):
     controller: melee.ControllerState = gamestate.players.get(player_port).controller_state
     b = melee.Button
 
-    A = 1 if controller.button.get(b.BUTTON_A)else 0
-    B = 1 if controller.button.get(b.BUTTON_B)else 0
-    X = 1 if controller.button.get(b.BUTTON_X)else 0
-    Y = 1 if controller.button.get(b.BUTTON_Y)else 0
-    Z = 1 if controller.button.get(b.BUTTON_Z)else 0
-    L = 1 if controller.button.get(b.BUTTON_L)else 0
-    R = 1 if controller.button.get(b.BUTTON_R)else 0
+    A = 1 if controller.button.get(b.BUTTON_A) else 0
+    B = 1 if controller.button.get(b.BUTTON_B) else 0
+    X = 1 if controller.button.get(b.BUTTON_X) else 0
+    Y = 1 if controller.button.get(b.BUTTON_Y) else 0
+    Z = 1 if controller.button.get(b.BUTTON_Z) else 0
+    L = 1 if controller.button.get(b.BUTTON_L) else 0
+    R = 1 if controller.button.get(b.BUTTON_R) else 0
     MAIN_STICK = controller.main_stick
     C_STICK = controller.c_stick
     L_SHOULDER = controller.l_shoulder
     R_SHOULDER = controller.r_shoulder
 
-
-    action = [A,B,X,Y,Z,L,R,MAIN_STICK,C_STICK,L_SHOULDER,R_SHOULDER]
-
+    action = [A, B, X, Y, Z, L, R, MAIN_STICK, C_STICK, L_SHOULDER, R_SHOULDER]
 
     return action
 
@@ -188,7 +184,6 @@ def create_model(replay_paths, player_character: melee.Character,
             except:
                 break
 
-
     tree = KDTree(X)
     if not os.path.isdir('models'):
         os.mkdir('models/')
@@ -213,48 +208,18 @@ def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: in
             num_points=200):
     inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
     dist, ind = tree.query([inp], k=num_points)
-    # print(dist[0][0])
-    votes = []
-    biased = []
-    multiplier = 20
+
     player: melee.PlayerState = gamestate.players.get(player_port)
     opponent: melee.PlayerState = gamestate.players.get(opponent_port)
+    # [0, 0, 0, 0, 0, 0, 0, (0.5, 0.5), (0.5, 0.5), 0.0, 0.0]
+    # [A, B, X, Y, Z, L, R, MAIN_STICK, C_STICK, L_SHOULDER, R_SHOULDER]
     for e, i in enumerate(ind[0]):
         point = list(np.array(tree.data[i]).astype(int))
         vote = map[str(point)]
-        if vote in [120, 121]:
-            continue
 
-        if e == 0 and dist[0][0] > 500:
-            print('moving to target')
+        if 1 in [vote[0], vote[1]]:
+            return vote
 
-            direction = np.sign(opponent.position.x - player.position.x)
-            return [direction + 1, 1, 0, 0]
-
-        if dist[0][e] >= 999999:
-            break
-        votes.append(vote)
-        d = decode_from_number(vote, maxes)
-
-        # if (d == [0, 1, 0, 2]).all():
-        #     return vote
-
-        # if d[3] > 2:
-        #     continue
-
-        if 0 < d[3] <= 2 or d[2] > 0:
-            for i in range(multiplier):
-                votes.append(vote)
-            # biased.append(vote)
-
-        # if player.character in [melee.Character.FOX, melee.Character.FALCO]:
-        #     if (d == [0, 1, 0, 2]).all() or (d == [2, 1, 0, 2]).all() or (d == [1, 2, 0, 2]).all():
-        #         return d
-
-    if len(votes) > 0:
-        vals, counts = np.unique(votes if len(biased) == 0 else biased, return_counts=True)
-        mode_value = np.argwhere(counts == np.max(counts))
-        return decode_from_number(vals[mode_value].flatten()[0], maxes)
-
-    print('nothing')
-    return [1, 1, 0, 0]
+    point = list(np.array(tree.data[0]).astype(int))
+    vote = map[str(point)]
+    return vote
