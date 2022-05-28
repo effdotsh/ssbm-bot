@@ -9,7 +9,6 @@ import os
 import DataHandler
 import numpy as np
 
-from encoder import decode_from_number
 
 args = Args.get_args()
 
@@ -20,7 +19,6 @@ if __name__ == '__main__':
     stage = melee.Stage.FINAL_DESTINATION
     print(f'{character.name} vs. {opponent.name} on {stage.name}')
 
-    tree, map = DataHandler.load_model(player_character=character, opponent_character=opponent, stage=stage)
 
     game = GameManager.Game(args)
     game.enterMatch(cpu_level=0, opponant_character=opponent,
