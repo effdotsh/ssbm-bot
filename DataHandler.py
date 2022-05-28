@@ -9,8 +9,7 @@ import MovesList
 
 from tqdm import tqdm
 
-import encoder
-from encoder import encode_to_number, decode_from_number
+
 
 import sklearn
 from sklearn.neighbors import KDTree
@@ -44,7 +43,7 @@ def get_ports(gamestate: melee.GameState, player_character: melee.Character, opp
 
 def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> list:
     x = player.position.x
-    y = player.position.y*3
+    y = player.position.y * 3
 
     percent = player.percent * 10
     shield = player.shield_strength
@@ -88,11 +87,11 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
     x_dist = player.position.x - opponent.position.x
     d = 999999
     if x_dist < 5:
-        d = 999999*2
+        d = 999999 * 2
     elif x_dist < 10:
-        d = 999999*3
+        d = 999999 * 3
     elif x_dist < 30:
-        d = 999999*4
+        d = 999999 * 4
 
     direction = 999999 if player.position.x < opponent.position.x else 0
 
@@ -114,38 +113,25 @@ buttons = [[melee.Button.BUTTON_A], [melee.Button.BUTTON_B], [melee.Button.BUTTO
 
 def generate_output(gamestate: melee.GameState, player_port: int):
     controller: melee.ControllerState = gamestate.players.get(player_port).controller_state
-    button = 0
-    num_buttons = len(buttons) + 1
-    for e, b in enumerate(buttons):
-        if controller.button.get(b[0]):
-            button = e + 1
-            break
+    b = melee.Button
 
-    move_x = 0 if controller.main_stick[0] < 0.3 else 1 if controller.main_stick[0] < 0.7 else 2
-    move_y = 0 if controller.main_stick[1] < 0.3 else 1 if controller.main_stick[1] < 0.7 else 2
-    num_move_single_axis = 3
-
-    num_c = 5
-    c = 0
-    if controller.c_stick[0] < 0.3:
-        c = 1
-    elif controller.c_stick[0] > 0.7:
-        c = 2
-    elif controller.c_stick[1] < 0.3:
-        c = 3
-    elif controller.c_stick[1] > 0.7:
-        c = 4
-
-    maxes = [num_move_single_axis, num_move_single_axis, num_c, num_buttons]
-    action = encode_to_number([move_x, move_y, c, button], maxes)
-
-    # state = np.zeros(np.prod(maxes))
-    # state[action] = 1
-    if c == 0 and button == 0:
-        return action, maxes, np.array([1, 1, 0, 0])
+    A = 1 if controller.button.get(b.BUTTON_A)else 0
+    B = 1 if controller.button.get(b.BUTTON_B)else 0
+    X = 1 if controller.button.get(b.BUTTON_X)else 0
+    Y = 1 if controller.button.get(b.BUTTON_Y)else 0
+    Z = 1 if controller.button.get(b.BUTTON_Z)else 0
+    L = 1 if controller.button.get(b.BUTTON_L)else 0
+    R = 1 if controller.button.get(b.BUTTON_R)else 0
+    MAIN_STICK = controller.main_stick
+    C_STICK = controller.c_stick
+    L_SHOULDER = controller.l_shoulder
+    R_SHOULDER = controller.r_shoulder
 
 
-    return action, maxes, np.array([move_x, move_y, c, button])
+    action = [A,B,X,Y,Z,L,R,MAIN_STICK,C_STICK,L_SHOULDER,R_SHOULDER]
+
+
+    return action
 
 
 # nothing_chance = 0.05
@@ -176,34 +162,33 @@ def create_model(replay_paths, player_character: melee.Character,
 
         while gamestate is not None and gamestate.stage is not None:
             inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
-            action, maxes, check_arr = generate_output(gamestate=gamestate, player_port=player_port)
+            action = generate_output(gamestate=gamestate, player_port=player_port)
 
             if inp is None:
                 break
 
-            if action not in [120, 121]:
+            if action not in MovesList.bad_moves:
                 X.append(inp)
                 key = str(list(inp.astype(int)))
 
                 map |= {key: action}
 
-            if player_character == opponent_character:
-                inp = generate_input(gamestate=gamestate, player_port=opponent_port, opponent_port=player_port)
-                action, maxes, check_arr = generate_output(gamestate=gamestate, player_port=opponent_port)
-
-                if inp is None:
-                    break
-
-                if action not in [120, 121]:
-                    X.append(inp)
-                    key = str(list(inp.astype(int)))
-
-                    map |= {key: action}
+            # if player_character == opponent_character:
+            #     inp = generate_input(gamestate=gamestate, player_port=opponent_port, opponent_port=player_port)
+            #     action = generate_output(gamestate=gamestate, player_port=opponent_port)
+            #     if inp is None:
+            #         break
+            #     if action not in MovesList.bad_moves:
+            #         X.append(inp)
+            #         key = str(list(inp.astype(int)))
+            #         map |= {key: action}
 
             try:
                 gamestate: melee.GameState = console.step()
             except:
                 break
+
+
     tree = KDTree(X)
     if not os.path.isdir('models'):
         os.mkdir('models/')
@@ -240,13 +225,11 @@ def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: in
         if vote in [120, 121]:
             continue
 
-
         if e == 0 and dist[0][0] > 500:
             print('moving to target')
 
-
-            direction = np.sign(opponent.position.x-player.position.x)
-            return [direction+1, 1, 0, 0]
+            direction = np.sign(opponent.position.x - player.position.x)
+            return [direction + 1, 1, 0, 0]
 
         if dist[0][e] >= 999999:
             break

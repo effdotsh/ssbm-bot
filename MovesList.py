@@ -8,3 +8,6 @@ dead_list = [melee.Action.DEAD_FLY, melee.Action.DEAD_FLY_SPLATTER,
 
 special_fall_list = [melee.Action.SPECIAL_FALL_BACK, melee.Action.SPECIAL_FALL_FORWARD, melee.Action.LANDING_SPECIAL,
                      melee.Action.DEAD_FALL]
+
+
+bad_moves = []
