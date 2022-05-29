@@ -10,9 +10,21 @@ import os
 import DataHandler
 import numpy as np
 
+import MovesList
 
 args = Args.get_args()
-
+smash_last = False
+dud = [0, 0, 0, 0, 0, 0, 0, (0.5, 0.5), (0.5, 0.5), 0.0, 0.0]
+def validate_action(action, gamestate: melee.GameState, port:int):
+    global smash_last
+    player:melee.PlayerState = gamestate.players.get(port)
+    if player.action in MovesList.smashes:
+        if smash_last:
+           return dud
+        smash_last = True
+    else:
+        smash_last = False
+    return action
 
 
 if __name__ == '__main__':
@@ -25,14 +37,13 @@ if __name__ == '__main__':
     print('loaded')
 
     game = GameManager.Game(args)
-    game.enterMatch(cpu_level=9, opponant_character=opponent,
+    game.enterMatch(cpu_level=0, opponant_character=opponent,
                     player_character=character,
                     stage=stage, rules=False)
 
     num_buttons = len(DataHandler.buttons) + 1
     axis_size = 3
     num_c = 5
-    maxes = [axis_size, axis_size, num_c, num_buttons]
 
     last_action = 120
     while True:
@@ -40,9 +51,15 @@ if __name__ == '__main__':
         # print('----------')
         # [A, B, X, Y, Z, L, R, MAIN_STICK, C_STICK, L_SHOULDER, R_SHOULDER]
         action = DataHandler.predict(tree=tree, map=map, gamestate=gamestate, player_port=game.controller.port,
-                                            opponent_port=game.controller_opponent.port, maxes=maxes)
+                                            opponent_port=game.controller_opponent.port)
 
+        action = validate_action(action, gamestate, game.controller.port)
         buttons = [melee.Button.BUTTON_A, melee.Button.BUTTON_B, melee.Button.BUTTON_X, melee.Button.BUTTON_Y, melee.Button.BUTTON_Z, melee.Button.BUTTON_L, melee.Button.BUTTON_R]
+        # if action is None:
+        #     print('action is none')
+        #     continue
+        # if len(action) < 8:
+        #     print(action)
         for e, active in enumerate(action[:7]):
             if active == 1:
                 game.controller.press_button(buttons[e])
