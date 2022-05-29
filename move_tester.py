@@ -33,4 +33,5 @@ if __name__ == '__main__':
     last_action = 120
     while True:
         gamestate = game.get_gamestate()
-        print(gamestate.players.get(game.controller.port).action_packed)
+        player: melee.PlayerState = gamestate.players.get(game.controller.port)
+        print(player.action, player.action_frame)

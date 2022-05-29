@@ -203,9 +203,9 @@ def load_model(player_character: melee.Character,
         print("Model does not exist")
         quit()
 
+dud = [0, 0, 0, 0, 0, 0, 0, (0.5, 0.5), (0.5, 0.5), 0.0, 0.0]
 
-def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: int, opponent_port: int, maxes: list,
-            num_points=200):
+def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: int, opponent_port: int, num_points=500):
     inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
     dist, ind = tree.query([inp], k=num_points)
 
@@ -213,13 +213,21 @@ def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: in
     opponent: melee.PlayerState = gamestate.players.get(opponent_port)
     # [0, 0, 0, 0, 0, 0, 0, (0.5, 0.5), (0.5, 0.5), 0.0, 0.0]
     # [A, B, X, Y, Z, L, R, MAIN_STICK, C_STICK, L_SHOULDER, R_SHOULDER]
-    for e, i in enumerate(ind[0]):
-        point = list(np.array(tree.data[i]).astype(int))
-        vote = map[str(point)]
-
-        if 1 in [vote[0], vote[1]]:
-            return vote
 
     point = list(np.array(tree.data[0]).astype(int))
-    vote = map[str(point)]
-    return vote
+    action = map[str(point)]
+    first = True
+    for e, i in enumerate(ind[0]):
+        p = list(np.array(tree.data[i]).astype(int))
+        a = map[str(p)]
+
+        if dist[0][e] > 999999:
+            print('nothing', time.time())
+            break
+        if a != dud:
+            return a
+        elif first:
+            first = False
+            action = a
+
+    return action

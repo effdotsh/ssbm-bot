@@ -11,3 +11,5 @@ special_fall_list = [melee.Action.SPECIAL_FALL_BACK, melee.Action.SPECIAL_FALL_F
 
 
 bad_moves = []
+
+smashes = [melee.Action.DOWNSMASH, melee.Action.FSMASH_LOW, melee.Action.FSMASH_MID, melee.Action.FSMASH_HIGH, melee.Action.FSMASH_MID_HIGH, melee.Action.FSMASH_MID_LOW, melee.Action.UPSMASH]
