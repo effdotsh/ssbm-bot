@@ -13,6 +13,16 @@ import numpy as np
 args = Args.get_args()
 
 
+
+def controller_states_different(new: melee.ControllerState, old: melee.ControllerState):
+    for b in melee.enums.Button:
+        if new.button.get(b) != old.button.get(b) and new.button.get(b):
+            return True
+    if new.c_stick != old.c_stick and new.c_stick != (0.5, 0.5):
+        return True
+    return False
+
+
 if __name__ == '__main__':
     character = melee.Character.FOX
     opponent = melee.Character.MARTH if not args.compete else character
@@ -25,13 +35,12 @@ if __name__ == '__main__':
                     player_character=character,
                     stage=stage, rules=False)
 
-    num_buttons = len(DataHandler.buttons) + 1
-    axis_size = 3
-    num_c = 5
-    maxes = [axis_size, axis_size, num_c, num_buttons]
-
-    last_action = 120
+    gamestate = game.get_gamestate()
+    player: melee.PlayerState = gamestate.players.get(game.controller.port)
+    last_state = player.controller_state
     while True:
         gamestate = game.get_gamestate()
         player: melee.PlayerState = gamestate.players.get(game.controller.port)
-        print(player.action, player.action_frame)
+        if controller_states_different(player.controller_state, last_state):
+            print(time.time())
+        last_state = player.controller_state
