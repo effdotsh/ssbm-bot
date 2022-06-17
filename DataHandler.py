@@ -62,7 +62,7 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
     is_invulnerable = 999999 if player.invulnerable else 0
 
     special_fall = 99999999.0 if player.action in MovesList.special_fall_list else 0
-    is_dead = 99999999 if player.action in MovesList.dead_list else 0
+    is_dead = 999999999 if player.action in MovesList.dead_list else 0
 
     jumps_left = player.jumps_left * 500
 
@@ -73,7 +73,8 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
 
     is_bmove = 999999.0 if framedata.is_bmove(player.character, player.action) else 0
 
-    return [tumbling, offstage, special_fall, is_dead, percent, shield, on_ground, is_attacking, x, y, vel_x, vel_y,
+    return [tumbling, offstage, special_fall, is_dead, percent, shield, on_ground, is_attacking,
+            # x, y, vel_x, vel_y,
             facing, in_hitstun, is_invulnerable, jumps_left, attack_windup, attack_active, attack_cooldown, is_bmove]
 
 
@@ -98,7 +99,8 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
         melee.Action.SWORD_DANCE_3_LOW_AIR, melee.Action.SWORD_DANCE_3_MID_AIR,
         melee.Action.SWORD_DANCE_3_HIGH_AIR] else 0
 
-    obs = [direction, d, firefoxing]
+
+    obs = [direction, firefoxing, x_dist]
     obs += get_player_obs(player, gamestate)
     obs += get_player_obs(opponent, gamestate)
 
@@ -156,22 +158,31 @@ def create_model(replay_paths, player_character: melee.Character,
 
             continue
 
-        while gamestate is not None and gamestate.stage is not None:
+        last_input = gamestate.players.get(player_port).character_controller
+        while True:
+            try:
+                gamestate: melee.GameState = console.step()
+            except:
+                break
+            if gamestate is None or gamestate.stage is None:
+                break
             inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
             action = generate_output(gamestate=gamestate, player_port=player_port)
-
+            if action == dud:
+                continue
             if inp is None:
                 break
 
             if action not in MovesList.bad_moves:
                 X.append(inp)
                 key = str(list(inp.astype(int)))
-
                 map |= {key: action}
 
             # if player_character == opponent_character:
             #     inp = generate_input(gamestate=gamestate, player_port=opponent_port, opponent_port=player_port)
             #     action = generate_output(gamestate=gamestate, player_port=opponent_port)
+            #     if action == dud:
+            #         continue
             #     if inp is None:
             #         break
             #     if action not in MovesList.bad_moves:
@@ -179,10 +190,7 @@ def create_model(replay_paths, player_character: melee.Character,
             #         key = str(list(inp.astype(int)))
             #         map |= {key: action}
 
-            try:
-                gamestate: melee.GameState = console.step()
-            except:
-                break
+
 
     tree = KDTree(X)
     if not os.path.isdir('models'):
@@ -221,9 +229,14 @@ def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: in
         p = list(np.array(tree.data[i]).astype(int))
         a = map[str(p)]
 
-        if dist[0][e] > 999999:
+        if dist[0][e] > 30:
             print('nothing', time.time())
-            break
+            if player.x < opponent.x:
+                return [0, 0, 0, 0, 0, 0, 0, (1, 0.5), (0.5, 0.5), 0.0, 0.0]
+            return [0, 0, 0, 0, 0, 0, 0, (0, 0.5), (0.5, 0.5), 0.0, 0.0]
+
+            # break
+
         if a != dud:
             return a
         elif first:
