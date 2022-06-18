@@ -9,18 +9,11 @@ import os
 import DataHandler
 import numpy as np
 
-
+from DataHandler import controller_states_different
 args = Args.get_args()
 
 
 
-def controller_states_different(new: melee.ControllerState, old: melee.ControllerState):
-    for b in melee.enums.Button:
-        if new.button.get(b) != old.button.get(b) and new.button.get(b):
-            return True
-    if new.c_stick != old.c_stick and new.c_stick != (0.5, 0.5):
-        return True
-    return False
 
 
 if __name__ == '__main__':

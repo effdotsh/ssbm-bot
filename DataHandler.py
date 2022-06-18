@@ -14,6 +14,15 @@ from sklearn.neighbors import KDTree
 
 framedata = melee.FrameData()
 
+def controller_states_different(new: melee.ControllerState, old: melee.ControllerState):
+    for b in melee.enums.Button:
+        if new.button.get(b) != old.button.get(b) and new.button.get(b):
+            return True
+    if new.c_stick != old.c_stick and new.c_stick != (0.5, 0.5):
+        return True
+    return False
+
+
 
 def get_ports(gamestate: melee.GameState, player_character: melee.Character, opponent_character: melee.Character):
     if gamestate is None:
@@ -42,7 +51,7 @@ def get_ports(gamestate: melee.GameState, player_character: melee.Character, opp
 def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> list:
     x = player.position.x
     y = player.position.y * 3
-
+    # return [player.x, player.y]
     percent = player.percent * 10
     shield = player.shield_strength
 
@@ -74,7 +83,7 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
     is_bmove = 999999.0 if framedata.is_bmove(player.character, player.action) else 0
 
     return [tumbling, offstage, special_fall, is_dead, percent, shield, on_ground, is_attacking,
-            # x, y, vel_x, vel_y,
+            x, y, vel_x, vel_y,
             facing, in_hitstun, is_invulnerable, jumps_left, attack_windup, attack_active, attack_cooldown, is_bmove]
 
 
@@ -158,7 +167,8 @@ def create_model(replay_paths, player_character: melee.Character,
 
             continue
 
-        last_input = gamestate.players.get(player_port).character_controller
+        last_input = gamestate.players.get(player_port).controller_state
+        last_input_opp = gamestate.players.get(opponent_port).controller_state
         while True:
             try:
                 gamestate: melee.GameState = console.step()
@@ -166,6 +176,13 @@ def create_model(replay_paths, player_character: melee.Character,
                 break
             if gamestate is None or gamestate.stage is None:
                 break
+
+            new_input = gamestate.players.get(player_port).controller_state
+            if not controller_states_different(new_input, last_input):
+                continue
+            last_input = new_input
+
+
             inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
             action = generate_output(gamestate=gamestate, player_port=player_port)
             if action == dud:
@@ -178,17 +195,23 @@ def create_model(replay_paths, player_character: melee.Character,
                 key = str(list(inp.astype(int)))
                 map |= {key: action}
 
-            # if player_character == opponent_character:
-            #     inp = generate_input(gamestate=gamestate, player_port=opponent_port, opponent_port=player_port)
-            #     action = generate_output(gamestate=gamestate, player_port=opponent_port)
-            #     if action == dud:
-            #         continue
-            #     if inp is None:
-            #         break
-            #     if action not in MovesList.bad_moves:
-            #         X.append(inp)
-            #         key = str(list(inp.astype(int)))
-            #         map |= {key: action}
+            if player_character == opponent_character:
+                new_input_opp = gamestate.players.get(opponent_port).controller_state
+                if not controller_states_different(new_input_opp, last_input_opp):
+                    continue
+                last_input_opp = new_input
+
+                inp = generate_input(gamestate=gamestate, player_port=opponent_port, opponent_port=player_port)
+                action = generate_output(gamestate=gamestate, player_port=opponent_port)
+                if action == dud:
+                    continue
+                if inp is None:
+                    break
+
+                if action not in MovesList.bad_moves:
+                    X.append(inp)
+                    key = str(list(inp.astype(int)))
+                    map |= {key: action}
 
 
 
@@ -224,12 +247,14 @@ def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: in
 
     point = list(np.array(tree.data[0]).astype(int))
     action = map[str(point)]
-    first = True
+    # first = True
+    print(dist[0][0])
+
     for e, i in enumerate(ind[0]):
         p = list(np.array(tree.data[i]).astype(int))
         a = map[str(p)]
 
-        if dist[0][e] > 30:
+        if dist[0][e] > 500:
             print('nothing', time.time())
             if player.x < opponent.x:
                 return [0, 0, 0, 0, 0, 0, 0, (1, 0.5), (0.5, 0.5), 0.0, 0.0]
@@ -239,8 +264,7 @@ def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: in
 
         if a != dud:
             return a
-        elif first:
-            first = False
-            action = a
-
+        # elif first:
+        #     first = False
+        #     action = a
     return action

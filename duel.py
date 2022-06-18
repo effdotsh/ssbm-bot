@@ -29,7 +29,7 @@ def validate_action(action, gamestate: melee.GameState, port:int):
 
 if __name__ == '__main__':
     character = melee.Character.CPTFALCON
-    opponent = melee.Character.CPTFALCON if not args.compete else character
+    opponent = melee.Character.JIGGLYPUFF if not args.compete else character
     stage = melee.Stage.FINAL_DESTINATION
     print(f'{character.name} vs. {opponent.name} on {stage.name}')
 
@@ -72,6 +72,5 @@ if __name__ == '__main__':
         # game.controller.press_shoulder(melee.Button.BUTTON_R, action[10])
 
         game.controller.flush()
-        print(action)
 
 
