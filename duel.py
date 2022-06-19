@@ -28,8 +28,8 @@ def validate_action(action, gamestate: melee.GameState, port:int):
 
 
 if __name__ == '__main__':
-    character = melee.Character.CPTFALCON
-    opponent = melee.Character.JIGGLYPUFF if not args.compete else character
+    character = melee.Character.FOX
+    opponent = melee.Character.FALCO if not args.compete else character
     stage = melee.Stage.FINAL_DESTINATION
     print(f'{character.name} vs. {opponent.name} on {stage.name}')
 
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     print('loaded')
 
     game = GameManager.Game(args)
-    game.enterMatch(cpu_level=0, opponant_character=opponent,
+    game.enterMatch(cpu_level=4, opponant_character=opponent,
                     player_character=character,
                     stage=stage, rules=False)
 
@@ -60,8 +60,11 @@ if __name__ == '__main__':
         #     continue
         # if len(action) < 8:
         #     print(action)
+
+        button_used = False
         for e, active in enumerate(action[:7]):
             if active == 1:
+                button_used = True
                 game.controller.press_button(buttons[e])
             else:
                 game.controller.release_button(buttons[e])
@@ -72,5 +75,14 @@ if __name__ == '__main__':
         # game.controller.press_shoulder(melee.Button.BUTTON_R, action[10])
 
         game.controller.flush()
+
+
+
+
+        if button_used:
+            gamestate = game.get_gamestate()
+
+            game.controller.release_all()
+
 
 
