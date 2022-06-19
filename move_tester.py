@@ -9,7 +9,7 @@ import os
 import DataHandler
 import numpy as np
 
-from DataHandler import controller_states_different
+from DataHandler import controller_states_different, generate_input
 args = Args.get_args()
 
 
@@ -34,6 +34,11 @@ if __name__ == '__main__':
     while True:
         gamestate = game.get_gamestate()
         player: melee.PlayerState = gamestate.players.get(game.controller.port)
-        if controller_states_different(player.controller_state, last_state):
-            print(time.time())
+
+
+        # if controller_states_different(player.controller_state, last_state):
+        #     print(time.time())
         last_state = player.controller_state
+
+        inp = generate_input(gamestate=gamestate, player_port=game.controller.port, opponent_port=game.controller_opponent.port)
+        print(inp)
