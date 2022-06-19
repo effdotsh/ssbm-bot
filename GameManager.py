@@ -82,7 +82,6 @@ class Game:
         print("Controller connected")
 
         costume = 0
-        framedata = melee.framedata.FrameData()
 
     # This isn't necessary, but makes it so that Dolphin will get killed when you ^C
     def signal_handler(self, sig, frame):

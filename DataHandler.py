@@ -119,19 +119,19 @@ def generate_output(gamestate: melee.GameState, player_port: int):
     controller: melee.ControllerState = gamestate.players.get(player_port).controller_state
     b = melee.Button
 
-    A = 1 if controller.button.get(b.BUTTON_A) else 0
-    B = 1 if controller.button.get(b.BUTTON_B) else 0
-    X = 1 if controller.button.get(b.BUTTON_X) else 0
-    Y = 1 if controller.button.get(b.BUTTON_Y) else 0
-    Z = 1 if controller.button.get(b.BUTTON_Z) else 0
-    L = 1 if controller.button.get(b.BUTTON_L) else 0
-    R = 1 if controller.button.get(b.BUTTON_R) else 0
-    MAIN_STICK = controller.main_stick
-    C_STICK = controller.c_stick
+    A = 1.0 if controller.button.get(b.BUTTON_A) else 0.0
+    B = 1.0 if controller.button.get(b.BUTTON_B) else 0.0
+    X = 1.0 if controller.button.get(b.BUTTON_X) else 0.0
+    Y = 1.0 if controller.button.get(b.BUTTON_Y) else 0.0
+    Z = 1.0 if controller.button.get(b.BUTTON_Z) else 0.0
+    L = 1.0 if controller.button.get(b.BUTTON_L) else 0.0
+    R = 1.0 if controller.button.get(b.BUTTON_R) else 0.0
+    MAIN_STICK = np.array(controller.main_stick) * 2 -1
+    C_STICK = np.array(controller.c_stick) * 2 -1
     L_SHOULDER = controller.l_shoulder
     R_SHOULDER = controller.r_shoulder
 
-    action = [A, B, X, Y, Z, L, R, MAIN_STICK, C_STICK, L_SHOULDER, R_SHOULDER]
+    action = np.array([A, B, X, Y, Z, L, R, MAIN_STICK[0], MAIN_STICK[1], C_STICK[0], C_STICK[1], L_SHOULDER, R_SHOULDER]).flatten()
 
     return action
 
