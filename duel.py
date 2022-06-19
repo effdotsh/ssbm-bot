@@ -1,73 +1,88 @@
+import math
+import time
+
 import Args
 import GameManager
 import melee
 import platform
 
 import os
-import torch
-import trainer
+import DataHandler
 import numpy as np
 
-from encoder import decode_from_number
+import MovesList
 
 args = Args.get_args()
+smash_last = False
+dud = [0, 0, 0, 0, 0, 0, 0, (0.5, 0.5), (0.5, 0.5), 0.0, 0.0]
+def validate_action(action, gamestate: melee.GameState, port:int):
+    global smash_last
+    player:melee.PlayerState = gamestate.players.get(port)
+    if player.action in MovesList.smashes:
+        if smash_last:
+           return dud
+        smash_last = True
+    else:
+        smash_last = False
+    return action
+
 
 if __name__ == '__main__':
-    character = melee.Character.JIGGLYPUFF
-    opponent = melee.Character.CPTFALCON if not args.compete else character
+    character = melee.Character.FOX
+    opponent = melee.Character.FALCO if not args.compete else character
     stage = melee.Stage.FINAL_DESTINATION
+    print(f'{character.name} vs. {opponent.name} on {stage.name}')
 
-    model = torch.load(f"models/{character.name}_v_{opponent.name}_on_{stage.name}")
-    # print(loaded)
-    # model = network.Network(19*2, 10)
-    # model.load_state_dict(loaded)
+    tree, map = DataHandler.load_model(player_character=character, opponent_character=opponent, stage=stage)
+    print('loaded')
+
     game = GameManager.Game(args)
-    game.enterMatch(cpu_level=9, opponant_character=opponent,
+    game.enterMatch(cpu_level=4, opponant_character=opponent,
                     player_character=character,
                     stage=stage, rules=False)
 
-    num_buttons = len(trainer.buttons) + 1
+    num_buttons = len(DataHandler.buttons) + 1
     axis_size = 3
     num_c = 5
-    maxes = [axis_size, axis_size, num_c, num_buttons]
-    with torch.no_grad():
-        while True:
-            gamestate = game.get_gamestate()
 
-            inp = trainer.generate_input(gamestate, 1, 2)
-            out = model(torch.Tensor(inp)).detach().numpy()
+    last_action = 120
+    while True:
+        gamestate = game.get_gamestate()
+        # print('----------')
+        # [A, B, X, Y, Z, L, R, MAIN_STICK, C_STICK, L_SHOULDER, R_SHOULDER]
+        action = DataHandler.predict(tree=tree, map=map, gamestate=gamestate, player_port=game.controller.port,
+                                            opponent_port=game.controller_opponent.port)
 
-            action = np.argmax(out)
-            move_x, move_y, c, button = decode_from_number(action, maxes)
-            print(action)
-            # print(button)
-            # print(move_x)
-            # print(move_y)
-            # print(c)
-            # print(out)
-            print('----------')
-            # print(trainer.buttons)
-            if button > 0:
-                game.controller.press_button(trainer.buttons[button - 1][0])
+        action = validate_action(action, gamestate, game.controller.port)
+        buttons = [melee.Button.BUTTON_A, melee.Button.BUTTON_B, melee.Button.BUTTON_X, melee.Button.BUTTON_Y, melee.Button.BUTTON_Z, melee.Button.BUTTON_L, melee.Button.BUTTON_R]
+        # if action is None:
+        #     print('action is none')
+        #     continue
+        # if len(action) < 8:
+        #     print(action)
 
-            if c == 0:
-                game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 0.5)
+        button_used = False
+        for e, active in enumerate(action[:7]):
+            if active == 1:
+                button_used = True
+                game.controller.press_button(buttons[e])
             else:
-                if c == 1:
-                    game.controller.tilt_analog(melee.Button.BUTTON_C, 0, 0.5)
-                elif c == 2:
-                    game.controller.tilt_analog(melee.Button.BUTTON_C, 1, 0.5)
-                elif c == 3:
-                    game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 0)
-                elif c == 4:
-                    game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 1)
-                for i in range(5):
-                    gamestate = game.get_gamestate()
+                game.controller.release_button(buttons[e])
 
-            game.controller.tilt_analog(melee.Button.BUTTON_MAIN, move_x / 2, move_y / 2)
+        game.controller.tilt_analog(melee.Button.BUTTON_MAIN, action[7][0], action[7][1])
+        game.controller.tilt_analog(melee.Button.BUTTON_C, action[8][0], action[8][1])
+        # game.controller.press_shoulder(melee.Button.BUTTON_L, action[9])
+        # game.controller.press_shoulder(melee.Button.BUTTON_R, action[10])
+
+        game.controller.flush()
+
+
+
+
+        if button_used:
             gamestate = game.get_gamestate()
-            for b in trainer.buttons:
-                game.controller.release_button(b[0])
-            game.controller.tilt_analog(melee.Button.BUTTON_C, 0.5, 0.5)
 
-            # game.controller.release_all()
+            game.controller.release_all()
+
+
+
