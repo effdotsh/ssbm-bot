@@ -35,8 +35,9 @@ if __name__ == '__main__':
         #     print(time.time())
         last_state = player.controller_state
 
+        # print(last_state)
         # inp = generate_input(gamestate=gamestate, player_port=game.controller.port, opponent_port=game.controller_opponent.port)
         # print(inp)
 
-        out = generate_output(gamestate=gamestate, player_port=game.controller.port)
+        out = generate_output(player.controller_state)
         print(out)
