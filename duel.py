@@ -15,7 +15,7 @@ import MovesList
 
 args = Args.get_args()
 smash_last = False
-dud = [0, 0, 0, 0, 0, 0, 0, (0.5, 0.5), (0.5, 0.5), 0.0, 0.0]
+dud = np.zeros(9)
 def validate_action(action, gamestate: melee.GameState, port:int):
     global smash_last
     player:melee.PlayerState = gamestate.players.get(port)
@@ -40,18 +40,40 @@ def load_model(path: str):
 
 
 def decode_from_model(action: np.ndarray):
-    output = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 0.0]
-    action:np.ndarray = action[0]
-    b = np.argmax(action[:7])
-    if action[b] > -0.70:
-        output[b] = 1
+    output = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    a = np.argmax(action)
 
-    print(action[:7])
-    for i in range(7, 11):
-        if abs(action[i]) > 0.3:
-            output[i] = 1 * np.sign(action[i])
-    output[11] = action[11]
-    output[12] = action[12]
+    sticks = a % 81
+    button = a // 81
+
+    c_stick = sticks%9
+    move_stick = sticks//9
+
+    c_y = c_stick%3
+    c_x = c_stick//3
+
+    move_y = move_stick%3
+    move_x = move_stick//3
+
+    output[button] = 1
+
+    output[5] = move_x/2
+    output[6] = move_y/2
+
+    output[7] = c_x/2
+    output[8] = c_y/2
+    print(button, move_stick)
+    # action:np.ndarray = action[0]
+    # b = np.argmax(action[:7])
+    # if action[b] > -0.70:
+    #     output[b] = 1
+    #
+    # print(action[:7])
+    # for i in range(7, 11):
+    #     if abs(action[i]) > 0.3:
+    #         output[i] = 1 * np.sign(action[i])
+    # output[11] = action[11]
+    # output[12] = action[12]
 
     return output
 if __name__ == '__main__':
@@ -77,7 +99,6 @@ if __name__ == '__main__':
     while True:
         gamestate = game.get_gamestate()
         # print('----------')
-        # [A, B, X, Y, Z, L, R, MAIN_STICK, C_STICK, L_SHOULDER, R_SHOULDER]
 
         inp = DataHandler.generate_input(gamestate, game.controller.port, game.controller_opponent.port)
         # print(inp)
@@ -86,23 +107,21 @@ if __name__ == '__main__':
         action = decode_from_model(a)
 
         action = validate_action(action, gamestate, game.controller.port)
-        buttons = [melee.Button.BUTTON_A, melee.Button.BUTTON_B, melee.Button.BUTTON_X, melee.Button.BUTTON_Y, melee.Button.BUTTON_Z, melee.Button.BUTTON_L, melee.Button.BUTTON_R]
-        # if action is None:
-        #     print('action is none')
-        #     continue
-        # if len(action) < 8:
-        #     print(action)
+        b = melee.enums.Button
+        buttons = [[b.BUTTON_X, b.BUTTON_Y], [b.BUTTON_L, b.BUTTON_R], [b.BUTTON_Z], [b.BUTTON_A], [b.BUTTON_B]]
 
         button_used = False
-        for e, active in enumerate(action[:7]):
+        for e, active in enumerate(action[:5]):
             if active == 1:
                 button_used = True
-                game.controller.press_button(buttons[e])
+                game.controller.press_button(buttons[e][0])
             else:
-                game.controller.release_button(buttons[e])
+                game.controller.release_button(buttons[e][0])
 
-        game.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, action[7], action[8])
-        game.controller.tilt_analog_unit(melee.Button.BUTTON_C, action[9], action[10])
+        game.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, action[5], action[6])
+
+        print(action[7], action[8])
+        game.controller.tilt_analog_unit(melee.Button.BUTTON_C, action[7], action[8])
         # game.controller.press_shoulder(melee.Button.BUTTON_L, action[9])
         # game.controller.press_shoulder(melee.Button.BUTTON_R, action[10])
 
