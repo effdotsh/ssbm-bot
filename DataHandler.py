@@ -10,8 +10,8 @@ import MovesList
 
 from tqdm import tqdm
 
-import sklearn
-from sklearn.neighbors import KDTree
+from keras.models import Sequential
+from keras.layers import Dense
 
 framedata = melee.FrameData()
 
@@ -140,9 +140,10 @@ def generate_output(gamestate: melee.GameState, player_port: int):
 def create_model(replay_paths, player_character: melee.Character,
                  opponent_character: melee.Character, stage: melee.Stage):
     pickle_file_path = f'models/{player_character.name}_v_{opponent_character.name}_on_{stage.name}.pkl'
-    X = []
-    map = {}
 
+
+    X = []
+    Y = []
     for path in tqdm(replay_paths):
         console = melee.Console(is_dolphin=False,
                                 allow_old_version=True,
@@ -181,40 +182,42 @@ def create_model(replay_paths, player_character: melee.Character,
             action = generate_output(gamestate=gamestate, player_port=player_port)
             if inp is None:
                 break
+            if action is None:
+                break
 
-            if action not in MovesList.bad_moves:
-                X.append(inp)
-                key = str(list(inp.astype(int)))
-                map |= {key: action}
+            X.append(inp)
+            Y.append(action)
 
-            if player_character == opponent_character:
-                new_input_opp = gamestate.players.get(opponent_port).controller_state
-                if not controller_states_different(new_input_opp, last_input_opp):
-                    continue
-                last_input_opp = new_input
+    X = np.array(X)
+    Y = np.array(Y)
 
-                inp = generate_input(gamestate=gamestate, player_port=opponent_port, opponent_port=player_port)
-                action = generate_output(gamestate=gamestate, player_port=opponent_port)
 
-                if inp is None:
-                    break
 
-                if action not in MovesList.bad_moves:
-                    X.append(inp)
-                    key = str(list(inp.astype(int)))
-                    map |= {key: action}
+    print(len(X), len(Y))
+    print(len(X[0]), len(Y[0]))
 
-    tree = KDTree(X)
+    # train
+    model = Sequential([
+        Dense(64, activation='tanh', input_shape=(len(X[0]),)),
+        Dense(64, activation='tanh'),
+        Dense(len(Y[0]), activation='tanh'),
+    ])
+    model.compile(
+        optimizer='adam',
+        loss='mean_squared_error',
+        metrics=['accuracy'],
+    )
+
+
+
+    model.fit(
+        X,  # training data
+        Y,  # training targets
+    )
+
+
     if not os.path.isdir('models'):
         os.mkdir('models/')
+
     with open(pickle_file_path, 'wb') as file:
-        pickle.dump({'tree': tree, 'map': map}, file)
-    return tree, map
-
-
-
-
-def predict(tree: KDTree, map: dict, gamestate: melee.GameState, player_port: int, opponent_port: int, num_points=1):
-    inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
-   
-    return [0, 0, 0, 0, 0, 0, 0, (0, 0.5), (0.5, 0.5), 0.0, 0.0]
+        pickle.dump(model, file)
