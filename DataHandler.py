@@ -5,6 +5,7 @@ import time
 
 import numpy as np
 import melee
+from tensorflow import keras
 
 import MovesList
 
@@ -15,13 +16,15 @@ from keras.layers import Dense
 
 framedata = melee.FrameData()
 
+
 def controller_states_different(new: melee.ControllerState, old: melee.ControllerState):
-    for b in MovesList.buttons:
+    # for b in MovesList.buttons:
+    for b in melee.enums.Button:
         if new.button.get(b) != old.button.get(b) and new.button.get(b):
             return True
-    if new.c_stick != old.c_stick and (new.c_stick[0]*2-1)**2 + (new.c_stick[1]*2-1)**2 >= 0.95:
+    if new.c_stick != old.c_stick and (new.c_stick[0] * 2 - 1) ** 2 + (new.c_stick[1] * 2 - 1) ** 2 >= 0.95:
         return True
-    if new.main_stick != old.main_stick and (new.main_stick[0]*2-1)**2 + (new.main_stick[1]*2-1)**2 >= 0.95:
+    if new.main_stick != old.main_stick and (new.main_stick[0] * 2 - 1) ** 2 + (new.main_stick[1] * 2 - 1) ** 2 >= 0.95:
         return True
     return False
 
@@ -96,19 +99,18 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
     if player is None or opponent is None:
         return None
 
-
     direction = 1 if player.position.x < opponent.position.x else -1
 
-    firefoxing = 1 if player.character in [melee.Character.FOX, melee.Character.FALCO] and player.action in MovesList.firefoxing else -1
+    firefoxing = 1 if player.character in [melee.Character.FOX,
+                                           melee.Character.FALCO] and player.action in MovesList.firefoxing else -1
 
     obs = [
         # player.position.x - opponent.position.x, player.position.y - opponent.position.y,
-           firefoxing, direction]
+        firefoxing, direction]
     obs += get_player_obs(player, gamestate)
     obs += get_player_obs(opponent, gamestate)
 
     return np.array(obs).flatten()
-
 
 
 buttons = [[melee.Button.BUTTON_A], [melee.Button.BUTTON_B], [melee.Button.BUTTON_X, melee.Button.BUTTON_Y],
@@ -119,19 +121,20 @@ def generate_output(gamestate: melee.GameState, player_port: int):
     controller: melee.ControllerState = gamestate.players.get(player_port).controller_state
     b = melee.Button
 
-    A = 1.0 if controller.button.get(b.BUTTON_A) else 0.0
-    B = 1.0 if controller.button.get(b.BUTTON_B) else 0.0
-    X = 1.0 if controller.button.get(b.BUTTON_X) else 0.0
-    Y = 1.0 if controller.button.get(b.BUTTON_Y) else 0.0
-    Z = 1.0 if controller.button.get(b.BUTTON_Z) else 0.0
-    L = 1.0 if controller.button.get(b.BUTTON_L) else 0.0
-    R = 1.0 if controller.button.get(b.BUTTON_R) else 0.0
-    MAIN_STICK = np.array(controller.main_stick) * 2 -1
-    C_STICK = np.array(controller.c_stick) * 2 -1
+    A = 1.0 if controller.button.get(b.BUTTON_A) else -1
+    B = 1.0 if controller.button.get(b.BUTTON_B) else -1
+    X = 1.0 if controller.button.get(b.BUTTON_X) else -1
+    Y = 1.0 if controller.button.get(b.BUTTON_Y) else -1
+    Z = 1.0 if controller.button.get(b.BUTTON_Z) else -1
+    L = 1.0 if controller.button.get(b.BUTTON_L) else -1
+    R = 1.0 if controller.button.get(b.BUTTON_R) else -1
+    MAIN_STICK = np.array(controller.main_stick) * 2 - 1
+    C_STICK = np.array(controller.c_stick) * 2 - 1
     L_SHOULDER = controller.l_shoulder
     R_SHOULDER = controller.r_shoulder
 
-    action = np.array([A, B, X, Y, Z, L, R, MAIN_STICK[0], MAIN_STICK[1], C_STICK[0], C_STICK[1], L_SHOULDER, R_SHOULDER]).flatten()
+    action = np.array(
+        [A, B, X, Y, Z, L, R, MAIN_STICK[0], MAIN_STICK[1], C_STICK[0], C_STICK[1], L_SHOULDER, R_SHOULDER]).flatten()
 
     return action
 
@@ -140,7 +143,6 @@ def generate_output(gamestate: melee.GameState, player_port: int):
 def create_model(replay_paths, player_character: melee.Character,
                  opponent_character: melee.Character, stage: melee.Stage):
     pickle_file_path = f'models/{player_character.name}_v_{opponent_character.name}_on_{stage.name}.pkl'
-
 
     X = []
     Y = []
@@ -191,8 +193,6 @@ def create_model(replay_paths, player_character: melee.Character,
     X = np.array(X)
     Y = np.array(Y)
 
-
-
     print(len(X), len(Y))
     print(len(X[0]), len(Y[0]))
 
@@ -202,19 +202,26 @@ def create_model(replay_paths, player_character: melee.Character,
         Dense(64, activation='tanh'),
         Dense(len(Y[0]), activation='tanh'),
     ])
+
+    opt = keras.optimizers.Adam(
+        learning_rate=3e-4,
+        beta_1=0.9,
+        beta_2=0.999,
+        epsilon=1e-07,
+        amsgrad=False,
+        name="Adam",
+    )
+
     model.compile(
-        optimizer='adam',
+        optimizer=opt,
         loss='mean_squared_error',
         metrics=['accuracy'],
     )
-
-
 
     model.fit(
         X,  # training data
         Y,  # training targets
     )
-
 
     if not os.path.isdir('models'):
         os.mkdir('models/')
