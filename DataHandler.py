@@ -106,7 +106,7 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
 
     obs = [
         # player.position.x - opponent.position.x, player.position.y - opponent.position.y,
-        firefoxing, direction]
+        firefoxing, direction, 1]
     obs += get_player_obs(player, gamestate)
     obs += get_player_obs(opponent, gamestate)
 
@@ -117,25 +117,46 @@ buttons = [[melee.Button.BUTTON_A], [melee.Button.BUTTON_B], [melee.Button.BUTTO
            [melee.Button.BUTTON_Z], [melee.Button.BUTTON_L, melee.Button.BUTTON_R]]
 
 
-def generate_output(gamestate: melee.GameState, player_port: int):
-    controller: melee.ControllerState = gamestate.players.get(player_port).controller_state
-    b = melee.Button
+def generate_output(controller: melee.ControllerState):
+    b = melee.enums.Button
+    buttons = [[b.BUTTON_X, b.BUTTON_Y], [b.BUTTON_L, b.BUTTON_R], [b.BUTTON_Z], [b.BUTTON_A], [b.BUTTON_B]]
 
-    A = 1.0 if controller.button.get(b.BUTTON_A) else -1
-    B = 1.0 if controller.button.get(b.BUTTON_B) else -1
-    X = 1.0 if controller.button.get(b.BUTTON_X) else -1
-    Y = 1.0 if controller.button.get(b.BUTTON_Y) else -1
-    Z = 1.0 if controller.button.get(b.BUTTON_Z) else -1
-    L = 1.0 if controller.button.get(b.BUTTON_L) else -1
-    R = 1.0 if controller.button.get(b.BUTTON_R) else -1
-    MAIN_STICK = np.array(controller.main_stick) * 2 - 1
-    C_STICK = np.array(controller.c_stick) * 2 - 1
-    L_SHOULDER = controller.l_shoulder
-    R_SHOULDER = controller.r_shoulder
+    button = 5  # 6 options
+    for e, group in enumerate(buttons):
+        for btn in group:
+            if controller.button.get(btn):
+                button = e
+                break
+        if button == e:
+            break
 
-    action = np.array(
-        [A, B, X, Y, Z, L, R, MAIN_STICK[0], MAIN_STICK[1], C_STICK[0], C_STICK[1], L_SHOULDER, R_SHOULDER]).flatten()
+    c_x = 1
+    c_y = 1
+    if controller.c_stick[0] < 0.25:
+        c_x = 0
+    elif controller.c_stick[0] > 0.75:
+        c_x = 2
+    if controller.c_stick[1] < 0.25:
+        c_y = 0
+    elif controller.c_stick[1] > 0.75:
+        c_y = 2
+    c_stick = 3 * c_x + c_y
 
+    move_x = 1
+    move_y = 1
+    if controller.main_stick[0] < 0.25:
+        move_x = 0
+    elif controller.main_stick[0] > 0.75:
+        move_x = 2
+    if controller.main_stick[1] < 0.25:
+        move_y = 0
+    elif controller.main_stick[1] > 0.75:
+        move_y = 2
+    move_stick = 3 * move_x + move_y # 9 options
+
+    sticks = move_stick*9 + c_stick
+
+    action = button * 81 + sticks
     return action
 
 
@@ -181,7 +202,7 @@ def create_model(replay_paths, player_character: melee.Character,
             last_input = new_input
 
             inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
-            action = generate_output(gamestate=gamestate, player_port=player_port)
+            action = generate_output(new_input)
             if inp is None:
                 break
             if action is None:
