@@ -18,8 +18,8 @@ framedata = melee.FrameData()
 
 
 def controller_states_different(new: melee.ControllerState, old: melee.ControllerState):
-    # for b in MovesList.buttons:
-    for b in melee.enums.Button:
+    for b in MovesList.buttons:
+    # for b in melee.enums.Button:
         if new.button.get(b) != old.button.get(b) and new.button.get(b):
             return True
     if new.c_stick != old.c_stick and (new.c_stick[0] * 2 - 1) ** 2 + (new.c_stick[1] * 2 - 1) ** 2 >= 0.95:
@@ -152,9 +152,9 @@ def generate_output(controller: melee.ControllerState):
         move_y = 0
     elif controller.main_stick[1] > 0.75:
         move_y = 2
-    move_stick = 3 * move_x + move_y # 9 options
+    move_stick = 3 * move_x + move_y  # 9 options
 
-    sticks = move_stick*9 + c_stick
+    sticks = move_stick * 9 + c_stick
 
     action = button * 81 + sticks
     return action
@@ -196,20 +196,27 @@ def create_model(replay_paths, player_character: melee.Character,
             if gamestate is None or gamestate.stage is None:
                 break
 
-            new_input = gamestate.players.get(player_port).controller_state
+            player: melee.PlayerState = gamestate.players.get(player_port)
+            if player.action in MovesList.dead_list:
+                continue
+
+            new_input = player.controller_state
             if not controller_states_different(new_input, last_input):
                 continue
             last_input = new_input
 
             inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
             action = generate_output(new_input)
+            out = np.zeros(486)
+            out[action] = 1
+
             if inp is None:
                 break
             if action is None:
                 break
 
             X.append(inp)
-            Y.append(action)
+            Y.append(out)
 
     X = np.array(X)
     Y = np.array(Y)
