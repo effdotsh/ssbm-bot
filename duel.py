@@ -43,7 +43,7 @@ def decode_from_model(action: np.ndarray):
     output = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 0.0]
     action:np.ndarray = action[0]
     b = np.argmax(action[:7])
-    if action[b] > 0:
+    if action[b] > -0.70:
         output[b] = 1
 
     print(action[:7])
@@ -55,8 +55,8 @@ def decode_from_model(action: np.ndarray):
 
     return output
 if __name__ == '__main__':
-    character = melee.Character.FOX
-    opponent = melee.Character.FALCO if not args.compete else character
+    character = melee.Character.CPTFALCON
+    opponent = melee.Character.JIGGLYPUFF if not args.compete else character
     stage = melee.Stage.FINAL_DESTINATION
     file_name = f'{character.name}_v_{opponent.name}_on_{stage.name}'
     print(file_name)
