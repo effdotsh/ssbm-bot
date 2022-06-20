@@ -18,8 +18,10 @@ framedata = melee.FrameData()
 
 
 def controller_states_different(new: melee.ControllerState, old: melee.ControllerState):
-    for b in MovesList.buttons:
-    # for b in melee.enums.Button:
+    # for b in MovesList.buttons:
+    if generate_output(new) != generate_output(old):
+        return False
+    for b in melee.enums.Button:
         if new.button.get(b) != old.button.get(b) and new.button.get(b):
             return True
     if new.c_stick != old.c_stick and (new.c_stick[0] * 2 - 1) ** 2 + (new.c_stick[1] * 2 - 1) ** 2 >= 0.95:
@@ -27,6 +29,8 @@ def controller_states_different(new: melee.ControllerState, old: melee.Controlle
     if new.main_stick != old.main_stick and (new.main_stick[0] * 2 - 1) ** 2 + (new.main_stick[1] * 2 - 1) ** 2 >= 0.95:
         return True
     return False
+
+    # return generate_output(new) != generate_output(old)
 
 
 def get_ports(gamestate: melee.GameState, player_character: melee.Character, opponent_character: melee.Character):
@@ -56,19 +60,20 @@ def get_ports(gamestate: melee.GameState, player_character: melee.Character, opp
 def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> list:
     x = player.position.x / 100
     y = player.position.y / 20
-
-    percent = player.percent / 100
     shield = player.shield_strength / 60
 
+    percent = player.percent / 100
+    vel_y = (player.speed_y_self + player.speed_y_attack) / 20
+    vel_x = (player.speed_x_attack + player.speed_air_x_self + player.speed_ground_x_self) / 20
+    is_attacking = 1 if framedata.is_attack(player.character, player.action) else 0
+
+    # return [x, y, shield, percent, vel_x, vel_y, is_attacking]
     edge = melee.EDGE_POSITION.get(gamestate.stage)
 
     offstage = 1 if abs(player.position.x) > edge - 1 else -1
     tumbling = 1 if player.action in [melee.Action.TUMBLING] else -1
-    is_attacking = 1 if framedata.is_attack(player.character, player.action) else -1
     on_ground = 1 if player.on_ground else -1
 
-    vel_y = (player.speed_y_self + player.speed_y_attack) / 20
-    vel_x = (player.speed_x_attack + player.speed_air_x_self + player.speed_ground_x_self) / 20
 
     facing = 1 if player.facing else -1
     # return [x, y, percent, shield, is_attacking, on_ground, vel_x, vel_y, facing]
@@ -106,7 +111,8 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
 
     obs = [
         # player.position.x - opponent.position.x, player.position.y - opponent.position.y,
-        firefoxing, direction, 1]
+        # firefoxing, direction, 1
+    ]
     obs += get_player_obs(player, gamestate)
     obs += get_player_obs(opponent, gamestate)
 
@@ -129,7 +135,6 @@ def generate_output(controller: melee.ControllerState):
                 break
         if button == e:
             break
-
     c_x = 1
     c_y = 1
     if controller.c_stick[0] < 0.25:
@@ -157,6 +162,7 @@ def generate_output(controller: melee.ControllerState):
     sticks = move_stick * 9 + c_stick
 
     action = button * 81 + sticks
+
     return action
 
 
@@ -232,11 +238,7 @@ def create_model(replay_paths, player_character: melee.Character,
     ])
 
     opt = keras.optimizers.Adam(
-        learning_rate=3e-4,
-        beta_1=0.9,
-        beta_2=0.999,
-        epsilon=1e-07,
-        amsgrad=False,
+        learning_rate=3e-3,
         name="Adam",
     )
 
