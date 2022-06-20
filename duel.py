@@ -1,4 +1,5 @@
 import math
+import pickle
 import time
 
 import Args
@@ -27,17 +28,29 @@ def validate_action(action, gamestate: melee.GameState, port:int):
     return action
 
 
+def load_model(path: str):
+    path = f'models/{file_name}.pkl'
+    if os.path.exists(path):
+        with open(path, 'rb') as file:
+            data = pickle.load(file)
+            return data
+    else:
+        print("Model does not exist")
+        quit()
+
+
 if __name__ == '__main__':
     character = melee.Character.FOX
     opponent = melee.Character.FALCO if not args.compete else character
     stage = melee.Stage.FINAL_DESTINATION
-    print(f'{character.name} vs. {opponent.name} on {stage.name}')
+    file_name = f'{character.name}_v_{opponent.name}_on_{stage.name}'
+    print(file_name)
 
-    tree, map = DataHandler.load_model(player_character=character, opponent_character=opponent, stage=stage)
+    model = load_model(file_name)
     print('loaded')
 
     game = GameManager.Game(args)
-    game.enterMatch(cpu_level=4, opponant_character=opponent,
+    game.enterMatch(cpu_level=0, opponant_character=opponent,
                     player_character=character,
                     stage=stage, rules=False)
 
@@ -50,10 +63,13 @@ if __name__ == '__main__':
         gamestate = game.get_gamestate()
         # print('----------')
         # [A, B, X, Y, Z, L, R, MAIN_STICK, C_STICK, L_SHOULDER, R_SHOULDER]
-        action = DataHandler.predict(tree=tree, map=map, gamestate=gamestate, player_port=game.controller.port,
-                                            opponent_port=game.controller_opponent.port)
 
-        action = validate_action(action, gamestate, game.controller.port)
+        inp = DataHandler.generate_input(gamestate, game.controller.port, game.controller_opponent.port)
+        # print(inp)
+        a = model.predict(np.array([inp]))
+        print(a[0][0])
+        # action = validate_action(action, gamestate, game.controller.port)
+        action = dud
         buttons = [melee.Button.BUTTON_A, melee.Button.BUTTON_B, melee.Button.BUTTON_X, melee.Button.BUTTON_Y, melee.Button.BUTTON_Z, melee.Button.BUTTON_L, melee.Button.BUTTON_R]
         # if action is None:
         #     print('action is none')
