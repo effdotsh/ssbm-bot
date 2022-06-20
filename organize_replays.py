@@ -6,7 +6,8 @@ import melee
 from tqdm import tqdm
 
 if __name__ == '__main__':
-    replay_folder = '/home/human/Documents/training_data'
+    # replay_folder = '/home/human/Documents/training_data'
+    replay_folder= '/home/human/Documents/slippi replays'
     replay_paths = []
     for root, dirs, files in os.walk(replay_folder):
         for name in files:

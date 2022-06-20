@@ -40,9 +40,15 @@ def load_model(path: str):
 
 
 def decode_from_model(action: np.ndarray):
+    action = action[0]
+    reduce = [418, 427, 454, 481, 472, 463, 436, 409, 445]
+    for i in reduce:
+        action[i]/=2
+
     output = [0, 0, 0, 0, 0, 0, 0, 0, 0]
     a = np.argmax(action)
 
+    # print(a, action[a])
     sticks = a % 81
     button = a // 81
 
@@ -57,12 +63,13 @@ def decode_from_model(action: np.ndarray):
 
     output[button] = 1
 
-    output[5] = move_x/2
-    output[6] = move_y/2
+    output[5] = move_x-1
+    output[6] = move_y-1
 
-    output[7] = c_x/2
-    output[8] = c_y/2
-    print(button, move_stick)
+    output[7] = c_x-1
+    output[8] = c_y-1
+
+    # print(move_x, move_y)
     # action:np.ndarray = action[0]
     # b = np.argmax(action[:7])
     # if action[b] > -0.70:
@@ -74,12 +81,12 @@ def decode_from_model(action: np.ndarray):
     #         output[i] = 1 * np.sign(action[i])
     # output[11] = action[11]
     # output[12] = action[12]
-
+    print(a, output)
     return output
 if __name__ == '__main__':
-    character = melee.Character.CPTFALCON
-    opponent = melee.Character.JIGGLYPUFF if not args.compete else character
-    stage = melee.Stage.FINAL_DESTINATION
+    character = melee.Character.JIGGLYPUFF
+    opponent = melee.Character.CPTFALCON if not args.compete else character
+    stage = melee.Stage.BATTLEFIELD
     file_name = f'{character.name}_v_{opponent.name}_on_{stage.name}'
     print(file_name)
 
@@ -87,7 +94,7 @@ if __name__ == '__main__':
     print('loaded')
 
     game = GameManager.Game(args)
-    game.enterMatch(cpu_level=0, opponant_character=opponent,
+    game.enterMatch(cpu_level=4, opponant_character=opponent,
                     player_character=character,
                     stage=stage, rules=False)
 
@@ -118,10 +125,12 @@ if __name__ == '__main__':
             else:
                 game.controller.release_button(buttons[e][0])
 
-        game.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, action[5], action[6])
-
-        print(action[7], action[8])
-        game.controller.tilt_analog_unit(melee.Button.BUTTON_C, action[7], action[8])
+        if action[0] == 1:
+            game.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, 0, 0)
+            game.controller.tilt_analog_unit(melee.Button.BUTTON_C, 0, 0)
+        else:
+            game.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, action[5], action[6])
+            game.controller.tilt_analog_unit(melee.Button.BUTTON_C, action[7], action[8])
         # game.controller.press_shoulder(melee.Button.BUTTON_L, action[9])
         # game.controller.press_shoulder(melee.Button.BUTTON_R, action[10])
 
@@ -131,6 +140,8 @@ if __name__ == '__main__':
 
 
         if button_used:
+            gamestate = game.get_gamestate()
+            gamestate = game.get_gamestate()
             gamestate = game.get_gamestate()
 
             game.controller.release_all()
