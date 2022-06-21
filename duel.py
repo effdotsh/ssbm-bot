@@ -41,9 +41,10 @@ def load_model(path: str):
 
 def decode_from_model(action: np.ndarray):
     action = action[0]
-    reduce = [418, 427, 454, 481, 472, 463, 436, 409, 445]
+    reduce = [418, 427, 454, 481, 472, 463, 436, 409, 445, 13, 67]
     for i in reduce:
-        action[i]/=2
+        action[i]/=3
+    # action[13]/=6
 
     output = [0, 0, 0, 0, 0, 0, 0, 0, 0]
     a = np.argmax(action)
@@ -69,6 +70,8 @@ def decode_from_model(action: np.ndarray):
     output[7] = c_x-1
     output[8] = c_y-1
 
+    if (output[7], output[8]) != (0, 0):
+        print(time.time())
     # print(move_x, move_y)
     # action:np.ndarray = action[0]
     # b = np.argmax(action[:7])
@@ -94,7 +97,7 @@ if __name__ == '__main__':
     print('loaded')
 
     game = GameManager.Game(args)
-    game.enterMatch(cpu_level=4, opponant_character=opponent,
+    game.enterMatch(cpu_level=9, opponant_character=opponent,
                     player_character=character,
                     stage=stage, rules=False)
 
