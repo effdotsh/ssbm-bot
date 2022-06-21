@@ -18,16 +18,37 @@ framedata = melee.FrameData()
 
 
 def controller_states_different(new: melee.ControllerState, old: melee.ControllerState):
-    # for b in MovesList.buttons:
-    if generate_output(new) != generate_output(old):
+    if generate_output(new) == generate_output(old):
         return False
+    # for b in MovesList.buttons:
     for b in melee.enums.Button:
         if new.button.get(b) != old.button.get(b) and new.button.get(b):
             return True
-    if new.c_stick != old.c_stick and (new.c_stick[0] * 2 - 1) ** 2 + (new.c_stick[1] * 2 - 1) ** 2 >= 0.95:
+
+    if new.c_stick[0] < 0.35 and old.c_stick[0] >= 0.35:
         return True
-    if new.main_stick != old.main_stick and (new.main_stick[0] * 2 - 1) ** 2 + (new.main_stick[1] * 2 - 1) ** 2 >= 0.95:
+
+    if new.c_stick[0] > 0.65 and old.c_stick[0] <= 0.65:
         return True
+
+    if new.c_stick[1] < 0.35 and old.c_stick[1] >= 0.35:
+        return True
+
+    if new.c_stick[1] > 0.65 and old.c_stick[1] <= 0.65:
+        return True
+
+    if new.main_stick[0] < 0.35 and old.main_stick[0] >= 0.35:
+        return True
+
+    if new.main_stick[0] > 0.65 and old.main_stick[0] <= 0.65:
+        return True
+
+    if new.main_stick[1] < 0.35 and old.main_stick[1] >= 0.35:
+        return True
+
+    if new.main_stick[1] > 0.65 and old.main_stick[1] <= 0.65:
+        return True
+
     return False
 
     # return generate_output(new) != generate_output(old)
@@ -58,13 +79,13 @@ def get_ports(gamestate: melee.GameState, player_character: melee.Character, opp
 
 
 def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> list:
-    x = player.position.x / 100
-    y = player.position.y / 20
+    x = player.position.x/20
+    y = player.position.y/10
     shield = player.shield_strength / 60
 
     percent = player.percent / 100
-    vel_y = (player.speed_y_self + player.speed_y_attack) / 20
-    vel_x = (player.speed_x_attack + player.speed_air_x_self + player.speed_ground_x_self) / 20
+    vel_y = (player.speed_y_self + player.speed_y_attack)
+    vel_x = (player.speed_x_attack + player.speed_air_x_self + player.speed_ground_x_self)
     is_attacking = 1 if framedata.is_attack(player.character, player.action) else 0
 
     # return [x, y, shield, percent, vel_x, vel_y, is_attacking]
@@ -73,7 +94,6 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
     offstage = 1 if abs(player.position.x) > edge - 1 else -1
     tumbling = 1 if player.action in [melee.Action.TUMBLING] else -1
     on_ground = 1 if player.on_ground else -1
-
 
     facing = 1 if player.facing else -1
     # return [x, y, percent, shield, is_attacking, on_ground, vel_x, vel_y, facing]
@@ -92,10 +112,20 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
 
     is_bmove = 1 if framedata.is_bmove(player.character, player.action) else -1
 
-    return [tumbling, offstage, special_fall, is_dead, shield, on_ground, is_attacking,
+    return [
+        # tumbling,
+        offstage,
+            # special_fall,
+            # is_dead,
+            shield, on_ground, is_attacking,
             x, y,
             vel_x, vel_y, percent,
-            facing, in_hitstun, is_invulnerable, jumps_left, attack_windup, attack_active, attack_cooldown, is_bmove]
+            facing,
+            # in_hitstun, is_invulnerable,
+            jumps_left,
+            # attack_windup, attack_active, attack_cooldown,
+            # is_bmove
+            ]
 
 
 def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: int):
@@ -137,31 +167,32 @@ def generate_output(controller: melee.ControllerState):
             break
     c_x = 1
     c_y = 1
-    if controller.c_stick[0] < 0.25:
+    if controller.c_stick[0] < 0.35:
         c_x = 0
-    elif controller.c_stick[0] > 0.75:
+    elif controller.c_stick[0] > 0.65:
         c_x = 2
-    if controller.c_stick[1] < 0.25:
+    if controller.c_stick[1] < 0.35:
         c_y = 0
-    elif controller.c_stick[1] > 0.75:
+    elif controller.c_stick[1] > 0.65:
         c_y = 2
     c_stick = 3 * c_x + c_y
-
+    # print(c_stick, c_x, c_y)
     move_x = 1
     move_y = 1
-    if controller.main_stick[0] < 0.25:
+    if controller.main_stick[0] < 0.35:
         move_x = 0
-    elif controller.main_stick[0] > 0.75:
+    elif controller.main_stick[0] > 0.65:
         move_x = 2
-    if controller.main_stick[1] < 0.25:
+    if controller.main_stick[1] < 0.35:
         move_y = 0
-    elif controller.main_stick[1] > 0.75:
+    elif controller.main_stick[1] > 0.65:
         move_y = 2
     move_stick = 3 * move_x + move_y  # 9 options
 
     sticks = move_stick * 9 + c_stick
 
     action = button * 81 + sticks
+
 
     return action
 
@@ -203,16 +234,71 @@ def create_model(replay_paths, player_character: melee.Character,
                 break
 
             player: melee.PlayerState = gamestate.players.get(player_port)
-            if player.action in MovesList.dead_list:
+            opponent: melee.PlayerState = gamestate.players.get(opponent_port)
+
+            if player.action in MovesList.dead_list or opponent.action in MovesList.dead_list:
                 continue
 
             new_input = player.controller_state
             if not controller_states_different(new_input, last_input):
                 continue
+
             last_input = new_input
 
             inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
+
             action = generate_output(new_input)
+
+
+
+
+
+
+
+
+
+
+
+
+
+            sticks = action % 81
+            button = action // 81
+
+            c_stick = sticks % 9
+            move_stick = sticks // 9
+
+            c_y = c_stick % 3
+            c_x = c_stick // 3
+
+            move_y = move_stick % 3
+            move_x = move_stick // 3
+            print(c_x)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             out = np.zeros(486)
             out[action] = 1
 
@@ -238,7 +324,7 @@ def create_model(replay_paths, player_character: melee.Character,
     ])
 
     opt = keras.optimizers.Adam(
-        learning_rate=3e-3,
+        learning_rate=6e-3,
         name="Adam",
     )
 
@@ -251,6 +337,7 @@ def create_model(replay_paths, player_character: melee.Character,
     model.fit(
         X,  # training data
         Y,  # training targets
+        shuffle=True
     )
 
     if not os.path.isdir('models'):
