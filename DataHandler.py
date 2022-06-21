@@ -16,37 +16,39 @@ from keras.layers import Dense
 
 framedata = melee.FrameData()
 
+low_analog = 0.2
+high_analog = 0.8
 
 def controller_states_different(new: melee.ControllerState, old: melee.ControllerState):
     if generate_output(new) == generate_output(old):
         return False
-    # for b in MovesList.buttons:
-    for b in melee.enums.Button:
+    for b in MovesList.buttons:
+    # for b in melee.enums.Button:
         if new.button.get(b) != old.button.get(b) and new.button.get(b):
             return True
 
-    if new.c_stick[0] < 0.35 and old.c_stick[0] >= 0.35:
+    if new.c_stick[0] < low_analog and old.c_stick[0] >= low_analog:
         return True
 
-    if new.c_stick[0] > 0.65 and old.c_stick[0] <= 0.65:
+    if new.c_stick[0] > high_analog and old.c_stick[0] <= high_analog:
         return True
 
-    if new.c_stick[1] < 0.35 and old.c_stick[1] >= 0.35:
+    if new.c_stick[1] < low_analog and old.c_stick[1] >= low_analog:
         return True
 
-    if new.c_stick[1] > 0.65 and old.c_stick[1] <= 0.65:
+    if new.c_stick[1] > high_analog and old.c_stick[1] <= high_analog:
         return True
 
-    if new.main_stick[0] < 0.35 and old.main_stick[0] >= 0.35:
+    if new.main_stick[0] < low_analog and old.main_stick[0] >= low_analog:
         return True
 
-    if new.main_stick[0] > 0.65 and old.main_stick[0] <= 0.65:
+    if new.main_stick[0] > high_analog and old.main_stick[0] <= high_analog:
         return True
 
-    if new.main_stick[1] < 0.35 and old.main_stick[1] >= 0.35:
+    if new.main_stick[1] < low_analog and old.main_stick[1] >= low_analog:
         return True
 
-    if new.main_stick[1] > 0.65 and old.main_stick[1] <= 0.65:
+    if new.main_stick[1] > high_analog and old.main_stick[1] <= high_analog:
         return True
 
     return False
@@ -155,9 +157,12 @@ buttons = [[melee.Button.BUTTON_A], [melee.Button.BUTTON_B], [melee.Button.BUTTO
 
 def generate_output(controller: melee.ControllerState):
     b = melee.enums.Button
-    buttons = [[b.BUTTON_X, b.BUTTON_Y], [b.BUTTON_L, b.BUTTON_R], [b.BUTTON_Z], [b.BUTTON_A], [b.BUTTON_B]]
+    # buttons = [[b.BUTTON_X, b.BUTTON_Y], [b.BUTTON_L, b.BUTTON_R], [b.BUTTON_Z], [b.BUTTON_A], [b.BUTTON_B]]
 
-    button = 5  # 6 options
+    buttons = [[b.BUTTON_X, b.BUTTON_Y], [b.BUTTON_B]]
+    # button = 5  # 6 options
+    button = 2  # 6 options
+
     for e, group in enumerate(buttons):
         for btn in group:
             if controller.button.get(btn):
@@ -165,28 +170,41 @@ def generate_output(controller: melee.ControllerState):
                 break
         if button == e:
             break
+
     c_x = 1
     c_y = 1
-    if controller.c_stick[0] < 0.35:
+    if controller.c_stick[0] < low_analog:
         c_x = 0
-    elif controller.c_stick[0] > 0.65:
+    elif controller.c_stick[0] > high_analog:
         c_x = 2
-    if controller.c_stick[1] < 0.35:
+    if controller.c_stick[1] < low_analog:
         c_y = 0
-    elif controller.c_stick[1] > 0.65:
+    elif controller.c_stick[1] > high_analog:
         c_y = 2
+
+    c_y = c_y if c_x == 1 else 1
     c_stick = 3 * c_x + c_y
+
     # print(c_stick, c_x, c_y)
     move_x = 1
     move_y = 1
-    if controller.main_stick[0] < 0.35:
+    if controller.main_stick[0] < low_analog:
         move_x = 0
-    elif controller.main_stick[0] > 0.65:
+    elif controller.main_stick[0] > high_analog:
         move_x = 2
-    if controller.main_stick[1] < 0.35:
+    if controller.main_stick[1] < low_analog:
         move_y = 0
-    elif controller.main_stick[1] > 0.65:
+    elif controller.main_stick[1] > high_analog:
         move_y = 2
+
+
+
+    if button == 0: # if jumping then move_y doesnt matter
+        move_y = 1
+
+
+
+    move_y = move_y if move_x == 1 else 1
     move_stick = 3 * move_x + move_y  # 9 options
 
     sticks = move_stick * 9 + c_stick
@@ -251,55 +269,7 @@ def create_model(replay_paths, player_character: melee.Character,
 
 
 
-
-
-
-
-
-
-
-
-
-
-            sticks = action % 81
-            button = action // 81
-
-            c_stick = sticks % 9
-            move_stick = sticks // 9
-
-            c_y = c_stick % 3
-            c_x = c_stick // 3
-
-            move_y = move_stick % 3
-            move_x = move_stick // 3
-            print(c_x)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            out = np.zeros(486)
+            out = np.zeros(3*9*9)
             out[action] = 1
 
             if inp is None:
