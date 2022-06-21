@@ -41,12 +41,12 @@ def load_model(path: str):
 
 def decode_from_model(action: np.ndarray):
     action = action[0]
-    reduce = [418, 427, 454, 481, 472, 463, 436, 409, 445, 13, 67]
+    reduce = [175, 229, 13, 67]
     for i in reduce:
         action[i]/=3
     # action[13]/=6
 
-    output = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    output = [0, 0, 0, 0, 0, 0]
     a = np.argmax(action)
 
     # print(a, action[a])
@@ -64,13 +64,13 @@ def decode_from_model(action: np.ndarray):
 
     output[button] = 1
 
-    output[5] = move_x-1
-    output[6] = move_y-1
+    output[2] = move_x-1
+    output[3] = move_y-1
 
-    output[7] = c_x-1
-    output[8] = c_y-1
+    output[4] = c_x-1
+    output[5] = c_y-1
 
-    if (output[7], output[8]) != (0, 0):
+    if (output[4], output[5]) != (0, 0):
         print(time.time())
     # print(move_x, move_y)
     # action:np.ndarray = action[0]
@@ -90,6 +90,7 @@ if __name__ == '__main__':
     character = melee.Character.JIGGLYPUFF
     opponent = melee.Character.CPTFALCON if not args.compete else character
     stage = melee.Stage.BATTLEFIELD
+    drop_every = 7
     file_name = f'{character.name}_v_{opponent.name}_on_{stage.name}'
     print(file_name)
 
@@ -106,8 +107,10 @@ if __name__ == '__main__':
     num_c = 5
 
     last_action = 120
+    fc = 0
     while True:
         gamestate = game.get_gamestate()
+        fc += 1
         # print('----------')
 
         inp = DataHandler.generate_input(gamestate, game.controller.port, game.controller_opponent.port)
@@ -118,22 +121,23 @@ if __name__ == '__main__':
 
         action = validate_action(action, gamestate, game.controller.port)
         b = melee.enums.Button
-        buttons = [[b.BUTTON_X, b.BUTTON_Y], [b.BUTTON_L, b.BUTTON_R], [b.BUTTON_Z], [b.BUTTON_A], [b.BUTTON_B]]
+        # buttons = [[b.BUTTON_X, b.BUTTON_Y], [b.BUTTON_L, b.BUTTON_R], [b.BUTTON_Z], [b.BUTTON_A], [b.BUTTON_B]]
+        buttons = [[b.BUTTON_X, b.BUTTON_Y], [b.BUTTON_B]]
 
         button_used = False
-        for e, active in enumerate(action[:5]):
-            if active == 1:
+        for i in range(len(buttons)):
+            if action[i] == 1:
                 button_used = True
-                game.controller.press_button(buttons[e][0])
+                game.controller.press_button(buttons[i][0])
             else:
-                game.controller.release_button(buttons[e][0])
+                game.controller.release_button(buttons[i][0])
 
         if action[0] == 1:
             game.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, 0, 0)
             game.controller.tilt_analog_unit(melee.Button.BUTTON_C, 0, 0)
         else:
-            game.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, action[5], action[6])
-            game.controller.tilt_analog_unit(melee.Button.BUTTON_C, action[7], action[8])
+            game.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, action[2], action[3])
+            game.controller.tilt_analog_unit(melee.Button.BUTTON_C, action[4], action[5])
         # game.controller.press_shoulder(melee.Button.BUTTON_L, action[9])
         # game.controller.press_shoulder(melee.Button.BUTTON_R, action[10])
 
@@ -146,8 +150,12 @@ if __name__ == '__main__':
             gamestate = game.get_gamestate()
             gamestate = game.get_gamestate()
             gamestate = game.get_gamestate()
-
+            fc += 3
             game.controller.release_all()
 
-
+        if fc >= drop_every:
+            game.controller.release_all()
+            gamestate = game.get_gamestate()
+            gamestate = game.get_gamestate()
+            fc = 0
 
