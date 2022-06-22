@@ -20,12 +20,14 @@ low_analog = 0.2
 high_analog = 0.8
 
 def controller_states_different(new: melee.ControllerState, old: melee.ControllerState):
+
     if generate_output(new) == generate_output(old):
         return False
-    for b in MovesList.buttons:
+    for btns in MovesList.buttons:
     # for b in melee.enums.Button:
-        if new.button.get(b) != old.button.get(b) and new.button.get(b):
-            return True
+        for b in btns:
+            if new.button.get(b) != old.button.get(b) and new.button.get(b):
+                return True
 
     if new.c_stick[0] < low_analog and old.c_stick[0] >= low_analog:
         return True
@@ -81,8 +83,8 @@ def get_ports(gamestate: melee.GameState, player_character: melee.Character, opp
 
 
 def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> list:
-    x = player.position.x/20
-    y = player.position.y/10
+    x = player.position.x / 30
+    y = player.position.y / 5
     shield = player.shield_strength / 60
 
     percent = player.percent / 100
@@ -153,19 +155,13 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
     return np.array(obs).flatten()
 
 
-buttons = [[melee.Button.BUTTON_A], [melee.Button.BUTTON_B], [melee.Button.BUTTON_X, melee.Button.BUTTON_Y],
-           [melee.Button.BUTTON_Z], [melee.Button.BUTTON_L, melee.Button.BUTTON_R]]
+
 
 
 def generate_output(controller: melee.ControllerState):
-    b = melee.enums.Button
-    # buttons = [[b.BUTTON_X, b.BUTTON_Y], [b.BUTTON_L, b.BUTTON_R], [b.BUTTON_Z], [b.BUTTON_A], [b.BUTTON_B]]
 
-    buttons = [[b.BUTTON_X, b.BUTTON_Y], [b.BUTTON_B]]
-    # button = 5  # 6 options
-    button = 2  # 6 options
-
-    for e, group in enumerate(buttons):
+    button = len(MovesList.buttons)
+    for e, group in enumerate(MovesList.buttons):
         for btn in group:
             if controller.button.get(btn):
                 button = e
@@ -275,8 +271,7 @@ def create_model(replay_paths, player_character: melee.Character,
             action = generate_output(new_input)
 
 
-
-            out = np.zeros(3*9*9)
+            out = np.zeros((len(MovesList.buttons)+1)*9*9)
             out[action] = 1
 
             if inp is None:
@@ -297,6 +292,7 @@ def create_model(replay_paths, player_character: melee.Character,
     model = Sequential([
         Dense(64, activation='tanh', input_shape=(len(X[0]),)),
         Dense(64, activation='tanh'),
+        # Dense(64, activation='tanh'),
         Dense(len(Y[0]), activation='tanh'),
     ])
 

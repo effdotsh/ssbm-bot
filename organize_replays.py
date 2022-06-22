@@ -16,7 +16,7 @@ if __name__ == '__main__':
 
 
     if not os.path.exists('replays.json'):
-        with open('replays.json', 'w') as file:
+        with open('replays.json', 'w+') as file:
             json.dump({}, file, indent=4)
 
     f = open('replays.json', 'r')
