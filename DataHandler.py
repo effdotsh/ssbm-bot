@@ -124,7 +124,8 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
             vel_x, vel_y,
         # percent,
             facing,
-            # in_hitstun, is_invulnerable,
+            in_hitstun,
+        # is_invulnerable,
             jumps_left,
             attack_windup, attack_active, attack_cooldown,
             is_bmove
