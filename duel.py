@@ -26,7 +26,7 @@ def validate_action(action, gamestate: melee.GameState, port:int):
         if player.jumps_left == 0 and player.position.y < -20 and vel_y < 0:
             x = np.sign(player.position.x)
             if abs(player.position.x) < edge:
-                return [0, 1, x, 0, 0, 0]
+                return [0, 0, x, 0, 0, 0]
             else:
                 return [0, 1, -0.4* x, 0.9, 0, 0]
     # if player.action in MovesList.smashes:
@@ -149,6 +149,8 @@ if __name__ == '__main__':
             game.controller.tilt_analog_unit(melee.Button.BUTTON_C, 0, 0)
             gamestate = game.get_gamestate()
             gamestate = game.get_gamestate()
+            game.controller.release_all()
+
             gamestate = game.get_gamestate()
 
         else:
