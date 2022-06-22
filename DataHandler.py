@@ -121,12 +121,13 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
             # is_dead,
             shield, on_ground, is_attacking,
             x, y,
-            vel_x, vel_y, percent,
+            vel_x, vel_y,
+        # percent,
             facing,
             # in_hitstun, is_invulnerable,
             jumps_left,
-            # attack_windup, attack_active, attack_cooldown,
-            # is_bmove
+            attack_windup, attack_active, attack_cooldown,
+            is_bmove
             ]
 
 
@@ -199,13 +200,18 @@ def generate_output(controller: melee.ControllerState):
 
 
 
-    if button == 0: # if jumping then move_y doesnt matter
-        move_y = 1
+
 
 
 
     move_y = move_y if move_x == 1 else 1
     move_stick = 3 * move_x + move_y  # 9 options
+
+    if c_stick != 4:
+        move_stick = 4
+    if button == 0: # if jumping then move_y doesnt matter
+        move_stick = 4
+        c_stick = 4
 
     sticks = move_stick * 9 + c_stick
 
