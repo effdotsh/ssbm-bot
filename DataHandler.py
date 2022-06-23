@@ -123,7 +123,8 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
         # is_invulnerable,
         jumps_left,
         attack_windup, attack_active, attack_cooldown,
-        is_bmove
+        is_bmove,
+        (abs(player.position.x) - edge)/20
     ]
 
 
@@ -141,6 +142,8 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
     obs = [
         # player.position.x - opponent.position.x, player.position.y - opponent.position.y,
         # firefoxing, direction, 1
+        1 if player.position.x > opponent.position.x else -1,
+        1 if player.position.y > opponent.position.y else -1
     ]
     obs += get_player_obs(player, gamestate)
     obs += get_player_obs(opponent, gamestate)
@@ -195,7 +198,7 @@ def decode_from_model(action: np.ndarray, player: melee.PlayerState = None):
     if player is not None and player.y > 0:
         reduce = [0, 6, 7]
         for i in reduce:
-            action[i] /= 2.5
+            action[i] /= 2
 
     a = np.argmax(action)
     print(a, action[a])
@@ -223,6 +226,14 @@ def decode_from_model(action: np.ndarray, player: melee.PlayerState = None):
     if a == 8:
         return [[0, 1 if b_used else 0, 0], 0, -1, 0, 0]
     if a == 9:
+        if b_used and player is not None and player.character == melee.enums.Character.MARTH:
+            vel_y = player.speed_y_self + player.speed_y_attack
+
+            if player.jumps_left == 0 and player.position.y < -20 and vel_y < 0:
+                x = np.sign(player.position.x)
+                return [[0, 1, 0], -0.5 * x, 0.85, 0, 0]
+
         return [[0, 1 if b_used else 0, 0], 0, 1, 0, 0]
+
     print('NO ACTION FOUND !!!!')
     return [[0, 0, 0], 0, 0, 0, 0]

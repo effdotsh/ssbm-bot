@@ -33,14 +33,15 @@ if __name__ == '__main__':
         if gamestate is None:
             continue
         player: melee.PlayerState = gamestate.players.get(game.controller.port)
-        if player is None:
-            continue
-        if controller_states_different(player.controller_state, last_state):
-            # print(time.time())
-            out = generate_output(player.controller_state)
-            print(out)
-        #
-        last_state = player.controller_state
+        print(player.on_ground)
+        # if player is None:
+        #     continue
+        # if controller_states_different(player.controller_state, last_state):
+        #     # print(time.time())
+        #     out = generate_output(player.controller_state)
+        #     print(out)
+        # #
+        # last_state = player.controller_state
         # print(player.controller_state)
         # print(last_state)
         # inp = generate_input(gamestate=gamestate, player_port=game.controller.port, opponent_port=game.controller_opponent.port)

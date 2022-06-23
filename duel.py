@@ -31,7 +31,7 @@ def validate_action(action, gamestate: melee.GameState, port: int):
             if abs(player.position.x) < edge:
                 return [[0, 0, 0], x, 0, 0, 0]
             else:
-                return [[0, 1, 0], -0.4 * x, 0.9, 0, 0]
+                return [[0, 1, 0], -0.5 * x, 0.85, 0, 0]
     # if player.action in MovesList.smashes:
     #     if smash_last:
     #        return dud
