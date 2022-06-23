@@ -14,7 +14,7 @@ from DataHandler import controller_states_different, generate_input, generate_ou
 args = Args.get_args()
 
 if __name__ == '__main__':
-    character = melee.Character.JIGGLYPUFF
+    character = melee.Character.MARTH
     opponent = melee.Character.CPTFALCON if not args.compete else character
     stage = melee.Stage.BATTLEFIELD
     print(f'{character.name} vs. {opponent.name} on {stage.name}')

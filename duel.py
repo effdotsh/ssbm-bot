@@ -52,55 +52,6 @@ def load_model(path: str):
         quit()
 
 
-def decode_from_model(action: np.ndarray, player: melee.PlayerState = None):
-    action = action[0]
-    if player is not None and player.y > 0:
-        reduce = [175, 229, 13, 67]
-        for i in reduce:
-            action[i] /= 1.5
-        action[40] /= 2
-
-    output = [[0] * len(MovesList.buttons), 0, 0, 0, 0]
-    # a = random.choices(list(range(len(action))), weights=action, k=1)[0]
-    a = np.argmax(action)
-
-    sticks = a % 81
-    button = a // 81
-
-    c_stick = sticks % 9
-    move_stick = sticks // 9
-
-    c_y = c_stick % 3
-    c_x = c_stick // 3
-
-    move_y = move_stick % 3
-    move_x = move_stick // 3
-
-    if button < len(output[0]):
-        output[0][button] = 1
-
-    output[-4] = move_x - 1
-    output[-3] = move_y - 1
-
-    output[-2] = c_x - 1
-    output[-1] = c_y - 1
-
-    if (output[-2], output[-1]) != (0, 0):
-        print(time.time())
-    # print(move_x, move_y)
-    # action:np.ndarray = action[0]
-    # b = np.argmax(action[:7])
-    # if action[b] > -0.70:
-    #     output[b] = 1
-    #
-    # print(action[:7])
-    # for i in range(7, 11):
-    #     if abs(action[i]) > 0.3:
-    #         output[i] = 1 * np.sign(action[i])
-    # output[11] = action[11]
-    # output[12] = action[12]
-    print(a, output, action[a])
-    return output
 
 
 if __name__ == '__main__':
@@ -131,7 +82,7 @@ if __name__ == '__main__':
         # print(inp)
         a = model.predict(np.array([inp]))
 
-        action = decode_from_model(a, player)
+        action = DataHandler.decode_from_model(a, player)
 
         action = validate_action(action, gamestate, game.controller.port)
         b = melee.enums.Button
