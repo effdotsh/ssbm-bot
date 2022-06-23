@@ -197,7 +197,7 @@ def generate_output(controller: melee.ControllerState):
 
 def decode_from_model(action: np.ndarray, player: melee.PlayerState = None):
     action = action[0]
-    if player is not None and player.y > 0:
+    if player is not None and player.position.y > 0 and abs(player.position.x) < 100:
         reduce = [0, 6, 7]
         for i in reduce:
             action[i] /= 2
@@ -233,7 +233,7 @@ def decode_from_model(action: np.ndarray, player: melee.PlayerState = None):
 
             if player.jumps_left == 0 and player.position.y < -20 and vel_y < 0:
                 x = np.sign(player.position.x)
-                return [[0, 1, 0], -0.5 * x, 0.85, 0, 0]
+                return [[0, 1, 0], -0.6 * x, 0.85, 0, 0]
 
         return [[0, 1 if b_used else 0, 0], 0, 1, 0, 0]
 
