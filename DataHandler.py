@@ -1,7 +1,4 @@
-import math
-import os
-import pickle
-import time
+
 
 import numpy as np
 import melee
@@ -9,22 +6,18 @@ from tensorflow import keras
 
 import MovesList
 
-from tqdm import tqdm
-
-from keras.models import Sequential
-from keras.layers import Dense
 
 framedata = melee.FrameData()
 
 low_analog = 0.2
 high_analog = 0.8
 
-def controller_states_different(new: melee.ControllerState, old: melee.ControllerState):
 
+def controller_states_different(new: melee.ControllerState, old: melee.ControllerState):
     if generate_output(new) == generate_output(old):
         return False
     for btns in MovesList.buttons:
-    # for b in melee.enums.Button:
+        # for b in melee.enums.Button:
         for b in btns:
             if new.button.get(b) != old.button.get(b) and new.button.get(b):
                 return True
@@ -119,19 +112,19 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
     return [
         # tumbling,
         offstage,
-            # special_fall,
-            # is_dead,
-            shield, on_ground, is_attacking,
-            x, y,
-            vel_x, vel_y,
+        # special_fall,
+        # is_dead,
+        shield, on_ground, is_attacking,
+        x, y,
+        vel_x, vel_y,
         # percent,
-            facing,
-            in_hitstun,
+        facing,
+        in_hitstun,
         # is_invulnerable,
-            jumps_left,
-            attack_windup, attack_active, attack_cooldown,
-            is_bmove
-            ]
+        jumps_left,
+        attack_windup, attack_active, attack_cooldown,
+        is_bmove
+    ]
 
 
 def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: int):
@@ -155,166 +148,81 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
     return np.array(obs).flatten()
 
 
-
-
-
 def generate_output(controller: melee.ControllerState):
+    action_counter = 0
 
-    button = len(MovesList.buttons)
-    for e, group in enumerate(MovesList.buttons):
-        for btn in group:
-            if controller.button.get(btn):
-                button = e
-                break
-        if button == e:
-            break
+    # Jump
+    if controller.button.get(melee.Button.BUTTON_X) or controller.button.get(melee.Button.BUTTON_Y):
+        return action_counter
+    action_counter += 1
 
-    c_x = 1
-    c_y = 1
+    # Shield
+    if controller.button.get(melee.Button.BUTTON_L) or controller.button.get(melee.Button.BUTTON_R):
+        return action_counter
+    action_counter += 1
+
+    # C Stick
     if controller.c_stick[0] < low_analog:
-        c_x = 0
-    elif controller.c_stick[0] > high_analog:
-        c_x = 2
+        return action_counter
+    if controller.c_stick[0] > high_analog:
+        return action_counter + 1
     if controller.c_stick[1] < low_analog:
-        c_y = 0
-    elif controller.c_stick[1] > high_analog:
-        c_y = 2
+        return action_counter + 2
+    if controller.c_stick[1] > high_analog:
+        return action_counter + 3
+    action_counter += 4
 
-    c_y = c_y if c_x == 1 else 1
-    c_stick = 3 * c_x + c_y
+    # Either move stick pressed with or without B
+    if controller.button.get(melee.Button.BUTTON_B):
+        action_counter += 4
 
-    # print(c_stick, c_x, c_y)
-    move_x = 1
-    move_y = 1
+    # Move Stick
     if controller.main_stick[0] < low_analog:
-        move_x = 0
-    elif controller.main_stick[0] > high_analog:
-        move_x = 2
+        return action_counter
+    if controller.main_stick[0] > high_analog:
+        return action_counter + 1
     if controller.main_stick[1] < low_analog:
-        move_y = 0
-    elif controller.main_stick[1] > high_analog:
-        move_y = 2
+        return action_counter + 2
+    if controller.main_stick[1] > high_analog:
+        return action_counter + 3
+    action_counter += 4
+
+    return action_counter
 
 
+def decode_from_model(action: np.ndarray, player: melee.PlayerState = None):
+    action = action[0]
+    if player is not None and player.y > 0:
+        reduce = [0, 6, 7]
+        for i in reduce:
+            action[i] /= 2.5
 
+    a = np.argmax(action)
+    print(a, action[a])
+    if a == 0:
+        return [[1, 0, 0], 0, 0 ,0, 0]
+    elif a == 1:
+        return [[0, 0, 1], 0, 0, 0, 0]
+    elif a == 2:
+        return [[0, 0, 0], 0, 0, -1, 0]
+    elif a == 3:
+        return [[0, 0, 0], 0, 0, 1, 0]
+    elif a == 4:
+        return [[0, 0, 0], 0, 0, 0, -1]
+    elif a == 5:
+        return [[0, 0, 0], 0, 0, 0, 1]
 
+    b_used = a >= 10
+    if a >= 10:
+        a -= 4
 
-
-
-    move_y = move_y if move_x == 1 else 1
-    move_stick = 3 * move_x + move_y  # 9 options
-
-    if c_stick != 4:
-        move_stick = 4
-    if button == 0: # if jumping then move_y doesnt matter
-        move_stick = 4
-        c_stick = 4
-
-    sticks = move_stick * 9 + c_stick
-
-    action = button * 81 + sticks
-
-
-    return action
-
-
-# nothing_chance = 0.05
-def create_model(replay_paths, player_character: melee.Character,
-                 opponent_character: melee.Character, stage: melee.Stage):
-    pickle_file_path = f'models/{player_character.name}_v_{opponent_character.name}_on_{stage.name}.pkl'
-
-    X = []
-    Y = []
-    for path in tqdm(replay_paths):
-        console = melee.Console(is_dolphin=False,
-                                allow_old_version=True,
-                                path=path)
-        try:
-            console.connect()
-        except:
-            console.stop()
-            print('console failed to connect', path, time.time())
-            continue
-
-        gamestate: melee.GameState = console.step()
-        player_port, opponent_port = get_ports(gamestate, player_character=player_character,
-                                               opponent_character=opponent_character)
-        if player_port == -1:
-            print('bad port', path, gamestate.players.keys(), time.time())
-
-            continue
-
-        last_input = gamestate.players.get(player_port).controller_state
-        last_input_opp = gamestate.players.get(opponent_port).controller_state
-        while True:
-            try:
-                gamestate: melee.GameState = console.step()
-            except:
-                break
-            if gamestate is None or gamestate.stage is None:
-                break
-
-            player: melee.PlayerState = gamestate.players.get(player_port)
-            opponent: melee.PlayerState = gamestate.players.get(opponent_port)
-
-            if player.action in MovesList.dead_list or opponent.action in MovesList.dead_list:
-                continue
-
-            new_input = player.controller_state
-            if not controller_states_different(new_input, last_input):
-                continue
-
-            last_input = new_input
-
-            inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
-
-            action = generate_output(new_input)
-
-
-            out = np.zeros((len(MovesList.buttons)+1)*9*9)
-            out[action] = 1
-
-            if inp is None:
-                break
-            if action is None:
-                break
-
-            X.append(inp)
-            Y.append(out)
-
-    X = np.array(X)
-    Y = np.array(Y)
-
-    print(len(X), len(Y))
-    print(len(X[0]), len(Y[0]))
-
-    # train
-    model = Sequential([
-        Dense(64, activation='tanh', input_shape=(len(X[0]),)),
-        Dense(64, activation='tanh'),
-        # Dense(64, activation='tanh'),
-        Dense(len(Y[0]), activation='tanh'),
-    ])
-
-    opt = keras.optimizers.Adam(
-        learning_rate=6e-3,
-        name="Adam",
-    )
-
-    model.compile(
-        optimizer=opt,
-        loss='mean_squared_error',
-        metrics=['accuracy'],
-    )
-
-    model.fit(
-        X,  # training data
-        Y,  # training targets
-        shuffle=True
-    )
-
-    if not os.path.isdir('models'):
-        os.mkdir('models/')
-
-    with open(pickle_file_path, 'wb') as file:
-        pickle.dump(model, file)
+    if a == 6:
+        return [[0, 1 if b_used else 0, 0], -1, 0, 0, 0]
+    if a == 7:
+        return [[0, 1 if b_used else 0, 0], 1, 0, 0, 0]
+    if a == 8:
+        return [[0, 1 if b_used else 0, 0], 0, -1, 0, 0]
+    if a == 9:
+        return [[0, 1 if b_used else 0, 0], 0, 1, 0, 0]
+    print('NO ACTION FOUND !!!!')
+    return [[0, 0, 0], 0, 0, 0, 0]
