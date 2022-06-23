@@ -76,8 +76,8 @@ def get_ports(gamestate: melee.GameState, player_character: melee.Character, opp
 
 
 def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> list:
-    x = player.position.x / 30
-    y = player.position.y / 5
+    x = player.position.x / 100
+    y = player.position.y / 50
     shield = player.shield_strength / 60
 
     percent = player.percent / 100
@@ -110,9 +110,9 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
     is_bmove = 1 if framedata.is_bmove(player.character, player.action) else -1
 
     return [
-        # tumbling,
+        tumbling,
         offstage,
-        # special_fall,
+        special_fall,
         # is_dead,
         shield, on_ground, is_attacking,
         x, y,
@@ -120,7 +120,7 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
         # percent,
         facing,
         in_hitstun,
-        # is_invulnerable,
+        is_invulnerable,
         jumps_left,
         attack_windup, attack_active, attack_cooldown,
         is_bmove,
@@ -140,10 +140,12 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
                                            melee.Character.FALCO] and player.action in MovesList.firefoxing else -1
 
     obs = [
-        # player.position.x - opponent.position.x, player.position.y - opponent.position.y,
+        (player.position.x - opponent.position.x)/20, (player.position.y - opponent.position.y)/10,
         # firefoxing, direction, 1
         1 if player.position.x > opponent.position.x else -1,
-        1 if player.position.y > opponent.position.y else -1
+        1 if player.position.y > opponent.position.y else -1,
+
+        abs(player.position.x - opponent.position.x) - 3.5
     ]
     obs += get_player_obs(player, gamestate)
     obs += get_player_obs(opponent, gamestate)

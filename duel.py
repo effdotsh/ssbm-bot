@@ -26,12 +26,15 @@ def validate_action(action, gamestate: melee.GameState, port: int):
     edge = melee.stages.EDGE_POSITION.get(gamestate.stage)
     if player.character == melee.enums.Character.MARTH:
         vel_y = player.speed_y_self + player.speed_y_attack
+        x = np.sign(player.position.x)
         if player.jumps_left == 0 and player.position.y < -20 and vel_y < 0:
-            x = np.sign(player.position.x)
-            if abs(player.position.x) < edge:
+            if abs(player.position.x) < edge-10:
                 return [[0, 0, 0], x, 0, 0, 0]
             else:
                 return [[0, 1, 0], -0.5 * x, 0.85, 0, 0]
+        elif player.y < 0 and player.jumps_left > 0:
+            return [[1, 0, 0], x, 0, 0, 0]
+
     # if player.action in MovesList.smashes:
     #     if smash_last:
     #        return dud
@@ -58,7 +61,7 @@ if __name__ == '__main__':
     character = melee.Character.MARTH
     opponent = melee.Character.CPTFALCON if not args.compete else character
     stage = melee.Stage.BATTLEFIELD
-    drop_every = 7
+    drop_every = 30
     file_name = f'{character.name}_v_{opponent.name}_on_{stage.name}'
     print(file_name)
 
