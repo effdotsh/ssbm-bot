@@ -18,7 +18,9 @@ import random
 args = Args.get_args()
 smash_last = False
 
-
+character = melee.Character.MARTH
+opponent = melee.Character.CPTFALCON
+stage = melee.Stage.BATTLEFIELD
 
 def validate_action(action, gamestate: melee.GameState, port: int):
     # global smash_last
@@ -28,9 +30,13 @@ def validate_action(action, gamestate: melee.GameState, port: int):
         vel_y = player.speed_y_self + player.speed_y_attack
         x = np.sign(player.position.x)
         if player.jumps_left == 0 and player.position.y < -20 and vel_y < 0:
-                return [[0, 1, 0], -0.6 * x, 0.85, 0, 0]
+            facing = 1 if player.facing else -1
+            if facing == x:
+                return [[0, 1, 0, 0, 0], -x, 0, 0, 0]
+            return [[0, 1, 0, 0, 0], -0.6 * x, 0.85, 0, 0]
+
         elif player.jumps_left > 0 and (player.y < 0 or abs(player.position.x) > edge):
-            return [[1, 0, 0], x, 0, 0, 0]
+            return [[1, 0, 0, 0, 0], x, 0, 0, 0]
 
     # if player.action in MovesList.smashes:
     #     if smash_last:
@@ -52,12 +58,7 @@ def load_model(path: str):
         quit()
 
 
-
-
 if __name__ == '__main__':
-    character = melee.Character.MARTH
-    opponent = melee.Character.CPTFALCON if not args.compete else character
-    stage = melee.Stage.BATTLEFIELD
     drop_every = 30
     file_name = f'{character.name}_v_{opponent.name}_on_{stage.name}'
     print(file_name)
@@ -66,7 +67,7 @@ if __name__ == '__main__':
     print('loaded')
 
     game = GameManager.Game(args)
-    game.enterMatch(cpu_level=0, opponant_character=opponent,
+    game.enterMatch(cpu_level=9, opponant_character=opponent,
                     player_character=character,
                     stage=stage, rules=False)
 
@@ -89,6 +90,7 @@ if __name__ == '__main__':
 
         button_used = False
         for i in range(len(MovesList.buttons)):
+            print(action)
             if action[0][i] == 1:
                 button_used = True
                 game.controller.press_button(MovesList.buttons[i][0])

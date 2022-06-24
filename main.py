@@ -19,6 +19,9 @@ import MovesList
 
 args = Args.get_args()
 
+player_character = melee.Character.MARTH
+opponent_character = melee.Character.CPTFALCON
+stage = melee.Stage.BATTLEFIELD
 
 # nothing_chance = 0.05
 def create_model(replay_paths, player_character: melee.Character,
@@ -71,9 +74,9 @@ def create_model(replay_paths, player_character: melee.Character,
             inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
 
             action = generate_output(new_input)
-            if action == 14:
+            if action == 19:
                 continue
-            out = np.zeros(14)
+            out = np.zeros(19)
             out[action] = 1
 
             if inp is None:
@@ -124,10 +127,6 @@ def create_model(replay_paths, player_character: melee.Character,
 
 
 if __name__ == '__main__':
-    player_character = melee.Character.MARTH
-    opponent_character = melee.Character.CPTFALCON
-    stage = melee.Stage.BATTLEFIELD
-
     print(f'{player_character.name} vs. {opponent_character.name} on {stage.name}')
 
     f = open('replays.json', 'r')
