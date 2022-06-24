@@ -22,5 +22,5 @@ firefoxing = [
 
 # buttons = [melee.enums.Button.BUTTON_A, melee.enums.Button.BUTTON_B, melee.enums.Button.BUTTON_X, melee.enums.Button.BUTTON_Y]
 b = melee.enums.Button
-buttons = [[b.BUTTON_X, b.BUTTON_Y], [b.BUTTON_B], [b.BUTTON_L, b.BUTTON_R]]
+buttons = [[b.BUTTON_X, b.BUTTON_Y], [b.BUTTON_B], [b.BUTTON_L, b.BUTTON_R], [b.BUTTON_A], [b.BUTTON_Z]]
 

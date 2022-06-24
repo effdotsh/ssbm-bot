@@ -1,11 +1,8 @@
-
-
 import numpy as np
 import melee
 from tensorflow import keras
 
 import MovesList
-
 
 framedata = melee.FrameData()
 
@@ -124,7 +121,7 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
         jumps_left,
         attack_windup, attack_active, attack_cooldown,
         is_bmove,
-        (abs(player.position.x) - edge)/20
+        (abs(player.position.x) - edge) / 20
     ]
 
 
@@ -140,7 +137,7 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
                                            melee.Character.FALCO] and player.action in MovesList.firefoxing else -1
 
     obs = [
-        (player.position.x - opponent.position.x)/20, (player.position.y - opponent.position.y)/10,
+        (player.position.x - opponent.position.x) / 20, (player.position.y - opponent.position.y) / 10,
         # firefoxing, direction, 1
         1 if player.position.x > opponent.position.x else -1,
         1 if player.position.y > opponent.position.y else -1,
@@ -166,6 +163,11 @@ def generate_output(controller: melee.ControllerState):
         return action_counter
     action_counter += 1
 
+    # grab
+    if controller.button.get(melee.Button.BUTTON_Z):
+        return action_counter
+    action_counter += 1
+
     # C Stick
     if controller.c_stick[0] < low_analog:
         return action_counter
@@ -180,6 +182,8 @@ def generate_output(controller: melee.ControllerState):
     # Either move stick pressed with or without B
     if controller.button.get(melee.Button.BUTTON_B):
         action_counter += 4
+    elif controller.button.get(melee.Button.BUTTON_A):
+        action_counter += 8
 
     # Move Stick
     if controller.main_stick[0] < low_analog:
@@ -197,45 +201,53 @@ def generate_output(controller: melee.ControllerState):
 
 def decode_from_model(action: np.ndarray, player: melee.PlayerState = None):
     action = action[0]
-    if player is not None and player.position.y > 0 and abs(player.position.x) < 100:
+    # if player is not None and player.position.y > 0 and abs(player.position.x) < 100:
+    if player is not None and player.position.y > 0:
         reduce = [0, 6, 7]
         for i in reduce:
             action[i] /= 2
 
     a = np.argmax(action)
     print(a, action[a])
-    if a == 0:
-        return [[1, 0, 0], 0, 0 ,0, 0]
-    elif a == 1:
-        return [[0, 0, 1], 0, 0, 0, 0]
-    elif a == 2:
-        return [[0, 0, 0], 0, 0, -1, 0]
-    elif a == 3:
-        return [[0, 0, 0], 0, 0, 1, 0]
-    elif a == 4:
-        return [[0, 0, 0], 0, 0, 0, -1]
-    elif a == 5:
-        return [[0, 0, 0], 0, 0, 0, 1]
+    # [[BUTTON_X, BUTTON_B, BUTTON_L, BUTTON_A, BUTTON_Z], move_x, move_y, c_x, c_y]
+    if a == 0:  # jump
+        return [[1, 0, 0, 0, 0], 0, 0, 0, 0]
+    elif a == 1:  # shield
+        return [[0, 0, 1, 0, 0], 0, 0, 0, 0]
+    elif a == 2:  # grab
+        return [[0, 0, 0, 0, 1], 0, 0, 0, 0]
 
-    b_used = a >= 10
-    if a >= 10:
+    # c_stick
+    elif a == 3:
+        return [[0, 0, 0, 0, 0], 0, 0, -1, 0]
+    elif a == 4:
+        return [[0, 0, 0, 0, 0], 0, 0, 1, 0]
+    elif a == 5:
+        return [[0, 0, 0, 0, 0], 0, 0, 0, -1]
+    elif a == 6:
+        return [[0, 0, 0, 0, 0], 0, 0, 0, 1]
+
+    b_used = 1 if 11 <= a < 15 else 0
+    a_used = 1 if 15 <= a < 19 else 0
+
+    while a >= 11:
         a -= 4
 
-    if a == 6:
-        return [[0, 1 if b_used else 0, 0], -1, 0, 0, 0]
     if a == 7:
-        return [[0, 1 if b_used else 0, 0], 1, 0, 0, 0]
+        return [[0, b_used, 0, a_used, 0], -1, 0, 0, 0]
     if a == 8:
-        return [[0, 1 if b_used else 0, 0], 0, -1, 0, 0]
+        return [[0, b_used, 0, a_used, 0], 1, 0, 0, 0]
     if a == 9:
+        return [[0, b_used, 0, a_used, 0], 0, -1, 0, 0]
+    if a == 10:
         if b_used and player is not None and player.character == melee.enums.Character.MARTH:
             vel_y = player.speed_y_self + player.speed_y_attack
 
             if player.jumps_left == 0 and player.position.y < -20 and vel_y < 0:
                 x = np.sign(player.position.x)
-                return [[0, 1, 0], -0.6 * x, 0.85, 0, 0]
+                return [[0, 1, 0, 0, 0], -0.6 * x, 0.85, 0, 0]
 
-        return [[0, 1 if b_used else 0, 0], 0, 1, 0, 0]
+        return [[0, b_used, 0, a_used, 0], 0, 1, 0, 0]
 
     print('NO ACTION FOUND !!!!')
-    return [[0, 0, 0], 0, 0, 0, 0]
+    return [[0, 0, 0, 0, 0], 0, 0, 0, 0]
