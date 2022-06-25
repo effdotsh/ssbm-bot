@@ -19,15 +19,14 @@ import MovesList
 
 args = Args.get_args()
 
-player_character = melee.Character.MARTH
+player_character = melee.Character.FOX
 opponent_character = melee.Character.CPTFALCON
 stage = melee.Stage.BATTLEFIELD
+
 
 # nothing_chance = 0.05
 def create_model(replay_paths, player_character: melee.Character,
                  opponent_character: melee.Character, stage: melee.Stage):
-    pickle_file_path = f'models/{player_character.name}_v_{opponent_character.name}_on_{stage.name}.pkl'
-
     X = []
     Y = []
     for path in tqdm(replay_paths):
@@ -62,7 +61,7 @@ def create_model(replay_paths, player_character: melee.Character,
             player: melee.PlayerState = gamestate.players.get(player_port)
             opponent: melee.PlayerState = gamestate.players.get(opponent_port)
 
-            if player.action in MovesList.dead_list or opponent.action in MovesList.dead_list:
+            if player.action in MovesList.dead_list:
                 continue
 
             new_input = player.controller_state
@@ -102,7 +101,7 @@ def create_model(replay_paths, player_character: melee.Character,
     ])
 
     opt = keras.optimizers.Adam(
-        learning_rate=3e-3,
+        learning_rate=1e-4,
         name="Adam",
     )
 
@@ -118,23 +117,35 @@ def create_model(replay_paths, player_character: melee.Character,
         shuffle=True
     )
 
-    if not os.path.isdir('models'):
-        os.mkdir('models/')
+    folder = 'models2'
+    pickle_file_path = f'{folder}/{player_character.name}_v_{opponent_character.name}_on_{stage.name}.pkl'
+
+    if not os.path.isdir(folder):
+        os.mkdir(f'{folder}/')
 
     with open(pickle_file_path, 'wb') as file:
         pickle.dump(model, file)
 
 
-
 if __name__ == '__main__':
-    print(f'{player_character.name} vs. {opponent_character.name} on {stage.name}')
+    # print(f'{player_character.name} vs. {opponent_character.name} on {stage.name}')
 
-    f = open('replays.json', 'r')
+    f = open('replays2.json', 'r')
     j = json.load(f)
+    # replay_paths = j[f'{player_character.name}_{opponent_character.name}'][stage.name]
+    #
+    # create_model(replay_paths=replay_paths, player_character=player_character,
+    #              opponent_character=opponent_character, stage=stage)
 
-    replay_paths = j[f'{player_character.name}_{opponent_character.name}'][stage.name]
+    characters = [melee.Character.FOX, melee.Character.MARTH, melee.Character.FALCO, melee.Character.CPTFALCON,
+                  melee.Character.JIGGLYPUFF]
 
-    create_model(replay_paths=replay_paths, player_character=player_character,
-                 opponent_character=opponent_character, stage=stage)
+    for c1 in characters:
+        for c2 in characters:
+            for s in [melee.Stage.BATTLEFIELD, melee.Stage.FINAL_DESTINATION]:
+                print(f'{c1.name} vs. {c2.name} on {s.name}')
 
+                replay_paths = j[f'{c1.name}_{c2.name}'][s.name]
 
+                create_model(replay_paths=replay_paths, player_character=c1,
+                             opponent_character=c2, stage=s)
