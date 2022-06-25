@@ -35,7 +35,7 @@ def validate_action(action, gamestate: melee.GameState, port: int):
                 return [[0, 1, 0, 0, 0], -x, 0, 0, 0]
             return [[0, 1, 0, 0, 0], -0.6 * x, 0.85, 0, 0]
 
-        elif player.jumps_left > 0 and (player.y < 0 or abs(player.position.x) > edge):
+        elif player.jumps_left > 0 and (player.y < 20 or abs(player.position.x) > edge):
             return [[1, 0, 0, 0, 0], x, 0, 0, 0]
 
     # if player.action in MovesList.smashes:
@@ -104,8 +104,6 @@ if __name__ == '__main__':
             gamestate = game.get_gamestate()
             game.controller.release_all()
 
-            gamestate = game.get_gamestate()
-
         else:
             game.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, action[-4], action[-3])
             game.controller.tilt_analog_unit(melee.Button.BUTTON_C, action[-2], action[-1])
@@ -115,8 +113,6 @@ if __name__ == '__main__':
         game.controller.flush()
 
         if button_used:
-            gamestate = game.get_gamestate()
-            gamestate = game.get_gamestate()
             gamestate = game.get_gamestate()
             fc += 3
             game.controller.release_all()

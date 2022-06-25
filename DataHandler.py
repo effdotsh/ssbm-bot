@@ -106,11 +106,12 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
 
     is_bmove = 1 if framedata.is_bmove(player.character, player.action) else -1
 
+    stock = player.stock
     return [
         tumbling,
         offstage,
         special_fall,
-        # is_dead,
+        is_dead,
         shield, on_ground, is_attacking,
         x, y,
         vel_x, vel_y,
@@ -121,7 +122,8 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
         jumps_left,
         attack_windup, attack_active, attack_cooldown,
         is_bmove,
-        (abs(player.position.x) - edge) / 20
+        (abs(player.position.x) - edge) / 20,
+        # stock
     ]
 
 
@@ -203,9 +205,11 @@ def decode_from_model(action: np.ndarray, player: melee.PlayerState = None):
     action = action[0]
     # if player is not None and player.position.y > 0 and abs(player.position.x) < 100:
     if player is not None and player.position.y > 0:
-        reduce = [0, 6, 7]
+        reduce = [0,1, 7, 8, 9]
         for i in reduce:
-            action[i] /= 2
+            action[i] /= 5
+    action[1] /= 100
+    action[2] /= 100
 
     a = np.argmax(action)
     print(a, action[a])

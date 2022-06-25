@@ -50,6 +50,23 @@ if __name__ == '__main__':
         p1: melee.PlayerState = gamestate.players.get(ports[0])
         p2: melee.PlayerState = gamestate.players.get(ports[1])
 
+        #Make sure button is actually pressed
+        button_pressed = False
+        counter = 0
+        while True:
+            counter += 1
+            gamestate: melee.GameState = console.step()
+            p1: melee.PlayerState = gamestate.players.get(ports[0])
+            controller: melee.ControllerState = p1.controller_state
+            for b in melee.enums.Button:
+                if controller.button.get(b):
+                    button_pressed = True
+                    break
+            if button_pressed or counter > 1000:
+                break
+        if not button_pressed:
+            continue
+
         key = f'{p1.character.name}_{p2.character.name}'
         if key not in j:
             j[key] = {}
