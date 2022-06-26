@@ -152,7 +152,7 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
     return np.array(obs).flatten()
 
 
-def generate_output(controller: melee.ControllerState):
+def generate_output(controller: melee.ControllerState, player: melee.PlayerState = None):
     action_counter = 0
 
     # Jump
@@ -182,22 +182,29 @@ def generate_output(controller: melee.ControllerState):
     action_counter += 4
 
     # Either move stick pressed with or without B
+    b_used = False
+    a_used = False
     if controller.button.get(melee.Button.BUTTON_B):
         action_counter += 4
+        b_used = True
     elif controller.button.get(melee.Button.BUTTON_A):
         action_counter += 8
-
+        a_used = True
     # Move Stick
     if controller.main_stick[0] < low_analog:
         return action_counter
-    if controller.main_stick[0] > high_analog:
+    elif controller.main_stick[0] > high_analog:
         return action_counter + 1
-    if controller.main_stick[1] < low_analog:
+    elif controller.main_stick[1] < low_analog:
         return action_counter + 2
-    if controller.main_stick[1] > high_analog:
+    elif controller.main_stick[1] > high_analog:
         return action_counter + 3
     action_counter += 4
 
+    if player is not None:
+        if player.character in [melee.Character.FOX, melee.Character.FALCO]:
+            if b_used:    # Don't use lasers as fox/falco
+                return -1
     return action_counter
 
 
@@ -205,7 +212,7 @@ def decode_from_model(action: np.ndarray, player: melee.PlayerState = None):
     action = action[0]
     # if player is not None and player.position.y > 0 and abs(player.position.x) < 100:
     if player is not None and player.position.y > 0:
-        reduce = [0,1, 7, 8, 9]
+        reduce = [0, 1, 7, 8, 9]
         for i in reduce:
             action[i] /= 5
     action[1] /= 100

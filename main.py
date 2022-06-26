@@ -60,6 +60,8 @@ def create_model(replay_paths, player_character: melee.Character,
 
             player: melee.PlayerState = gamestate.players.get(player_port)
             opponent: melee.PlayerState = gamestate.players.get(opponent_port)
+            if player is None or opponent is None:
+                break
 
             if player.action in MovesList.dead_list:
                 continue
@@ -73,7 +75,7 @@ def create_model(replay_paths, player_character: melee.Character,
             inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
 
             action = generate_output(new_input)
-            if action == 19:
+            if action == 19 or action == -1:
                 continue
             out = np.zeros(19)
             out[action] = 1

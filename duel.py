@@ -18,8 +18,8 @@ import random
 args = Args.get_args()
 smash_last = False
 
-character = melee.Character.MARTH
-opponent = melee.Character.CPTFALCON
+character = melee.Character.FALCO
+opponent = melee.Character.FALCO
 stage = melee.Stage.BATTLEFIELD
 
 def validate_action(action, gamestate: melee.GameState, port: int):
@@ -48,7 +48,7 @@ def validate_action(action, gamestate: melee.GameState, port: int):
 
 
 def load_model(path: str):
-    path = f'models/{file_name}.pkl'
+    path = f'models2/{file_name}.pkl'
     if os.path.exists(path):
         with open(path, 'rb') as file:
             data = pickle.load(file)
