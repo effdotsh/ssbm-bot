@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import copy
 
 import melee
 
@@ -48,7 +49,7 @@ def create_model(replay_paths, player_character: melee.Character,
 
             continue
 
-        last_player: melee.PlayerState = gamestate.players.get(player_port)
+        last_player: melee.PlayerState = copy.deepcopy(gamestate.players.get(player_port))
         while True:
             try:
                 gamestate: melee.GameState = console.step()

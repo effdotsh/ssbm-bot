@@ -14,37 +14,14 @@ import numpy as np
 import MovesList
 
 import random
-
+from Bot import Bot
 args = Args.get_args()
 smash_last = False
 
 character = melee.Character.FALCO
 opponent = melee.Character.FALCO
 stage = melee.Stage.FINAL_DESTINATION
-level=0
-def validate_action(action, gamestate: melee.GameState, port: int):
-    # global smash_last
-    player: melee.PlayerState = gamestate.players.get(port)
-    edge = melee.stages.EDGE_POSITION.get(gamestate.stage)
-    if player.character == melee.enums.Character.MARTH:
-        vel_y = player.speed_y_self + player.speed_y_attack
-        x = np.sign(player.position.x)
-        if player.jumps_left == 0 and player.position.y < -20 and vel_y < 0:
-            facing = 1 if player.facing else -1
-            if facing == x:
-                return [[0, 1, 0, 0, 0], -x, 0, 0, 0]
-            return [[0, 1, 0, 0, 0], -0.6 * x, 0.85, 0, 0]
-
-        elif player.jumps_left > 0 and (player.y < 20 or abs(player.position.x) > edge):
-            return [[1, 0, 0, 0, 0], x, 0, 0, 0]
-
-    # if player.action in MovesList.smashes:
-    #     if smash_last:
-    #        return dud
-    #     smash_last = True
-    # else:
-    #     smash_last = False
-    return action
+level=9
 
 
 def load_model(path: str):
@@ -73,52 +50,9 @@ if __name__ == '__main__':
 
     last_action = 120
     fc = 0
+
+
+    bot = Bot(model=model, controller=game.controller, opponent_controller=game.opponent_controller)
     while True:
         gamestate = game.get_gamestate()
-        player: melee.PlayerState = gamestate.players.get(game.controller.port)
-        fc += 1
-        # print('----------')
-
-        inp = DataHandler.generate_input(gamestate, game.controller.port, game.controller_opponent.port)
-        # print(inp)
-        a = model.predict(np.array([inp]))
-
-        action = DataHandler.decode_from_model(a, player)
-
-        action = validate_action(action, gamestate, game.controller.port)
-        b = melee.enums.Button
-
-        button_used = False
-        for i in range(len(MovesList.buttons)):
-            print(action)
-            if action[0][i] == 1:
-                button_used = True
-                game.controller.press_button(MovesList.buttons[i][0])
-            else:
-                game.controller.release_button(MovesList.buttons[i][0])
-
-        if action[0][0] == 1:  # jump
-            game.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, 0, 0)
-            game.controller.tilt_analog_unit(melee.Button.BUTTON_C, 0, 0)
-            gamestate = game.get_gamestate()
-            gamestate = game.get_gamestate()
-            game.controller.release_all()
-
-        else:
-            game.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, action[-4], action[-3])
-            game.controller.tilt_analog_unit(melee.Button.BUTTON_C, action[-2], action[-1])
-        # game.controller.press_shoulder(melee.Button.BUTTON_L, action[9])
-        # game.controller.press_shoulder(melee.Button.BUTTON_R, action[10])
-
-        game.controller.flush()
-
-        if button_used:
-            gamestate = game.get_gamestate()
-            fc += 3
-            game.controller.release_all()
-
-        if fc >= drop_every:
-            game.controller.release_all()
-            gamestate = game.get_gamestate()
-            gamestate = game.get_gamestate()
-            fc = 0
+        bot.act(gamestate)
