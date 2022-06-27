@@ -218,9 +218,9 @@ def decode_from_model(action: np.ndarray, player: melee.PlayerState = None):
     if player is not None and player.position.y > 0:
         reduce = [0, 1, 7, 8, 9]
         for i in reduce:
-            action[i] /= 5
-    action[1] /= 100
-    action[2] /= 100
+            action[i] /= 4
+    # action[1] /= 100
+    # action[2] /= 100
 
     a = np.argmax(action)
     print(a, action[a])
