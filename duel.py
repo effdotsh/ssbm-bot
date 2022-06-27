@@ -42,16 +42,16 @@ if __name__ == '__main__':
     print(file_name)
 
     model: keras.Model = load_model(file_name)
-
-    game = GameManager.Game(args)
-    game.enterMatch(cpu_level=level, opponant_character=opponent,
-                    player_character=character,
-                    stage=stage, rules=False)
-
-    bot1 = Bot(model=model, controller=game.controller, opponent_controller=game.opponent_controller)
-    # bot2 = Bot(model=model, controller=game.opponent_controller, opponent_controller=game.controller)
-
-    while True:
-        gamestate = game.get_gamestate()
-        bot1.act(gamestate)
-        # bot2.act(gamestate)
+    print(model.weights[0][0])
+    # game = GameManager.Game(args)
+    # game.enterMatch(cpu_level=level, opponant_character=opponent,
+    #                 player_character=character,
+    #                 stage=stage, rules=False)
+    #
+    # bot1 = Bot(model=model, controller=game.controller, opponent_controller=game.opponent_controller)
+    # # bot2 = Bot(model=model, controller=game.opponent_controller, opponent_controller=game.controller)
+    #
+    # while True:
+    #     gamestate = game.get_gamestate()
+    #     bot1.act(gamestate)
+    #     # bot2.act(gamestate)
