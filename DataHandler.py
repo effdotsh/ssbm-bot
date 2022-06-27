@@ -10,8 +10,11 @@ low_analog = 0.2
 high_analog = 0.8
 
 
-def controller_states_different(new: melee.ControllerState, old: melee.ControllerState):
-    if generate_output(new) == generate_output(old):
+def controller_states_different(new_player: melee.PlayerState, old_player: melee.PlayerState):
+    new: melee.ControllerState = new_player.controller_state
+    old: melee.ControllerState = old_player.controller_state
+
+    if generate_output(new_player) == generate_output(old_player):
         return False
     for btns in MovesList.buttons:
         # for b in melee.enums.Button:
@@ -152,7 +155,8 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
     return np.array(obs).flatten()
 
 
-def generate_output(controller: melee.ControllerState, player: melee.PlayerState = None):
+def generate_output(player: melee.PlayerState):
+    controller: melee.ControllerState = player.controller_state
     action_counter = 0
 
     # Jump

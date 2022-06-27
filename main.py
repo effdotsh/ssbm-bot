@@ -48,8 +48,7 @@ def create_model(replay_paths, player_character: melee.Character,
 
             continue
 
-        last_input = gamestate.players.get(player_port).controller_state
-        last_input_opp = gamestate.players.get(opponent_port).controller_state
+        last_player: melee.PlayerState = gamestate.players.get(player_port)
         while True:
             try:
                 gamestate: melee.GameState = console.step()
@@ -66,15 +65,14 @@ def create_model(replay_paths, player_character: melee.Character,
             if player.action in MovesList.dead_list:
                 continue
 
-            new_input = player.controller_state
-            if not controller_states_different(new_input, last_input):
+            if not controller_states_different(player, last_player):
                 continue
 
-            last_input = new_input
+            last_player = player
 
             inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
 
-            action = generate_output(new_input)
+            action = generate_output(player)
             if action == 19 or action == -1:
                 continue
             out = np.zeros(19)
@@ -98,7 +96,7 @@ def create_model(replay_paths, player_character: melee.Character,
     model = Sequential([
         Dense(64, activation='tanh', input_shape=(len(X[0]),)),
         Dense(64, activation='tanh'),
-        # Dense(64, activation='tanh'),
+        Dense(64, activation='tanh'),
         Dense(len(Y[0]), activation='tanh'),
     ])
 

@@ -195,7 +195,9 @@ class Game:
                                                 costume=0,
                                                 autostart=False,
                                                 swag=False)
+        c = 0
         while gamestate.menu_state not in [melee.Menu.IN_GAME, melee.Menu.SUDDEN_DEATH]:
+            c+=1
             gamestate = self.get_gamestate()
             melee.MenuHelper.menu_helper_simple(gamestate,
                                                 self.controller,
@@ -204,17 +206,24 @@ class Game:
                                                 self.args.connect_code,
                                                 costume=0,
                                                 autostart=False,
-                                                swag=False)
-            melee.MenuHelper.menu_helper_simple(gamestate,
-                                                self.controller_opponent,
-                                                opponant_character,
-                                                stage,
-                                                self.args.connect_code,
-                                                cpu_level=cpu_level,
-                                                costume=0,
-                                                autostart=True,
-                                                swag=True)
-            # p1: melee.PlayerState = gamestate.players.get(self.controller.port)
+                                                swag=self.args.connect_code =="")
+            if self.args.connect_code =="":
+                print('urmom')
+                melee.MenuHelper.menu_helper_simple(gamestate,
+                                                    self.controller_opponent,
+                                                    opponant_character,
+                                                    stage,
+                                                    self.args.connect_code,
+                                                    cpu_level=cpu_level,
+                                                    costume=0,
+                                                    autostart=True,
+                                                    swag=True)
+            elif c > 60*3:
+                self.controller.press_button(melee.Button.BUTTON_START)
+                break
+        while gamestate.menu_state not in [melee.Menu.IN_GAME, melee.Menu.SUDDEN_DEATH]:
+            pass
+        # p1: melee.PlayerState = gamestate.players.get(self.controller.port)
             # p2: melee.PlayerState = gamestate.players.get(self.controller_opponent.port)
             # if p1.coin_down and p2.coin_down:
             #     self.controller.press_button(melee.Button.BUTTON_START)
