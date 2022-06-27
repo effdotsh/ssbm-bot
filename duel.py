@@ -18,10 +18,10 @@ from Bot import Bot
 args = Args.get_args()
 smash_last = False
 
-character = melee.Character.FALCO
-opponent = melee.Character.FALCO
+character = melee.Character.MARTH
+opponent = melee.Character.MARTH
 stage = melee.Stage.FINAL_DESTINATION
-level=9
+level=0
 
 
 def load_model(path: str):
@@ -51,8 +51,10 @@ if __name__ == '__main__':
     last_action = 120
     fc = 0
 
+    bot1 = Bot(model=model, controller=game.controller, opponent_controller=game.opponent_controller)
+    bot2 = Bot(model=model, controller=game.opponent_controller, opponent_controller=game.controller)
 
-    bot = Bot(model=model, controller=game.controller, opponent_controller=game.opponent_controller)
     while True:
         gamestate = game.get_gamestate()
-        bot.act(gamestate)
+        bot1.act(gamestate)
+        bot2.act(gamestate)

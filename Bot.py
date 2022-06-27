@@ -9,7 +9,7 @@ import MovesList
 class Bot:
     def __init__(self, model, controller: melee.Controller, opponent_controller: melee.Controller):
         self.opponent_controller = opponent_controller
-        self.drop_every = 30
+        self.drop_every = 5
         self.model = model
         self.controller = controller
         self.frame_counter = 0
@@ -82,10 +82,7 @@ class Bot:
 
         self.controller.flush()
 
-        if button_used:
-            self.delay += 3
-
         if self.frame_counter >= self.drop_every:
             self.controller.release_all()
             self.frame_counter = 0
-            self.delay += 3
+            self.delay += 1
