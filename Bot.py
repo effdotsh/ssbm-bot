@@ -1,3 +1,4 @@
+import keras
 import melee
 
 from DataHandler import generate_input, generate_output, decode_from_model
@@ -10,7 +11,7 @@ class Bot:
     def __init__(self, model, controller: melee.Controller, opponent_controller: melee.Controller):
         self.opponent_controller = opponent_controller
         self.drop_every = 5
-        self.model = model
+        self.model: keras.Model = model
         self.controller = controller
         self.frame_counter = 0
         self.delay = 0
@@ -49,17 +50,14 @@ class Bot:
         player: melee.PlayerState = gamestate.players.get(self.controller.port)
 
         self.frame_counter += 1
-        # print('----------')
 
         inp = generate_input(gamestate, self.controller.port, self.opponent_controller.port)
-        # print(inp)
-        a = self.model.predict(np.array([inp]))
+        a = self.model.predict(np.array([inp]), verbose=0)
 
         action = decode_from_model(a, player)
 
         action = self.validate_action(action, gamestate, self.controller.port)
         b = melee.enums.Button
-        print(action)
 
         button_used = False
         for i in range(len(MovesList.buttons)):

@@ -223,7 +223,6 @@ def decode_from_model(action: np.ndarray, player: melee.PlayerState = None):
     # action[2] /= 100
 
     a = np.argmax(action)
-    print(a, action[a])
     # [[BUTTON_X, BUTTON_B, BUTTON_L, BUTTON_A, BUTTON_Z], move_x, move_y, c_x, c_y]
     if a == 0:  # jump
         return [[1, 0, 0, 0, 0], 0, 0, 0, 0]
