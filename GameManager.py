@@ -52,7 +52,7 @@ class Game:
                                            port=args.port,
                                            type=melee.ControllerType.STANDARD)
 
-        self.controller_opponent = melee.Controller(console=self.console,
+        self.opponent_controller = melee.Controller(console=self.console,
                                                     port=args.opponent,
                                                     type=melee.ControllerType.STANDARD)
 
@@ -76,7 +76,7 @@ class Game:
         if not self.controller.connect():
             print("ERROR: Failed to connect the controller.")
             sys.exit(-1)
-        if not self.controller_opponent.connect():
+        if not self.opponent_controller.connect():
             print("ERROR: Failed to connect the controller.")
             sys.exit(-1)
         print("Controller connected")
@@ -210,7 +210,7 @@ class Game:
             if self.args.connect_code =="":
                 print('urmom')
                 melee.MenuHelper.menu_helper_simple(gamestate,
-                                                    self.controller_opponent,
+                                                    self.opponent_controller,
                                                     opponant_character,
                                                     stage,
                                                     self.args.connect_code,
@@ -232,4 +232,4 @@ class Game:
     def getController(self, port) -> melee.Controller:
         if (port == self.args.port):
             return self.controller
-        return self.controller_opponent
+        return self.opponent_controller
