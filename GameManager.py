@@ -208,7 +208,6 @@ class Game:
                                                 autostart=False,
                                                 swag=self.args.connect_code =="")
             if self.args.connect_code =="":
-                print('urmom')
                 melee.MenuHelper.menu_helper_simple(gamestate,
                                                     self.opponent_controller,
                                                     opponant_character,

@@ -2,6 +2,8 @@ import math
 import pickle
 import time
 
+import keras
+
 import Args
 import GameManager
 import melee
@@ -21,11 +23,11 @@ smash_last = False
 character = melee.Character.MARTH
 opponent = melee.Character.MARTH
 stage = melee.Stage.FINAL_DESTINATION
-level=0
+level=9
 
 
 def load_model(path: str):
-    path = f'models2/{file_name}.pkl'
+    path = f'models2/{path}.pkl'
     if os.path.exists(path):
         with open(path, 'rb') as file:
             data = pickle.load(file)
@@ -36,25 +38,20 @@ def load_model(path: str):
 
 
 if __name__ == '__main__':
-    drop_every = 30
     file_name = f'{character.name}_v_{opponent.name}_on_{stage.name}'
     print(file_name)
 
-    model = load_model(file_name)
-    print('loaded')
+    model: keras.Model = load_model(file_name)
 
     game = GameManager.Game(args)
     game.enterMatch(cpu_level=level, opponant_character=opponent,
                     player_character=character,
                     stage=stage, rules=False)
 
-    last_action = 120
-    fc = 0
-
     bot1 = Bot(model=model, controller=game.controller, opponent_controller=game.opponent_controller)
-    bot2 = Bot(model=model, controller=game.opponent_controller, opponent_controller=game.controller)
+    # bot2 = Bot(model=model, controller=game.opponent_controller, opponent_controller=game.controller)
 
     while True:
         gamestate = game.get_gamestate()
         bot1.act(gamestate)
-        bot2.act(gamestate)
+        # bot2.act(gamestate)
