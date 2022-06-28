@@ -52,7 +52,7 @@ class Bot:
         self.frame_counter += 1
 
         inp = generate_input(gamestate, self.controller.port, self.opponent_controller.port)
-        a = self.model.predict(np.array([inp]), verbose=0)
+        a = self.model.predict(np.array([inp]), verbose=0, use_multiprocessing=True)
 
         action = decode_from_model(a, player)
 

@@ -206,7 +206,7 @@ class Game:
                                                 self.args.connect_code,
                                                 costume=0,
                                                 autostart=False,
-                                                swag=self.args.connect_code =="")
+                                                swag=False)
             if self.args.connect_code =="":
                 melee.MenuHelper.menu_helper_simple(gamestate,
                                                     self.opponent_controller,
