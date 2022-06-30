@@ -193,7 +193,7 @@ def generate_output(player: melee.PlayerState):
         action_counter += 4
         b_used = True
     elif controller.button.get(melee.Button.BUTTON_A):
-        action_counter += 8
+        action_counter += 9
         a_used = True
     # Move Stick
     if controller.main_stick[0] < low_analog:
@@ -210,6 +210,7 @@ def generate_output(player: melee.PlayerState):
         if player.character in [melee.Character.FOX, melee.Character.FALCO]:
             if b_used:    # Don't use lasers as fox/falco
                 return -1
+
     return action_counter
 
 
@@ -217,7 +218,7 @@ def decode_from_model(action: np.ndarray, player: melee.PlayerState = None):
     action = action[0]
     # if player is not None and player.position.y > 0 and abs(player.position.x) < 100:
     if player is not None and player.position.y > 0:
-        reduce = [0, 1, 7, 8, 9]
+        reduce = []
         for i in reduce:
             action[i] /= 2
     # action[1] /= 100
@@ -242,27 +243,47 @@ def decode_from_model(action: np.ndarray, player: melee.PlayerState = None):
     elif a == 6:
         return [[0, 0, 0, 0, 0], 0, 0, 0, 1]
 
-    b_used = 1 if 11 <= a < 15 else 0
-    a_used = 1 if 15 <= a < 19 else 0
 
-    while a >= 11:
-        a -= 4
+    # move stick
+    elif a == 7:
+        return [[0, 0, 0, 0, 0], -1, 0, 0, 0]
+    elif a == 8:
+        return [[0, 0, 0, 0, 0], 1, 0, 0, 0]
+    elif a == 9:
+        return [[0, 0, 0, 0, 0], 0, -1, 0, 0]
+    elif a == 10:
+        return [[0, 0, 0, 0, 0], 0, 1, 0, 0]
 
-    if a == 7:
-        return [[0, b_used, 0, a_used, 0], -1, 0, 0, 0]
-    if a == 8:
-        return [[0, b_used, 0, a_used, 0], 1, 0, 0, 0]
-    if a == 9:
-        return [[0, b_used, 0, a_used, 0], 0, -1, 0, 0]
-    if a == 10:
-        if b_used and player is not None and player.character == melee.enums.Character.MARTH: # b reverse not possible in the action space
+    # b moves
+    elif a == 11:
+        return [[0, 1, 0, 0, 0], -1, 0, 0, 0]
+    elif a == 12:
+        return [[0, 1, 0, 0, 0], 1, 0, 0, 0]
+    elif a == 13:
+        return [[0, 1, 0, 0, 0], 0, -1, 0, 0]
+    elif a == 14:
+        # b reverse not possible in the action space
+        if player is not None and player.character == melee.enums.Character.MARTH:
             vel_y = player.speed_y_self + player.speed_y_attack
 
             if player.jumps_left == 0 and player.position.y < -20 and vel_y < 0:
                 x = np.sign(player.position.x)
                 return [[0, 1, 0, 0, 0], -0.6 * x, 0.85, 0, 0]
+        return [[0, 1, 0, 0, 0], 0, 1, 0, 0]
+    elif a == 15:
+        return [[0, 1, 0, 0, 0], 0, 0, 0, 0]
 
-        return [[0, b_used, 0, a_used, 0], 0, 1, 0, 0]
+    # a moves
+    elif a == 16:
+        return [[0, 0, 0, 1, 0], -1, 0, 0, 0]
+    elif a == 17:
+        return [[0, 0, 0, 1, 0], 1, 0, 0, 0]
+    elif a == 18:
+        return [[0, 0, 0, 1, 0], 0, -1, 0, 0]
+    elif a == 19:
+        return [[0, 0, 0, 1, 0], 0, 1, 0, 0]
+    elif a == 20:
+        return [[0, 0, 0, 1, 0], 0, 0, 0, 0]
 
     print('NO ACTION FOUND !!!!')
     return [[0, 0, 0, 0, 0], 0, 0, 0, 0]

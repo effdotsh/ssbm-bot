@@ -18,7 +18,7 @@ import Args
 from DataHandler import get_ports, controller_states_different, generate_input, generate_output
 import MovesList
 
-from collections import deque
+
 
 args = Args.get_args()
 
@@ -76,9 +76,9 @@ def create_model(replay_paths, player_character: melee.Character,
             inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
 
             action = generate_output(player)
-            if action == 19 or action == -1:
+            if action == 21 or action == -1:
                 continue
-            out = np.zeros(19)
+            out = np.zeros(21)
             out[action] = 1
 
             if inp is None:
