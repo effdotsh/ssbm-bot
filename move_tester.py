@@ -43,15 +43,16 @@ if __name__ == '__main__':
 
         out = generate_output(player)
         # history.append(out)
-        print(out)
-        a = np.zeros(21)
-        a[out] = 1
-        print(decode_from_model([a], player))
-        # if controller_states_different(player, last_player):
-        #     # print(time.time())
-        #     if not(7 <= history[0] < 10 and history[-1] >= 10):
-        #         print(history[0])
-        # last_player = player
+        # print(out)
+        # a = np.zeros(21)
+        # a[out] = 1
+        # print(decode_from_model([a], player))
+        if controller_states_different(player, last_player):
+            # print(time.time())
+            # if not(7 <= history[0] < 10 and history[-1] >= 10):
+            #     print(history[0])
+            print(out)
+        last_player = player
 
 
         # print(player.controller_state)
