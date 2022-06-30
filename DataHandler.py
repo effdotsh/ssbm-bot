@@ -218,10 +218,12 @@ def decode_from_model(action: np.ndarray, player: melee.PlayerState = None):
     action = action[0]
     # if player is not None and player.position.y > 0 and abs(player.position.x) < 100:
     if player is not None and player.position.y > 0:
-        reduce = []
+        reduce = [0,7,8,9,10,1]
         for i in reduce:
-            action[i] /= 2
-    # action[1] /= 100
+            action[i] /= 10
+    action[0]/=3
+    if not player.on_ground:
+        action[1] /= 100
     # action[2] /= 100
 
     a = np.argmax(action)
