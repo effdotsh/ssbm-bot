@@ -20,8 +20,8 @@ from Bot import Bot
 args = Args.get_args()
 smash_last = False
 
-character = melee.Character.MARTH
-opponent = melee.Character.CPTFALCON
+character = melee.Character.FALCO
+opponent = melee.Character.MARTH
 stage = melee.Stage.BATTLEFIELD
 level=9
 
@@ -38,7 +38,7 @@ def load_model(path: str):
 
 
 if __name__ == '__main__':
-    file_name = f'models/{character.name}_v_{opponent.name}_on_{stage.name}.pkl'
+    file_name = f'models2/{character.name}_v_{opponent.name}_on_{stage.name}.pkl'
     # file_name = 'generated_models/old/FALCO_v_FALCO_on_FINAL_DESTINATION.pkl_9.pkl'
     print(file_name)
 

@@ -66,7 +66,8 @@ class Bot:
         action = self.validate_action(action, gamestate, self.controller.port)
         b = melee.enums.Button
 
-        button_used = False
+
+        print(action)
         for i in range(len(MovesList.buttons)):
             if action[0][i] == 1:
                 button_used = True
