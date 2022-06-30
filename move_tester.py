@@ -26,24 +26,25 @@ if __name__ == '__main__':
 
     gamestate = game.get_gamestate()
     player: melee.PlayerState = gamestate.players.get(game.controller.port)
-    last_state = player.controller_state
+    last_player = player
 
     while True:
         gamestate = game.get_gamestate()
         if gamestate is None:
             continue
         player: melee.PlayerState = gamestate.players.get(game.controller.port)
-        print(player.on_ground)
-        # if player is None:
-        #     continue
-        # if controller_states_different(player.controller_state, last_state):
-        #     # print(time.time())
-        #     out = generate_output(player.controller_state)
-        #     print(out)
-        # #
-        # last_state = player.controller_state
+        # print(player.on_ground)
+        if player is None or last_player is None:
+            continue
+        if controller_states_different(player, last_player):
+            # print(time.time())
+            out = generate_output(player)
+            print(out)
+        last_player = player
+
+
         # print(player.controller_state)
         # print(last_state)
-        # inp = generate_input(gamestate=gamestate, player_port=game.controller.port, opponent_port=game.controller_opponent.port)
+        # inp = generate_input(gamestate=gamestate, player_port=game.controller.port, opponent_port=game.controller.port)
         # print(inp)
 
