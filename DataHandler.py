@@ -156,6 +156,7 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
 
 
 def generate_output(player: melee.PlayerState):
+
     controller: melee.ControllerState = player.controller_state
     action_counter = 0
 
@@ -215,10 +216,10 @@ def generate_output(player: melee.PlayerState):
 def decode_from_model(action: np.ndarray, player: melee.PlayerState = None):
     action = action[0]
     # if player is not None and player.position.y > 0 and abs(player.position.x) < 100:
-    # if player is not None and player.position.y > 0:
-    #     reduce = [0, 1, 7, 8, 9]
-    #     for i in reduce:
-    #         action[i] /= 5
+    if player is not None and player.position.y > 0:
+        reduce = [0, 1, 7, 8, 9]
+        for i in reduce:
+            action[i] /= 2
     # action[1] /= 100
     # action[2] /= 100
 
@@ -254,7 +255,7 @@ def decode_from_model(action: np.ndarray, player: melee.PlayerState = None):
     if a == 9:
         return [[0, b_used, 0, a_used, 0], 0, -1, 0, 0]
     if a == 10:
-        if b_used and player is not None and player.character == melee.enums.Character.MARTH:
+        if b_used and player is not None and player.character == melee.enums.Character.MARTH: # b reverse not possible in the action space
             vel_y = player.speed_y_self + player.speed_y_attack
 
             if player.jumps_left == 0 and player.position.y < -20 and vel_y < 0:

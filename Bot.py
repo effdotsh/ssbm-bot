@@ -16,22 +16,29 @@ class Bot:
         self.frame_counter = 0
         self.delay = 0
 
-
     def validate_action(self, action, gamestate: melee.GameState, port: int):
         # global smash_last
         player: melee.PlayerState = gamestate.players.get(port)
         edge = melee.stages.EDGE_POSITION.get(gamestate.stage)
+        vel_y = player.speed_y_self + player.speed_y_attack
+        x = np.sign(player.position.x)
+
         if player.character == melee.enums.Character.MARTH:
-            vel_y = player.speed_y_self + player.speed_y_attack
-            x = np.sign(player.position.x)
             if player.jumps_left == 0 and player.position.y < -20 and vel_y < 0:
                 facing = 1 if player.facing else -1
                 if facing == x:
                     return [[0, 1, 0, 0, 0], -x, 0, 0, 0]
                 return [[0, 1, 0, 0, 0], -0.6 * x, 0.85, 0, 0]
+        #
+        #     elif player.jumps_left > 0 and (player.y < 20 or abs(player.position.x) > edge):
+        #         return [[1, 0, 0, 0, 0], x, 0, 0, 0]
 
-            elif player.jumps_left > 0 and (player.y < 20 or abs(player.position.x) > edge):
-                return [[1, 0, 0, 0, 0], x, 0, 0, 0]
+        if player.jumps_left > 0 and abs(player.position.x) > edge:
+            if vel_y < 0:
+                print('mario jumpman mario')
+                return [[1, 0, 0, 0, 0], 0, 0, 0, 0]
+            else:
+                return [[0, 0, 0, 0, 0], -x, 0, 0, 0]
 
         # if player.action in MovesList.smashes:
         #     if smash_last:
@@ -70,7 +77,7 @@ class Bot:
         if action[0][0] == 1:  # jump
             self.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, 0, 0)
             self.controller.tilt_analog_unit(melee.Button.BUTTON_C, 0, 0)
-            self.delay+=2
+            self.delay += 1
 
         else:
             self.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, action[-4], action[-3])
