@@ -216,7 +216,7 @@ class Game:
                                                     cpu_level=cpu_level,
                                                     costume=0,
                                                     autostart=True,
-                                                    swag=True)
+                                                    swag=False)
             elif c > 60*3:
                 self.controller.press_button(melee.Button.BUTTON_START)
                 break

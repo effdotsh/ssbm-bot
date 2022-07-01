@@ -22,7 +22,7 @@ smash_last = False
 
 character = melee.Character.FALCO
 opponent = melee.Character.MARTH
-stage = melee.Stage.BATTLEFIELD
+stage = melee.Stage.FINAL_DESTINATION
 level=9
 
 

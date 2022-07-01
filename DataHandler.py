@@ -14,8 +14,9 @@ def controller_states_different(new_player: melee.PlayerState, old_player: melee
     new: melee.ControllerState = new_player.controller_state
     old: melee.ControllerState = old_player.controller_state
 
-    if generate_output(new_player) == generate_output(old_player):
-        return False
+    # if generate_output(new_player) == generate_output(old_player):
+    #     return False
+
     for btns in MovesList.buttons:
         # for b in melee.enums.Button:
         for b in btns:
@@ -160,6 +161,7 @@ def generate_output(player: melee.PlayerState):
     controller: melee.ControllerState = player.controller_state
     action_counter = 0
 
+
     # Jump
     if controller.button.get(melee.Button.BUTTON_X) or controller.button.get(melee.Button.BUTTON_Y):
         return action_counter
@@ -211,6 +213,8 @@ def generate_output(player: melee.PlayerState):
             if b_used:    # Don't use lasers as fox/falco
                 return -1
 
+    if not b_used and not a_used:
+        return -1
     return action_counter
 
 
