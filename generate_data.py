@@ -6,6 +6,8 @@ import melee
 
 import os
 import json
+
+import melee as melee
 from tqdm import tqdm
 import time
 import numpy as np
@@ -99,7 +101,8 @@ if __name__ == '__main__':
     # Mass Generate
     f = open('replays2.json', 'r')
     j = json.load(f)
-    characters = [melee.Character.FALCO, melee.Character.MARTH, melee.Character.CPTFALCON]
+    characters = [melee.Character.FALCO, melee.Character.JIGGLYPUFF, melee.Character.MARTH, melee.Character.CPTFALCON, melee.Character.FOX]
+
     for c1 in characters:
         for c2 in characters:
             if c1 != c2:
