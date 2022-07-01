@@ -17,6 +17,8 @@ class Bot:
 
         self.delay = 0
         self.pause_delay = 0
+        self.firefoxing = False
+
     def validate_action(self, action, gamestate: melee.GameState, port: int):
         # global smash_last
         player: melee.PlayerState = gamestate.players.get(port)
@@ -31,36 +33,40 @@ class Bot:
             return [[0, 0, 0, 0, 0], -x, 0, 0, 0]
 
         if player.character == melee.enums.Character.MARTH:
-            if player.jumps_left == 0 and (player.position.y < 0 or abs(player.position.x)-edge > 0):
+            if player.jumps_left == 0 and (player.position.y < 0 or abs(player.position.x) - edge > 0):
                 print('marth autorecover')
-                if player.y < -50 or abs(player.position.x)-edge < 20:
+                if player.y < -50 or abs(player.position.x) - edge < 20:
                     return [[0, 1, 0, 0, 0], -0.6 * x, 0.85, 0, 0]
                 facing = 1 if player.facing else -1
                 if facing == x:
-                    if vel_x > 0 and x > 0 or vel_x< 0 and x < 0:
+                    if vel_x > 0 and x > 0 or vel_x < 0 and x < 0:
                         return [[0, 1, 0, 0, 0], -x, 0, 0, 0]
                         print("side attack")
                     else:
                         return [[0, 0, 0, 0, 0], -x, 0, 0, 0]
 
                 return [[0, 1, 0, 0, 0], -0.6 * x, 0.85, 0, 0]
-        #
-        #     elif player.jumps_left > 0 and (player.y < 20 or abs(player.position.x) > edge):
-        #         return [[1, 0, 0, 0, 0], x, 0, 0, 0]
 
-        if player.jumps_left > 0 and abs(player.position.x) > edge:
-            if vel_y < 0:
-                print('mario jumpman mario')
-                return [[1, 0, 0, 0, 0], 0, 0, 0, 0]
+            if player.jumps_left > 0 and abs(player.position.x) > edge:
+                if vel_y < 0:
+                    print('mario jumpman mario')
+                    return [[1, 0, 0, 0, 0], 0, 0, 0, 0]
+                else:
+                    return [[0, 0, 0, 0, 0], -x, 0, 0, 0]
+
+        if player.character in [melee.Character.FOX, melee.Character.FALCO]:
+            if player.y < -10:
+                print('firefoxing')
+                if player.action in MovesList.firefoxing:
+                    self.firefoxing = True
+                if not self.firefoxing:
+                    print(player.action)
+                    return [[0, 1, 0, 0, 0], 0, 1, 0, 0]
+                else:
+                    return [[0, 0, 0, 0, 0], -x * 0.71, 0.71, 0, 0]
             else:
-                return [[0, 0, 0, 0, 0], -x, 0, 0, 0]
+                self.firefoxing = False
 
-        # if player.action in MovesList.smashes:
-        #     if smash_last:
-        #        return dud
-        #     smash_last = True
-        # else:
-        #     smash_last = False
         return action
 
     def act(self, gamestate: melee.GameState):
@@ -79,19 +85,18 @@ class Bot:
         if opponent.action in MovesList.dead_list and player.on_ground:
             return
 
-
         self.frame_counter += 1
 
         inp = generate_input(gamestate, self.controller.port, self.opponent_controller.port)
         a = self.model.predict(np.array([inp]), verbose=0, use_multiprocessing=True)
 
-        action = decode_from_model(a, player)
+        a, action = decode_from_model(a, player)
 
         action = self.validate_action(action, gamestate, self.controller.port)
         b = melee.enums.Button
 
-
         print(action)
+        button_used = False
         for i in range(len(MovesList.buttons)):
             if action[0][i] == 1:
                 button_used = True
@@ -102,18 +107,25 @@ class Bot:
         if action[0][0] == 1:  # jump
             self.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, 0, 0)
             self.controller.tilt_analog_unit(melee.Button.BUTTON_C, 0, 0)
-            self.delay += 1
-            self.pause_delay += 2
-
         else:
             self.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, action[-4], action[-3])
             self.controller.tilt_analog_unit(melee.Button.BUTTON_C, action[-2], action[-1])
-        # game.controller.press_shoulder(melee.Button.BUTTON_L, action[9])
-        # game.controller.press_shoulder(melee.Button.BUTTON_R, action[10])
+
+
+
+        if a in [11, 12] and player.character in [melee.Character.FALCO, melee.Character.FOX]:
+            self.delay += 15
+
+
+
+        if button_used:
+            self.pause_delay += 3
+
+
 
         self.controller.flush()
 
-        if self.frame_counter >= self.drop_every:
-            self.controller.release_all()
-            self.frame_counter = 0
-            self.delay += 1
+        # if self.frame_counter >= self.drop_every:
+        #     self.controller.release_all()
+        #     self.frame_counter = 0
+        #     self.delay += 1

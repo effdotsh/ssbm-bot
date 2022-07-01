@@ -21,14 +21,8 @@ import MovesList
 
 args = Args.get_args()
 
-player_character = melee.Character.PIKACHU
-opponent_character = melee.Character.CPTFALCON
-stage = melee.Stage.FINAL_DESTINATION
 
-
-# nothing_chance = 0.05
-def create_model(replay_paths, player_character: melee.Character,
-                 opponent_character: melee.Character, stage: melee.Stage, folder: str, lr: float):
+def load_data(replay_paths: str, player_character: melee.Character, opponent_character: melee.Character, ):
     X = []
     Y = []
     for path in tqdm(replay_paths):
@@ -99,7 +93,12 @@ def create_model(replay_paths, player_character: melee.Character,
 
     X = np.array(X)
     Y = np.array(Y)
+    return X, Y
 
+
+def create_model(X: np.ndarray, Y: np.ndarray, player_character: melee.Character, opponent_character: melee.Character,
+                 stage: melee.Stage,
+                 folder: str, lr: float):
     print(len(X), len(Y))
     print(len(X[0]), len(Y[0]))
 
@@ -144,6 +143,11 @@ def create_model(replay_paths, player_character: melee.Character,
 
 
 if __name__ == '__main__':
+    player_character = melee.Character.FALCO
+    opponent_character = melee.Character.MARTH
+    stage = melee.Stage.BATTLEFIELD
+
+    ## Generate from my replays
     # print(f'{player_character.name} vs. {opponent_character.name} on {stage.name}')
     # f = open('replays.json', 'r')
     # j = json.load(f)
@@ -152,16 +156,40 @@ if __name__ == '__main__':
     # create_model(replay_paths=replay_paths, player_character=player_character,
     #              opponent_character=opponent_character, stage=stage, folder='models', lr = 6e-3)
 
-    f = open('replays2.json', 'r')
-    j = json.load(f)
-    characters = [melee.Character.MARTH, melee.Character.FALCO, melee.Character.CPTFALCON]
-    for c1 in characters:
-        for c2 in characters:
-            if c1 != c2:
-                for s in [melee.Stage.BATTLEFIELD, melee.Stage.FINAL_DESTINATION]:
-                    print(f'{c1.name} vs. {c2.name} on {s.name}')
+    # # Mass Generate
+    # f = open('replays2.json', 'r')
+    # j = json.load(f)
+    # characters = [melee.Character.MARTH, melee.Character.FALCO, melee.Character.CPTFALCON]
+    # for c1 in characters:
+    #     for c2 in characters:
+    #         if c1 != c2:
+    #             for s in [melee.Stage.BATTLEFIELD, melee.Stage.FINAL_DESTINATION]:
+    #                 print(f'{c1.name} vs. {c2.name} on {s.name}')
+    #
+    #
+    #                 replay_paths = j[f'{c1.name}_{c2.name}'][s.name]
+    #
+    #                 X, Y = load_data(replay_paths, player_character, opponent_character)
+    #
+    #                 create_model(X, Y, player_character=c1,
+    #                              opponent_character=c2, stage=s, folder='models2', lr=2e-4)
 
-                    replay_paths = j[f'{c1.name}_{c2.name}'][s.name]
+    # # Generate
+    # f = open('replays2.json', 'r')
+    # j = json.load(f)
+    # characters = [melee.Character.MARTH, melee.Character.FALCO, melee.Character.CPTFALCON]
+    #
+    # replay_paths = j[f'{player_character.name}_{opponent_character.name}'][stage.name]
+    #
+    # X, Y = load_data(replay_paths, player_character, opponent_character)
+    #
+    # data_file_path = f'Data/{player_character.name}_{opponent_character.name}_on_{stage.name}_data.pkl'
+    # with open(data_file_path, 'wb') as file:
+    #     pickle.dump({'X': X, 'Y': Y}, file)
 
-                    create_model(replay_paths=replay_paths, player_character=c1,
-                                 opponent_character=c2, stage=s, folder='models2', lr=2e-4)
+    raw = open('Data/FALCO_MARTH_on_BATTLEFIELD_data.pkl', 'rb')
+    data = pickle.load(raw)
+    X = data['X']
+    Y = data['Y']
+    create_model(X, Y, player_character=player_character,
+                 opponent_character=opponent_character, stage=stage, folder='models2', lr=5e-5)
