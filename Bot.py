@@ -10,7 +10,7 @@ import MovesList
 class Bot:
     def __init__(self, model, controller: melee.Controller, opponent_controller: melee.Controller):
         self.opponent_controller = opponent_controller
-        self.drop_every = 5
+        self.drop_every = 30
         self.model: keras.Model = model
         self.controller = controller
         self.frame_counter = 0
@@ -27,7 +27,7 @@ class Bot:
         vel_x = player.speed_x_attack + player.speed_air_x_self + player.speed_ground_x_self
 
         x = np.sign(player.position.x)
-
+        print(x, player.moonwalkwarning)
         if player.action in MovesList.special_fall_list:
             print('special falling')
             return [[0, 0, 0, 0, 0], -x, 0, 0, 0]
@@ -35,17 +35,16 @@ class Bot:
         if player.character == melee.enums.Character.MARTH:
             if player.jumps_left == 0 and (player.position.y < 0 or abs(player.position.x) - edge > 0):
                 print('marth autorecover')
-                if player.y < -50 or abs(player.position.x) - edge < 20:
+                if player.y < -30:
+                    print('upupup')
                     return [[0, 1, 0, 0, 0], -0.6 * x, 0.85, 0, 0]
                 facing = 1 if player.facing else -1
-                if facing == x:
+                if facing == x or vel_y < -5:
                     if vel_x > 0 and x > 0 or vel_x < 0 and x < 0:
-                        return [[0, 1, 0, 0, 0], -x, 0, 0, 0]
                         print("side attack")
-                    else:
-                        return [[0, 0, 0, 0, 0], -x, 0, 0, 0]
 
-                return [[0, 1, 0, 0, 0], -0.6 * x, 0.85, 0, 0]
+                        return [[0, 1, 0, 0, 0], -x, 0, 0, 0]
+                return [[0, 0, 0, 0, 0], -x, 0, 0, 0]
 
             if player.jumps_left > 0 and abs(player.position.x) > edge:
                 if vel_y < 0:
@@ -55,15 +54,17 @@ class Bot:
                     return [[0, 0, 0, 0, 0], -x, 0, 0, 0]
 
         if player.character in [melee.Character.FOX, melee.Character.FALCO]:
-            if player.y < -10:
-                print('firefoxing')
+            if player.y < -20:
+                print('auto firefoxing')
                 if player.action in MovesList.firefoxing:
                     self.firefoxing = True
                 if not self.firefoxing:
                     print(player.action)
                     return [[0, 1, 0, 0, 0], 0, 1, 0, 0]
                 else:
-                    return [[0, 0, 0, 0, 0], -x * 0.71, 0.71, 0, 0]
+                    if abs(player.position.x)-edge > 20:
+                        return [[0, 0, 0, 0, 0], -x * 0.71, 0.71, 0, 0]
+                    return [[0, 0, 0, 0, 0], 0, 1, 0, 0]
             else:
                 self.firefoxing = False
 
@@ -125,7 +126,7 @@ class Bot:
 
         self.controller.flush()
 
-        # if self.frame_counter >= self.drop_every:
-        #     self.controller.release_all()
-        #     self.frame_counter = 0
-        #     self.delay += 1
+        if self.frame_counter >= self.drop_every:
+            self.controller.release_all()
+            self.frame_counter = 0
+            self.delay += 1

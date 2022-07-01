@@ -119,7 +119,7 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
         shield, on_ground, is_attacking,
         x, y,
         vel_x, vel_y,
-        # percent,
+        percent,
         facing,
         in_hitstun,
         is_invulnerable,
@@ -225,7 +225,7 @@ def decode_from_model(action: np.ndarray, player: melee.PlayerState = None):
     if player is not None and player.position.y > 0:
         reduce = [7,8,9,10,1]
         for i in reduce:
-            action[i] /= 7
+            action[i] /= 5
         if player.character in [melee.Character.FOX, melee.Character.FALCO, melee.Character.MARTH]:
             action[14]/=100
     action[0]/=4
