@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import copy
+from collections import deque
 
 import melee
 
@@ -20,14 +21,14 @@ import MovesList
 
 args = Args.get_args()
 
-player_character = melee.Character.MARTH
+player_character = melee.Character.PIKACHU
 opponent_character = melee.Character.CPTFALCON
-stage = melee.Stage.BATTLEFIELD
+stage = melee.Stage.FINAL_DESTINATION
 
 
 # nothing_chance = 0.05
 def create_model(replay_paths, player_character: melee.Character,
-                 opponent_character: melee.Character, stage: melee.Stage, folder: str):
+                 opponent_character: melee.Character, stage: melee.Stage, folder: str, lr: float):
     X = []
     Y = []
     for path in tqdm(replay_paths):
@@ -49,7 +50,11 @@ def create_model(replay_paths, player_character: melee.Character,
 
             continue
 
-        last_player: melee.PlayerState = copy.deepcopy(gamestate.players.get(player_port))
+        player: melee.PlayerState = gamestate.players.get(player_port)
+
+        action_history = deque(maxlen=3)
+        last_recorded_player = player
+        last_recorded_action = -1
         while True:
             try:
                 gamestate: melee.GameState = console.step()
@@ -66,26 +71,31 @@ def create_model(replay_paths, player_character: melee.Character,
             if player.action in MovesList.dead_list:
                 continue
 
-            if not controller_states_different(player, last_player):
-                continue
-
-            last_player = player
-
-            inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
-
             action = generate_output(player)
-            if action == 21 or action == -1:
-                continue
-            out = np.zeros(21)
-            out[action] = 1
-
-            if inp is None:
-                break
             if action is None:
                 break
+            if action == 21 or action == -1:
+                continue
 
-            X.append(inp)
-            Y.append(out)
+            action_history.append(action)
+
+            if action != last_recorded_action and action != -1:
+                if action_history[-1] < 11 and action_history[0] >= 11:
+                    pass
+                elif action_history[-1] >= 11 and action_history[0] < 11 or (
+                        action_history[-1] == action_history[0] and action_history[0] < 11):
+                    if controller_states_different(player, last_recorded_player):
+                        inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
+                        if inp is None:
+                            break
+
+                        out = np.zeros(21)
+                        out[action] = 1
+
+                        X.append(inp)
+                        Y.append(out)
+                    last_recorded_action = action
+                    last_recorded_player = player
 
     X = np.array(X)
     Y = np.array(Y)
@@ -97,7 +107,7 @@ def create_model(replay_paths, player_character: melee.Character,
     model = Sequential([
         Dense(64, activation='tanh', input_shape=(len(X[0]),)),
         Dense(64, activation='tanh'),
-        Dense(64, activation='tanh'),
+        # Dense(64, activation='tanh'),
         Dense(len(Y[0]), activation='tanh'),
     ])
     # model = Sequential([
@@ -107,7 +117,7 @@ def create_model(replay_paths, player_character: melee.Character,
     # ])
 
     opt = keras.optimizers.Adam(
-        learning_rate=1e-4,
+        learning_rate=lr,
         name="Adam",
     )
 
@@ -140,18 +150,18 @@ if __name__ == '__main__':
     # replay_paths = j[f'{player_character.name}_{opponent_character.name}'][stage.name]
     # #
     # create_model(replay_paths=replay_paths, player_character=player_character,
-    #              opponent_character=opponent_character, stage=stage, folder='models)
+    #              opponent_character=opponent_character, stage=stage, folder='models', lr = 6e-3)
 
     f = open('replays2.json', 'r')
     j = json.load(f)
-    characters = [melee.Character.FOX, melee.Character.MARTH, melee.Character.FALCO, melee.Character.CPTFALCON,
-                  melee.Character.JIGGLYPUFF]
+    characters = [melee.Character.MARTH, melee.Character.FALCO, melee.Character.CPTFALCON]
     for c1 in characters:
         for c2 in characters:
-            for s in [melee.Stage.BATTLEFIELD, melee.Stage.FINAL_DESTINATION]:
-                print(f'{c1.name} vs. {c2.name} on {s.name}')
+            if c1 != c2:
+                for s in [melee.Stage.BATTLEFIELD, melee.Stage.FINAL_DESTINATION]:
+                    print(f'{c1.name} vs. {c2.name} on {s.name}')
 
-                replay_paths = j[f'{c1.name}_{c2.name}'][s.name]
+                    replay_paths = j[f'{c1.name}_{c2.name}'][s.name]
 
-                create_model(replay_paths=replay_paths, player_character=c1,
-                             opponent_character=c2, stage=s, folder='models2')
+                    create_model(replay_paths=replay_paths, player_character=c1,
+                                 opponent_character=c2, stage=s, folder='models2', lr=2e-4)

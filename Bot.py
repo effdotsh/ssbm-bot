@@ -14,20 +14,35 @@ class Bot:
         self.model: keras.Model = model
         self.controller = controller
         self.frame_counter = 0
-        self.delay = 0
 
+        self.delay = 0
+        self.pause_delay = 0
     def validate_action(self, action, gamestate: melee.GameState, port: int):
         # global smash_last
         player: melee.PlayerState = gamestate.players.get(port)
         edge = melee.stages.EDGE_POSITION.get(gamestate.stage)
         vel_y = player.speed_y_self + player.speed_y_attack
+        vel_x = player.speed_x_attack + player.speed_air_x_self + player.speed_ground_x_self
+
         x = np.sign(player.position.x)
 
+        if player.action in MovesList.special_fall_list:
+            print('special falling')
+            return [[0, 0, 0, 0, 0], -x, 0, 0, 0]
+
         if player.character == melee.enums.Character.MARTH:
-            if player.jumps_left == 0 and player.position.y < -20 and vel_y < 0:
+            if player.jumps_left == 0 and (player.position.y < 0 or abs(player.position.x)-edge > 0):
+                print('marth autorecover')
+                if player.y < -50 or abs(player.position.x)-edge < 20:
+                    return [[0, 1, 0, 0, 0], -0.6 * x, 0.85, 0, 0]
                 facing = 1 if player.facing else -1
                 if facing == x:
-                    return [[0, 1, 0, 0, 0], -x, 0, 0, 0]
+                    if vel_x > 0 and x > 0 or vel_x< 0 and x < 0:
+                        return [[0, 1, 0, 0, 0], -x, 0, 0, 0]
+                        print("side attack")
+                    else:
+                        return [[0, 0, 0, 0, 0], -x, 0, 0, 0]
+
                 return [[0, 1, 0, 0, 0], -0.6 * x, 0.85, 0, 0]
         #
         #     elif player.jumps_left > 0 and (player.y < 20 or abs(player.position.x) > edge):
@@ -52,9 +67,18 @@ class Bot:
         if self.delay > 0:
             self.delay -= 1
             return
+        if self.pause_delay > 0:
+            self.pause_delay -= 1
+            self.controller.release_all()
+            return
         self.controller.release_all()
 
         player: melee.PlayerState = gamestate.players.get(self.controller.port)
+        opponent: melee.PlayerState = gamestate.players.get(self.opponent_controller.port)
+
+        if opponent.action in MovesList.dead_list and player.on_ground:
+            return
+
 
         self.frame_counter += 1
 
@@ -79,6 +103,7 @@ class Bot:
             self.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, 0, 0)
             self.controller.tilt_analog_unit(melee.Button.BUTTON_C, 0, 0)
             self.delay += 1
+            self.pause_delay += 2
 
         else:
             self.controller.tilt_analog_unit(melee.Button.BUTTON_MAIN, action[-4], action[-3])
