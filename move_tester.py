@@ -30,8 +30,9 @@ if __name__ == '__main__':
     player: melee.PlayerState = gamestate.players.get(game.controller.port)
     last_player = player
 
-    history = deque(maxlen=20)
+    history = deque(maxlen=5)
 
+    last_number = -1
     while True:
         gamestate = game.get_gamestate()
         if gamestate is None:
@@ -42,17 +43,28 @@ if __name__ == '__main__':
             continue
 
         out = generate_output(player)
-        # history.append(out)
+        history.append(out)
         # print(out)
         # a = np.zeros(21)
         # a[out] = 1
         # print(decode_from_model([a], player))
-        if controller_states_different(player, last_player):
+        # if controller_states_different(player, last_player):
             # print(time.time())
             # if not(7 <= history[0] < 10 and history[-1] >= 10):
             #     print(history[0])
-            print(out)
-        last_player = player
+            # print(out)
+        if out != last_number and out != -1:
+            if history[-1] < 11 and history[0] >=11:
+                pass
+            elif history[-1] >= 11 and history[0] < 11 or (history[-1] == history[0] and history[0] < 11):
+                if controller_states_different(player, last_player):
+                    print(out)
+                last_number=out
+                last_player = player
+
+        elif out == -1:
+            last_number=out
+            last_player = player
 
 
         # print(player.controller_state)
