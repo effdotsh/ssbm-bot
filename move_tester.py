@@ -28,47 +28,32 @@ if __name__ == '__main__':
 
     gamestate = game.get_gamestate()
     player: melee.PlayerState = gamestate.players.get(game.controller.port)
-    last_player = player
 
-    history = deque(maxlen=5)
+    action_history = deque(maxlen=3)
 
-    last_number = -1
+    last_recorded_player = player
+    last_recorded_action = -1
     while True:
         gamestate = game.get_gamestate()
         if gamestate is None:
             continue
         player: melee.PlayerState = gamestate.players.get(game.controller.port)
-        # print(player.on_ground)
-        if player is None or last_player is None:
+        if player is None or last_recorded_player is None:
             continue
 
         out = generate_output(player)
-        history.append(out)
-        # print(out)
-        # a = np.zeros(21)
-        # a[out] = 1
-        # print(decode_from_model([a], player))
-        # if controller_states_different(player, last_player):
-            # print(time.time())
-            # if not(7 <= history[0] < 10 and history[-1] >= 10):
-            #     print(history[0])
-            # print(out)
-        if out != last_number and out != -1:
-            if history[-1] < 11 and history[0] >=11:
+        action_history.append(out)
+
+        if out != last_recorded_action and out != -1:
+            if action_history[-1] < 11 and action_history[0] >=11:
                 pass
-            elif history[-1] >= 11 and history[0] < 11 or (history[-1] == history[0] and history[0] < 11):
-                if controller_states_different(player, last_player):
+            elif action_history[-1] >= 11 and action_history[0] < 11 or (action_history[-1] == action_history[0] and action_history[0] < 11):
+                if controller_states_different(player, last_recorded_player):
                     print(out)
-                last_number=out
-                last_player = player
+                last_recorded_action=out
+                last_recorded_player = player
 
         elif out == -1:
-            last_number=out
-            last_player = player
-
-
-        # print(player.controller_state)
-        # print(last_state)
-        # inp = generate_input(gamestate=gamestate, player_port=game.controller.port, opponent_port=game.controller.port)
-        # print(inp)
+            last_recorded_action=out
+            last_recorded_player = player
 
