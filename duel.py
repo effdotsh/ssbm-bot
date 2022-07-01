@@ -20,8 +20,8 @@ from Bot import Bot
 args = Args.get_args()
 smash_last = False
 
-character = melee.Character.FALCO
-opponent = melee.Character.MARTH
+character = melee.Character.MARTH
+opponent = melee.Character.CPTFALCON
 stage = melee.Stage.BATTLEFIELD
 level=9
 
