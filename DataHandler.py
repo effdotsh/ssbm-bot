@@ -89,26 +89,26 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
     # return [x, y, shield, percent, vel_x, vel_y, is_attacking]
     edge = melee.EDGE_POSITION.get(gamestate.stage)
 
-    offstage = 1 if abs(player.position.x) > edge - 1 else -1
-    tumbling = 1 if player.action in [melee.Action.TUMBLING] else -1
-    on_ground = 1 if player.on_ground else -1
+    offstage = 1 if abs(player.position.x) > edge - 1 else 0
+    tumbling = 1 if player.action in [melee.Action.TUMBLING] else 0
+    on_ground = 1 if player.on_ground else 0
 
     facing = 1 if player.facing else -1
     # return [x, y, percent, shield, is_attacking, on_ground, vel_x, vel_y, facing]
-    in_hitstun = 1 if player.hitlag_left else -1
-    is_invulnerable = 1 if player.invulnerable else -1
+    in_hitstun = 1 if player.hitlag_left else 0
+    is_invulnerable = 1 if player.invulnerable else 0
 
-    special_fall = 1 if player.action in MovesList.special_fall_list else -1
-    is_dead = 1 if player.action in MovesList.dead_list else -1
+    special_fall = 1 if player.action in MovesList.special_fall_list else 0
+    is_dead = 1 if player.action in MovesList.dead_list else 0
 
     jumps_left = player.jumps_left / framedata.max_jumps(player.character)
 
     attack_state = framedata.attack_state(player.character, player.action, player.action_frame)
-    attack_active = 1 if attack_state == melee.AttackState.ATTACKING else -1
-    attack_cooldown = 1 if attack_state == melee.AttackState.COOLDOWN else -1
-    attack_windup = 1 if attack_state == melee.AttackState.WINDUP else -1
+    attack_active = 1 if attack_state == melee.AttackState.ATTACKING else 0
+    attack_cooldown = 1 if attack_state == melee.AttackState.COOLDOWN else 0
+    attack_windup = 1 if attack_state == melee.AttackState.WINDUP else 0
 
-    is_bmove = 1 if framedata.is_bmove(player.character, player.action) else -1
+    is_bmove = 1 if framedata.is_bmove(player.character, player.action) else 0
 
     stock = player.stock
     return [
@@ -140,11 +140,12 @@ def generate_input(gamestate: melee.GameState, player_port: int, opponent_port: 
     direction = 1 if player.position.x < opponent.position.x else -1
 
     firefoxing = 1 if player.character in [melee.Character.FOX,
-                                           melee.Character.FALCO] and player.action in MovesList.firefoxing else -1
+                                           melee.Character.FALCO] and player.action in MovesList.firefoxing else 0
 
     obs = [
         (player.position.x - opponent.position.x) / 20, (player.position.y - opponent.position.y) / 10,
-        # firefoxing, direction, 1
+        firefoxing,
+        direction,
         1 if player.position.x > opponent.position.x else -1,
         1 if player.position.y > opponent.position.y else -1,
 
@@ -224,8 +225,7 @@ def decode_from_model(action: np.ndarray, player: melee.PlayerState = None):
     if player is not None and player.position.y > 0:
         reduce = [7,8,9,10,1]
         for i in reduce:
-            action[i] /= 5.6
-
+            action[i] /= 7
         if player.character in [melee.Character.FOX, melee.Character.FALCO, melee.Character.MARTH]:
             action[14]/=100
     action[0]/=4
@@ -236,40 +236,40 @@ def decode_from_model(action: np.ndarray, player: melee.PlayerState = None):
     a = np.argmax(action)
     # [[BUTTON_X, BUTTON_B, BUTTON_L, BUTTON_A, BUTTON_Z], move_x, move_y, c_x, c_y]
     if a == 0:  # jump
-        return [[1, 0, 0, 0, 0], 0, 0, 0, 0]
+        return a, [[1, 0, 0, 0, 0], 0, 0, 0, 0]
     elif a == 1:  # shield
-        return [[0, 0, 1, 0, 0], 0, 0, 0, 0]
+        return a, [[0, 0, 1, 0, 0], 0, 0, 0, 0]
     elif a == 2:  # grab
-        return [[0, 0, 0, 0, 1], 0, 0, 0, 0]
+        return a, [[0, 0, 0, 0, 1], 0, 0, 0, 0]
 
     # c_stick
     elif a == 3:
-        return [[0, 0, 0, 0, 0], 0, 0, -1, 0]
+        return a, [[0, 0, 0, 0, 0], 0, 0, -1, 0]
     elif a == 4:
-        return [[0, 0, 0, 0, 0], 0, 0, 1, 0]
+        return a, [[0, 0, 0, 0, 0], 0, 0, 1, 0]
     elif a == 5:
-        return [[0, 0, 0, 0, 0], 0, 0, 0, -1]
+        return a, [[0, 0, 0, 0, 0], 0, 0, 0, -1]
     elif a == 6:
-        return [[0, 0, 0, 0, 0], 0, 0, 0, 1]
+        return a, [[0, 0, 0, 0, 0], 0, 0, 0, 1]
 
 
     # move stick
     elif a == 7:
-        return [[0, 0, 0, 0, 0], -1, 0, 0, 0]
+        return a, [[0, 0, 0, 0, 0], -1, 0, 0, 0]
     elif a == 8:
-        return [[0, 0, 0, 0, 0], 1, 0, 0, 0]
+        return a, [[0, 0, 0, 0, 0], 1, 0, 0, 0]
     elif a == 9:
-        return [[0, 0, 0, 0, 0], 0, -1, 0, 0]
+        return a, [[0, 0, 0, 0, 0], 0, -1, 0, 0]
     elif a == 10:
-        return [[0, 0, 0, 0, 0], 0, 1, 0, 0]
+        return a, [[0, 0, 0, 0, 0], 0, 1, 0, 0]
 
     # b moves
     elif a == 11:
-        return [[0, 1, 0, 0, 0], -1, 0, 0, 0]
+        return a, [[0, 1, 0, 0, 0], -1, 0, 0, 0]
     elif a == 12:
-        return [[0, 1, 0, 0, 0], 1, 0, 0, 0]
+        return a, [[0, 1, 0, 0, 0], 1, 0, 0, 0]
     elif a == 13:
-        return [[0, 1, 0, 0, 0], 0, -1, 0, 0]
+        return a, [[0, 1, 0, 0, 0], 0, -1, 0, 0]
     elif a == 14:
         # b reverse not possible in the action space
         if player is not None and player.character == melee.enums.Character.MARTH:
@@ -277,22 +277,22 @@ def decode_from_model(action: np.ndarray, player: melee.PlayerState = None):
 
             if player.jumps_left == 0 and player.position.y < -20 and vel_y < 0:
                 x = np.sign(player.position.x)
-                return [[0, 1, 0, 0, 0], -0.6 * x, 0.85, 0, 0]
-        return [[0, 1, 0, 0, 0], 0, 1, 0, 0]
+                return a, [[0, 1, 0, 0, 0], -0.6 * x, 0.85, 0, 0]
+        return a, [[0, 1, 0, 0, 0], 0, 1, 0, 0]
     elif a == 15:
-        return [[0, 1, 0, 0, 0], 0, 0, 0, 0]
+        return a, [[0, 1, 0, 0, 0], 0, 0, 0, 0]
 
     # a moves
     elif a == 16:
-        return [[0, 0, 0, 1, 0], -1, 0, 0, 0]
+        return a, [[0, 0, 0, 1, 0], -1, 0, 0, 0]
     elif a == 17:
-        return [[0, 0, 0, 1, 0], 1, 0, 0, 0]
+        return a, [[0, 0, 0, 1, 0], 1, 0, 0, 0]
     elif a == 18:
-        return [[0, 0, 0, 1, 0], 0, -1, 0, 0]
+        return a, [[0, 0, 0, 1, 0], 0, -1, 0, 0]
     elif a == 19:
-        return [[0, 0, 0, 1, 0], 0, 1, 0, 0]
+        return a, [[0, 0, 0, 1, 0], 0, 1, 0, 0]
     elif a == 20:
-        return [[0, 0, 0, 1, 0], 0, 0, 0, 0]
+        return a, [[0, 0, 0, 1, 0], 0, 0, 0, 0]
 
     print('NO ACTION FOUND !!!!')
     return [[0, 0, 0, 0, 0], 0, 0, 0, 0]
