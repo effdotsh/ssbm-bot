@@ -139,7 +139,11 @@ if __name__ == '__main__':
     for e, c1 in enumerate(characters):
         for c2 in characters[e+1:]:
             if c1 != c2:
-                for s in [melee.Stage.BATTLEFIELD, melee.Stage.FINAL_DESTINATION]:
+                for s in [melee.Stage.FINAL_DESTINATION]:
+                    print(f'Data/{c1.name}_{c2.name}_on_{s.name}_data.pkl')
+                    print(f'Data/{c2.name}_{c1.name}_on_{s.name}_data.pkl')
+
+
                     f = open('replays2.json', 'r')
                     j = json.load(f)
                     characters = [melee.Character.MARTH, melee.Character.FALCO, melee.Character.CPTFALCON]
