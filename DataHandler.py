@@ -219,16 +219,25 @@ def generate_output(player: melee.PlayerState):
     return action_counter
 
 
-def decode_from_model(action: np.ndarray, player: melee.PlayerState = None):
+def decode_from_model(action: np.ndarray, player: melee.PlayerState = None, stage: melee.Stage = None):
     action = action[0]
+    edge = 100
+    if stage is not None:
+        edge = melee.EDGE_POSITION.get(stage)
     # if player is not None and player.position.y > 0 and abs(player.position.x) < 100:
     if player is not None and player.position.y > 0:
-        reduce = [7,8,9,10,1]
+        reduce = [7,1,8,10]
         for i in reduce:
-            action[i] /= 5
+            action[i] /= 3
         if player.character in [melee.Character.FOX, melee.Character.FALCO, melee.Character.MARTH]:
             action[14]/=100
-    action[0]/=4
+    if player.character in [melee.Character.FOX, melee.Character.FALCO]:
+        # model can't cancel moves
+        if abs(player.position.x) < edge:
+            action[11]/=100
+            action[12]/=100
+
+    action[0]/=10
     if not player.on_ground:
         action[1] /= 100
     # action[2] /= 100
