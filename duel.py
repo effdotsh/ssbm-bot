@@ -20,9 +20,9 @@ from Bot import Bot
 args = Args.get_args()
 smash_last = False
 
-character = melee.Character.MARTH
-opponent = melee.Character.CPTFALCON
-stage = melee.Stage.BATTLEFIELD
+player_character = melee.Character.FALCO
+opponent_character = melee.Character.JIGGLYPUFF
+stage = melee.Stage.FINAL_DESTINATION
 level=9
 
 
@@ -38,14 +38,14 @@ def load_model(path: str):
 
 
 if __name__ == '__main__':
-    file_name = f'models2/{character.name}_v_{opponent.name}_on_{stage.name}.pkl'
+    file_name = f'models2/{player_character.name}_v_{opponent_character.name}_on_{stage.name}.pkl'
     # file_name = 'generated_models/old/FALCO_v_FALCO_on_FINAL_DESTINATION.pkl_9.pkl'
     print(file_name)
 
     model: keras.Model = load_model(file_name)
     game = GameManager.Game(args)
-    game.enterMatch(cpu_level=level, opponant_character=opponent,
-                    player_character=character,
+    game.enterMatch(cpu_level=level, opponant_character=opponent_character,
+                    player_character=player_character,
                     stage=stage, rules=False)
 
     bot1 = Bot(model=model, controller=game.controller, opponent_controller=game.opponent_controller)

@@ -10,7 +10,7 @@ import MovesList
 class Bot:
     def __init__(self, model, controller: melee.Controller, opponent_controller: melee.Controller):
         self.opponent_controller = opponent_controller
-        self.drop_every = 30
+        self.drop_every = 180
         self.model: keras.Model = model
         self.controller = controller
         self.frame_counter = 0
@@ -19,18 +19,25 @@ class Bot:
         self.pause_delay = 0
         self.firefoxing = False
 
-    def validate_action(self, action, gamestate: melee.GameState, port: int):
+    def validate_action(self, action, gamestate: melee.GameState, port: int, opponent_port: int):
         # global smash_last
         player: melee.PlayerState = gamestate.players.get(port)
+        opponent: melee.PlayerState = gamestate.players.get(opponent_port)
+
         edge = melee.stages.EDGE_POSITION.get(gamestate.stage)
         vel_y = player.speed_y_self + player.speed_y_attack
         vel_x = player.speed_x_attack + player.speed_air_x_self + player.speed_ground_x_self
 
         x = np.sign(player.position.x)
-        print(x, player.moonwalkwarning)
+        rel_x = np.sign(player.position.x - opponent.position.x)
+        print(x, player.moonwalkwarning, player.action)
         if player.action in MovesList.special_fall_list:
             print('special falling')
             return [[0, 0, 0, 0, 0], -x, 0, 0, 0]
+
+        if player.action in MovesList.lying:
+            return [[0, 0, 0, 0, 0], rel_x, 0, 0, 0]
+
 
         if player.character == melee.enums.Character.MARTH:
             if player.jumps_left == 0 and (player.position.y < 0 or abs(player.position.x) - edge > 0):
@@ -62,7 +69,7 @@ class Bot:
                     print(player.action)
                     return [[0, 1, 0, 0, 0], 0, 1, 0, 0]
                 else:
-                    if abs(player.position.x)-edge > 20:
+                    if abs(player.position.x)-edge > 10:
                         return [[0, 0, 0, 0, 0], -x * 0.71, 0.71, 0, 0]
                     return [[0, 0, 0, 0, 0], 0, 1, 0, 0]
             else:
@@ -91,9 +98,9 @@ class Bot:
         inp = generate_input(gamestate, self.controller.port, self.opponent_controller.port)
         a = self.model.predict(np.array([inp]), verbose=0, use_multiprocessing=True)
 
-        a, action = decode_from_model(a, player)
+        a, action = decode_from_model(a, player, gamestate.stage)
 
-        action = self.validate_action(action, gamestate, self.controller.port)
+        action = self.validate_action(action, gamestate, self.controller.port, self.opponent_controller.port)
         b = melee.enums.Button
 
         print(action)
