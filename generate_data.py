@@ -24,8 +24,11 @@ import MovesList
 args = Args.get_args()
 
 def load_data(replay_paths: str, player_character: melee.Character, opponent_character: melee.Character, ):
-    X = []
-    Y = []
+    X_player = []
+    Y_player = []
+
+    X_opponent = []
+    Y_oponnent = []
     for path in tqdm(replay_paths):
         console = melee.Console(is_dolphin=False,
                                 allow_old_version=True,
@@ -46,10 +49,16 @@ def load_data(replay_paths: str, player_character: melee.Character, opponent_cha
             continue
 
         player: melee.PlayerState = gamestate.players.get(player_port)
+        opponent: melee.PlayerState = gamestate.players.get(player_port)
 
-        action_history = deque(maxlen=3)
+        player_action_history = deque(maxlen=3)
+        opponent_action_history = deque(maxlen=3)
+
         last_recorded_player = player
-        last_recorded_action = -1
+        last_recorded_action_player = -1
+
+        last_recorded_opponent = opponent
+        last_recorded_action_opponent = -1
         while True:
             try:
                 gamestate: melee.GameState = console.step()
@@ -66,35 +75,59 @@ def load_data(replay_paths: str, player_character: melee.Character, opponent_cha
             if player.action in MovesList.dead_list:
                 continue
 
+            # player
             action = generate_output(player)
+            inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
             if action is None:
                 break
-            if action == 21 or action == -1:
-                continue
+            if action not in [21, -1]:
+                player_action_history.append(action)
+                if action != last_recorded_action_player and action != -1:
+                    if player_action_history[-1] < 11 and player_action_history[0] >= 11:
+                        pass
+                    elif player_action_history[-1] >= 11 and player_action_history[0] < 11 or (
+                            player_action_history[-1] == player_action_history[0] and player_action_history[0] < 11):
+                        if controller_states_different(player, last_recorded_player):
+                            if inp is None:
+                                break
 
-            action_history.append(action)
+                            out = np.zeros(21)
+                            out[action] = 1
 
-            if action != last_recorded_action and action != -1:
-                if action_history[-1] < 11 and action_history[0] >= 11:
-                    pass
-                elif action_history[-1] >= 11 and action_history[0] < 11 or (
-                        action_history[-1] == action_history[0] and action_history[0] < 11):
-                    if controller_states_different(player, last_recorded_player):
-                        inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
-                        if inp is None:
-                            break
+                            X_player.append(inp)
+                            Y_player.append(out)
+                        last_recorded_action_player = action
+                        last_recorded_player = player
 
-                        out = np.zeros(21)
-                        out[action] = 1
+            #opponent
+            action_opponent = generate_output(player)
+            inp = generate_input(gamestate=gamestate, player_port=player_port, opponent_port=opponent_port)
+            if action_opponent is None:
+                break
+            if action_opponent not in [21, -1]:
+                opponent_action_history.append(action_opponent)
+                if action_opponent != last_recorded_action_opponent and action_opponent != -1:
+                    if opponent_action_history[-1] < 11 and opponent_action_history[0] >= 11:
+                        pass
+                    elif opponent_action_history[-1] >= 11 and opponent_action_history[0] < 11 or (
+                            opponent_action_history[-1] == opponent_action_history[0] and opponent_action_history[0] < 11):
+                        if controller_states_different(opponent, last_recorded_opponent):
+                            if inp is None:
+                                break
 
-                        X.append(inp)
-                        Y.append(out)
-                    last_recorded_action = action
-                    last_recorded_player = player
+                            out = np.zeros(21)
+                            out[action_opponent] = 1
 
-    X = np.array(X)
-    Y = np.array(Y)
-    return X, Y
+                            X_opponent.append(inp)
+                            Y_oponnent.append(out)
+                        last_recorded_action_opponent = action_opponent
+                        last_recorded_opponent = player
+
+    X_player = np.array(X_player)
+    Y_player = np.array(Y_player)
+    X_opponent = np.array(X_player)
+    Y_oponnent = np.array(Y_player)
+    return X_player, Y_player, X_opponent, Y_oponnent
 
 if __name__ == '__main__':
 
@@ -103,8 +136,8 @@ if __name__ == '__main__':
     j = json.load(f)
     characters = [melee.Character.FALCO, melee.Character.JIGGLYPUFF, melee.Character.MARTH, melee.Character.CPTFALCON, melee.Character.FOX]
 
-    for c1 in characters:
-        for c2 in characters:
+    for e, c1 in enumerate(characters):
+        for c2 in characters[e+1:]:
             if c1 != c2:
                 for s in [melee.Stage.BATTLEFIELD, melee.Stage.FINAL_DESTINATION]:
                     f = open('replays2.json', 'r')
@@ -113,8 +146,12 @@ if __name__ == '__main__':
 
                     replay_paths = j[f'{c1.name}_{c2.name}'][s.name]
 
-                    X, Y = load_data(replay_paths, c1, c2)
+                    Xp, Yp, Xo, Yo = load_data(replay_paths, c1, c2)
 
                     data_file_path = f'Data/{c1.name}_{c2.name}_on_{s.name}_data.pkl'
                     with open(data_file_path, 'wb') as file:
-                        pickle.dump({'X': X, 'Y': Y}, file)
+                        pickle.dump({'X': Xp, 'Y': Yp}, file)
+
+                    data_file_path = f'Data/{c2.name}_{c1.name}_on_{s.name}_data.pkl'
+                    with open(data_file_path, 'wb') as file:
+                        pickle.dump({'X': Xo, 'Y': Yo}, file)
