@@ -11,6 +11,7 @@ import time
 import numpy as np
 
 from tensorflow import keras
+from keras import optimizers
 from keras.models import Sequential
 from keras.layers import Dense
 import pickle
@@ -30,9 +31,9 @@ def create_model(X: np.ndarray, Y: np.ndarray, player_character: melee.Character
 
     # train
     model = Sequential([
-        Dense(64, activation='tanh', input_shape=(len(X[0]),)),
-        Dense(64, activation='tanh'),
-        Dense(64, activation='tanh'),
+        Dense(128, activation='tanh', input_shape=(len(X[0]),)),
+        Dense(128, activation='tanh'),
+        # Dense(128, activation='tanh'),
         Dense(len(Y[0]), activation='tanh'),
     ])
     # model = Sequential([
@@ -41,10 +42,24 @@ def create_model(X: np.ndarray, Y: np.ndarray, player_character: melee.Character
     #     Dense(len(Y[0]), activation='tanh'),
     # ])
 
-    opt = keras.optimizers.Adam(
+    # opt = keras.optimizers.Adam(
+    #     learning_rate=lr,
+    #     name="Adam",
+    # )
+    # opt = optimizers.Adagrad(
+    #     learning_rate=lr,
+    #     name="Adagrad",
+    # )
+    # opt = optimizers.Adadelta(
+    #     learning_rate=lr,
+    #     name="Adelta",
+    # )
+
+    opt = optimizers.RMSprop(
         learning_rate=lr,
-        name="Adam",
+        name="RMSprop",
     )
+
 
     model.compile(
         optimizer=opt,
@@ -69,10 +84,10 @@ def create_model(X: np.ndarray, Y: np.ndarray, player_character: melee.Character
 
 
 if __name__ == '__main__':
-    player_character = melee.Character.FALCO
-    opponent_character = melee.Character.JIGGLYPUFF
+    player_character = melee.Character.MARTH
+    opponent_character = melee.Character.CPTFALCON
     stage = melee.Stage.FINAL_DESTINATION
-    lr = 9e-5
+    lr = 1e-5
 
     raw = open(f'Data/{player_character.name}_{opponent_character.name}_on_{stage.name}_data.pkl', 'rb')
     data = pickle.load(raw)

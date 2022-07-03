@@ -226,9 +226,9 @@ def decode_from_model(action: np.ndarray, player: melee.PlayerState = None, stag
         edge = melee.EDGE_POSITION.get(stage)
     # if player is not None and player.position.y > 0 and abs(player.position.x) < 100:
     if player is not None and player.position.y > 0:
-        reduce = [7,1,8,10]
+        reduce = [7,1,8,10, 9]
         for i in reduce:
-            action[i] /= 3
+            action[i] /= 5
         if player.character in [melee.Character.FOX, melee.Character.FALCO, melee.Character.MARTH]:
             action[14]/=100
     if player.character in [melee.Character.FOX, melee.Character.FALCO]:
@@ -237,7 +237,7 @@ def decode_from_model(action: np.ndarray, player: melee.PlayerState = None, stag
             action[11]/=100
             action[12]/=100
 
-    action[0]/=10
+    action[0]/=4
     if not player.on_ground:
         action[1] /= 100
     # action[2] /= 100

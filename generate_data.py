@@ -150,7 +150,7 @@ def process_replays(replays: dict, c1: melee.Character, c2: melee.Character, s: 
 if __name__ == '__main__':
 
     # Mass Generate
-    f = open('replays2.json', 'r')
+    f = open('replays.json', 'r')
     replays = json.load(f)
     characters = [melee.Character.FALCO, melee.Character.JIGGLYPUFF, melee.Character.MARTH, melee.Character.CPTFALCON, melee.Character.FOX]
 

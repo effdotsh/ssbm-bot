@@ -36,6 +36,7 @@ class Bot:
             return [[0, 0, 0, 0, 0], -x, 0, 0, 0]
 
         if player.action in MovesList.lying:
+            print('getting up')
             return [[0, 0, 0, 0, 0], rel_x, 0, 0, 0]
 
 
