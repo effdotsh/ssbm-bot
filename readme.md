@@ -8,11 +8,11 @@ A psuedo imitation learning AI to play super smash bros
 
 ## Usage
 
-**Step 0:** Follow the [libmelee]([GitHub - altf4/libmelee: Open Python 3 API for making your own Smash Bros: Melee AI that works with Slippi Online](https://github.com/altf4/libmelee)) setup instruction. Set the dolphin path in `Args.py`
+**Step 0:** Follow the [libmelee](https://github.com/altf4/libmelee) setup instruction. Set the dolphin path in `Args.py`
 
-**Step 1**: [Get a melee ISO]([Dolphin Emulator - Ripping Games](https://dolphin-emu.org/docs/guides/ripping-games/)), name it `SSBM.iso` and put it in the main folder.
+**Step 1**: [Get a melee ISO](https://dolphin-emu.org/docs/guides/ripping-games/), name it `SSBM.iso` and put it in the main folder.
 
-**Step 2:** Get *alot* of slippi replays. For my project, I used [this]([melee_public_slp_dataset_v2.7z - Google Drive](https://drive.google.com/file/d/1ab6ovA46tfiPZ2Y3a_yS1J3k3656yQ8f/edit) dataset, however even this was more limited then I would like. Best case scenario, is alot of replay by a single player against a bunch of different opponents. Your mileage may vary.
+**Step 2:** Get *alot* of slippi replays. For my project, I used [this](https://drive.google.com/file/d/1ab6ovA46tfiPZ2Y3a_yS1J3k3656yQ8f/edit) dataset, however even this was more limited then I would like. Best case scenario, is alot of replay by a single player against a bunch of different opponents. Your mileage may vary.
 
 **Step 3:** Change the `replay_folder` variable to the path to your dataset, and run `organize_replays.py`
 
