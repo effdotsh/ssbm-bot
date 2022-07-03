@@ -1,19 +1,9 @@
 melee
-gym
 numpy
-
-matplotlib
-
 
 tqdm
 
 colorama
-wandb
 
-torch
-
-git+https://github.com/AI-Spawn/torchsample.git#egg=torchsample
-nibabel
-pandas
-
-sklearn
+tensorflow
+keras

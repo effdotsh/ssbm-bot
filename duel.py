@@ -1,5 +1,8 @@
 import math
+import pickle
 import time
+
+import keras
 
 import Args
 import GameManager
@@ -12,77 +15,43 @@ import numpy as np
 
 import MovesList
 
+import random
+from Bot import Bot
 args = Args.get_args()
 smash_last = False
-dud = [0, 0, 0, 0, 0, 0, 0, (0.5, 0.5), (0.5, 0.5), 0.0, 0.0]
-def validate_action(action, gamestate: melee.GameState, port:int):
-    global smash_last
-    player:melee.PlayerState = gamestate.players.get(port)
-    if player.action in MovesList.smashes:
-        if smash_last:
-           return dud
-        smash_last = True
+
+player_character = melee.Character.MARTH
+opponent_character = melee.Character.CPTFALCON
+stage = melee.Stage.FINAL_DESTINATION
+level=9
+
+
+def load_model(path: str):
+    path = f'{path}'
+    if os.path.exists(path):
+        with open(path, 'rb') as file:
+            data = pickle.load(file)
+            return data
     else:
-        smash_last = False
-    return action
+        print("Model does not exist")
+        quit()
 
 
 if __name__ == '__main__':
-    character = melee.Character.FOX
-    opponent = melee.Character.FALCO if not args.compete else character
-    stage = melee.Stage.FINAL_DESTINATION
-    print(f'{character.name} vs. {opponent.name} on {stage.name}')
+    file_name = f'models2/{player_character.name}_v_{opponent_character.name}_on_{stage.name}.pkl'
+    # file_name = 'generated_models/old/FALCO_v_FALCO_on_FINAL_DESTINATION.pkl_9.pkl'
+    print(file_name)
 
-    tree, map = DataHandler.load_model(player_character=character, opponent_character=opponent, stage=stage)
-    print('loaded')
-
+    model: keras.Model = load_model(file_name)
     game = GameManager.Game(args)
-    game.enterMatch(cpu_level=4, opponant_character=opponent,
-                    player_character=character,
+    game.enterMatch(cpu_level=level, opponant_character=opponent_character,
+                    player_character=player_character,
                     stage=stage, rules=False)
 
-    num_buttons = len(DataHandler.buttons) + 1
-    axis_size = 3
-    num_c = 5
+    bot1 = Bot(model=model, controller=game.controller, opponent_controller=game.opponent_controller)
+    # bot2 = Bot(model=model, controller=game.opponent_controller, opponent_controller=game.controller)
 
-    last_action = 120
     while True:
         gamestate = game.get_gamestate()
-        # print('----------')
-        # [A, B, X, Y, Z, L, R, MAIN_STICK, C_STICK, L_SHOULDER, R_SHOULDER]
-        action = DataHandler.predict(tree=tree, map=map, gamestate=gamestate, player_port=game.controller.port,
-                                            opponent_port=game.controller_opponent.port)
-
-        action = validate_action(action, gamestate, game.controller.port)
-        buttons = [melee.Button.BUTTON_A, melee.Button.BUTTON_B, melee.Button.BUTTON_X, melee.Button.BUTTON_Y, melee.Button.BUTTON_Z, melee.Button.BUTTON_L, melee.Button.BUTTON_R]
-        # if action is None:
-        #     print('action is none')
-        #     continue
-        # if len(action) < 8:
-        #     print(action)
-
-        button_used = False
-        for e, active in enumerate(action[:7]):
-            if active == 1:
-                button_used = True
-                game.controller.press_button(buttons[e])
-            else:
-                game.controller.release_button(buttons[e])
-
-        game.controller.tilt_analog(melee.Button.BUTTON_MAIN, action[7][0], action[7][1])
-        game.controller.tilt_analog(melee.Button.BUTTON_C, action[8][0], action[8][1])
-        # game.controller.press_shoulder(melee.Button.BUTTON_L, action[9])
-        # game.controller.press_shoulder(melee.Button.BUTTON_R, action[10])
-
-        game.controller.flush()
-
-
-
-
-        if button_used:
-            gamestate = game.get_gamestate()
-
-            game.controller.release_all()
-
-
-
+        bot1.act(gamestate)
+        # bot2.act(gamestate)

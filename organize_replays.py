@@ -6,7 +6,8 @@ import melee
 from tqdm import tqdm
 
 if __name__ == '__main__':
-    replay_folder = '/home/human/Documents/training_data'
+    # replay_folder = '/home/human/Documents/training_data'
+    replay_folder= '/home/human/Documents/slippi replays'
     replay_paths = []
     for root, dirs, files in os.walk(replay_folder):
         for name in files:
@@ -15,7 +16,7 @@ if __name__ == '__main__':
 
 
     if not os.path.exists('replays.json'):
-        with open('replays.json', 'w') as file:
+        with open('replays.json', 'w+') as file:
             json.dump({}, file, indent=4)
 
     f = open('replays.json', 'r')
@@ -48,6 +49,23 @@ if __name__ == '__main__':
             continue
         p1: melee.PlayerState = gamestate.players.get(ports[0])
         p2: melee.PlayerState = gamestate.players.get(ports[1])
+
+        #Make sure button is actually pressed
+        button_pressed = False
+        counter = 0
+        while True:
+            counter += 1
+            gamestate: melee.GameState = console.step()
+            p1: melee.PlayerState = gamestate.players.get(ports[0])
+            controller: melee.ControllerState = p1.controller_state
+            for b in melee.enums.Button:
+                if controller.button.get(b):
+                    button_pressed = True
+                    break
+            if button_pressed or counter > 1000:
+                break
+        if not button_pressed:
+            continue
 
         key = f'{p1.character.name}_{p2.character.name}'
         if key not in j:

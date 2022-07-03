@@ -20,4 +20,8 @@ firefoxing = [
     melee.Action.SWORD_DANCE_3_HIGH_AIR, melee.Action.SWORD_DANCE_4_MID]
 
 
-buttons = [melee.enums.Button.BUTTON_A, melee.enums.Button.BUTTON_B, melee.enums.Button.BUTTON_X, melee.enums.Button.BUTTON_Y]
+# buttons = [melee.enums.Button.BUTTON_A, melee.enums.Button.BUTTON_B, melee.enums.Button.BUTTON_X, melee.enums.Button.BUTTON_Y]
+b = melee.enums.Button
+buttons = [[b.BUTTON_X, b.BUTTON_Y], [b.BUTTON_B], [b.BUTTON_L, b.BUTTON_R], [b.BUTTON_A], [b.BUTTON_Z]]
+
+lying = [melee.Action.LYING_GROUND_DOWN, melee.Action.TECH_MISS_DOWN, melee.Action.TECH_MISS_UP]

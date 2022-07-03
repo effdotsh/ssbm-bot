@@ -16,7 +16,13 @@ runs
 saved
 *.model
 models
+models2
+replays2.json
 replays.json
 
 data
 training_data
+
+
+generated_models
+Data
