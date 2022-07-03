@@ -24,4 +24,4 @@ firefoxing = [
 b = melee.enums.Button
 buttons = [[b.BUTTON_X, b.BUTTON_Y], [b.BUTTON_B], [b.BUTTON_L, b.BUTTON_R], [b.BUTTON_A], [b.BUTTON_Z]]
 
-lying = [melee.Action.LYING_GROUND_DOWN]
+lying = [melee.Action.LYING_GROUND_DOWN, melee.Action.TECH_MISS_DOWN, melee.Action.TECH_MISS_UP]
