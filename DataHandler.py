@@ -101,7 +101,7 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
     special_fall = 1 if player.action in MovesList.special_fall_list else 0
     is_dead = 1 if player.action in MovesList.dead_list else 0
 
-    jumps_left = player.jumps_left / framedata.max_jumps(player.character)
+    jumps_left = 1 if player.jumps_left > 0 else 0
 
     attack_state = framedata.attack_state(player.character, player.action, player.action_frame)
     attack_active = 1 if attack_state == melee.AttackState.ATTACKING else 0
@@ -115,17 +115,17 @@ def get_player_obs(player: melee.PlayerState, gamestate: melee.GameState) -> lis
         tumbling,
         offstage,
         special_fall,
-        is_dead,
+        # is_dead,
         shield, on_ground, is_attacking,
         x, y,
         vel_x, vel_y,
-        percent,
+        # percent,
         facing,
         in_hitstun,
         is_invulnerable,
         jumps_left,
-        attack_windup, attack_active, attack_cooldown,
-        is_bmove,
+        # attack_windup, attack_active, attack_cooldown,
+        # is_bmove,
         (abs(player.position.x) - edge) / 20,
         # stock
     ]
