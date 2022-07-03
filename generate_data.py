@@ -129,33 +129,33 @@ def load_data(replay_paths: str, player_character: melee.Character, opponent_cha
     Y_oponnent = np.array(Y_player)
     return X_player, Y_player, X_opponent, Y_oponnent
 
+def process_replays(replays: dict, c1: melee.Character, c2: melee.Character, s: melee.Stage):
+    print(f'Data/{c1.name}_{c2.name}_on_{s.name}_data.pkl')
+    print(f'Data/{c2.name}_{c1.name}_on_{s.name}_data.pkl')
+
+
+    replay_paths = replays[f'{c1.name}_{c2.name}'][s.name]
+
+    Xp, Yp, Xo, Yo = load_data(replay_paths, c1, c2)
+
+    data_file_path = f'Data/{c1.name}_{c2.name}_on_{s.name}_data.pkl'
+    with open(data_file_path, 'wb') as file:
+        pickle.dump({'X': Xp, 'Y': Yp}, file)
+
+    data_file_path = f'Data/{c2.name}_{c1.name}_on_{s.name}_data.pkl'
+    with open(data_file_path, 'wb') as file:
+        pickle.dump({'X': Xo, 'Y': Yo}, file)
+
+
 if __name__ == '__main__':
 
     # Mass Generate
     f = open('replays2.json', 'r')
-    j = json.load(f)
+    replays = json.load(f)
     characters = [melee.Character.FALCO, melee.Character.JIGGLYPUFF, melee.Character.MARTH, melee.Character.CPTFALCON, melee.Character.FOX]
 
     for e, c1 in enumerate(characters):
         for c2 in characters[e+1:]:
             if c1 != c2:
                 for s in [melee.Stage.FINAL_DESTINATION]:
-                    print(f'Data/{c1.name}_{c2.name}_on_{s.name}_data.pkl')
-                    print(f'Data/{c2.name}_{c1.name}_on_{s.name}_data.pkl')
-
-
-                    f = open('replays2.json', 'r')
-                    j = json.load(f)
-                    characters = [melee.Character.MARTH, melee.Character.FALCO, melee.Character.CPTFALCON]
-
-                    replay_paths = j[f'{c1.name}_{c2.name}'][s.name]
-
-                    Xp, Yp, Xo, Yo = load_data(replay_paths, c1, c2)
-
-                    data_file_path = f'Data/{c1.name}_{c2.name}_on_{s.name}_data.pkl'
-                    with open(data_file_path, 'wb') as file:
-                        pickle.dump({'X': Xp, 'Y': Yp}, file)
-
-                    data_file_path = f'Data/{c2.name}_{c1.name}_on_{s.name}_data.pkl'
-                    with open(data_file_path, 'wb') as file:
-                        pickle.dump({'X': Xo, 'Y': Yo}, file)
+                    process_replays(replays, c1, c2, s)
